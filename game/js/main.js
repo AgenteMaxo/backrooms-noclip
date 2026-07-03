@@ -184,6 +184,11 @@
     const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
     const iv = setInterval(() => {
       try {
+        // prueba dirigida de remodelación de zona
+        if (params.get('remodel') && acciones === 120 && !world.over) {
+          window.__remodelResultado = [];
+          for (let i = 0; i < 5; i++) window.__remodelResultado.push(world.remodelarZona());
+        }
         if (acciones >= N || world.over) {
           clearInterval(iv);
           const div = document.createElement('div');
@@ -201,6 +206,7 @@
             diario: world.journal.map((j) => j.nombre),
             errores,
             erroresRender: window.__renderErrors || [],
+            remodel: window.__remodelResultado || null,
           });
           document.body.appendChild(div);
           document.title = errores.length ? 'SELFTEST-ERRORES' : 'SELFTEST-OK';

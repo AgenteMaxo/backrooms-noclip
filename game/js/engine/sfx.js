@@ -18,7 +18,7 @@
   let idleStop = null;
   const overrides = {};
 
-  const NOMBRES = ['paso', 'golpe', 'dano', 'recoger', 'dado', 'puerta', 'registrar', 'muerte', 'victoria', 'latido', 'ui'];
+  const NOMBRES = ['paso', 'golpe', 'dano', 'recoger', 'dado', 'puerta', 'registrar', 'muerte', 'victoria', 'latido', 'ui', 'derrumbe', 'bisturi'];
   for (const n of NOMBRES) {
     for (const ext of ['mp3', 'ogg', 'wav']) {
       const el = new window.Audio();
@@ -132,6 +132,14 @@
     },
     puerta() { ruido(0.4, 320, 0.36, 'lowpass', 90); tono(70, 0.35, 0.32, 'sine', 45); setTimeout(() => ctx && ruido(0.1, 1800, 0.1, 'bandpass'), 300); },
     registrar() { ruido(0.32, 1800, 0.26, 'bandpass', 500); tono(210, 0.14, 0.18, 'square', 190); },
+    derrumbe() {
+      // retumbo profundo + crujidos de roca en cascada
+      tono(38, 1.4, 0.55, 'sine', 23);
+      ruido(1.2, 170, 0.32, 'lowpass', 55);
+      for (let i = 0; i < 5; i++)
+        setTimeout(() => ctx && ruido(0.13, 650 + Math.random() * 600, 0.2, 'bandpass', 180),
+          120 + i * 170 + Math.random() * 90);
+    },
     bisturi() {
       ruido(0.32, 3800, 0.16, 'bandpass', 900);                       // silbido de hoja
       setTimeout(() => ctx && tono(2400, 0.12, 0.14, 'sine', 2100), 300); // tintineo

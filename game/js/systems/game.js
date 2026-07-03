@@ -164,11 +164,65 @@
   world.hunger = (n) => { world.player.hambre = Math.max(0, Math.min(100, world.player.hambre + n)); };
   world.hasItem = (id) => world.player.inv.includes(id);
 
-  world.forgetExplored = function (frac) {
+  // Remodelación REAL de una zona del nivel (propiedad no euclidiana):
+  // regenera los tiles de un chunk lejos del jugador, valida que todas las
+  // salidas sigan alcanzables, y borra la memoria explorada SOLO de esa zona.
+  world.remodelarZona = function () {
     const g = world.map.grid;
-    const r = world.rng;
-    for (let i = 0; i < world.explored.length; i++)
-      if (world.explored[i] && world.light[i] <= 0 && r.chance(frac)) world.explored[i] = 0;
+    const T = MapGen.T;
+    const rng = RNG.create(`${world.runSeed}::remodel::${world.level.id}::${world.turnTotal}`);
+    const CH = 14;
+    if (g.w < CH + 6 || g.h < CH + 6) return false;
+
+    for (let intento = 0; intento < 12; intento++) {
+      const cx = rng.int(2, g.w - CH - 3);
+      const cy = rng.int(2, g.h - CH - 3);
+      // fuera de la vista del jugador (distancia a la celda más cercana del chunk)
+      const ncx = Math.max(cx, Math.min(world.player.x, cx + CH - 1));
+      const ncy = Math.max(cy, Math.min(world.player.y, cy + CH - 1));
+      const pd = Math.max(Math.abs(world.player.x - ncx), Math.abs(world.player.y - ncy));
+      if (pd < world.visionActual() + 3) continue;
+      // sin salidas dentro del chunk
+      if (world.map.exits.some((e) => e.x >= cx && e.x < cx + CH && e.y >= cy && e.y < cy + CH)) continue;
+
+      // copia de seguridad por si rompe la conectividad
+      const backup = new Uint8Array(CH * CH);
+      for (let y = 0; y < CH; y++)
+        for (let x = 0; x < CH; x++)
+          backup[y * CH + x] = g.t[(cy + y) * g.w + (cx + x)];
+
+      // regenerar el interior (los bordes del chunk se conservan: no sella pasos)
+      for (let y = 1; y < CH - 1; y++)
+        for (let x = 1; x < CH - 1; x++) {
+          const gx = cx + x, gy = cy + y;
+          const viejo = g.t[gy * g.w + gx];
+          if (viejo === T.VACIO || viejo === T.AGUA) continue; // no tocar abismos ni agua
+          const pilar = (gx % 2 === 0 && gy % 2 === 0) || rng.chance(0.22);
+          g.t[gy * g.w + gx] = pilar ? T.PARED : T.SUELO;
+        }
+      // despeja bajo objetos, props y entidades del chunk
+      const dentro = (x, y) => x >= cx && x < cx + CH && y >= cy && y < cy + CH;
+      for (const it of world.map.items) if (!it.taken && dentro(it.x, it.y)) g.t[it.y * g.w + it.x] = T.SUELO;
+      for (const pr of world.map.props || []) if (dentro(pr.x, pr.y)) g.t[pr.y * g.w + pr.x] = T.SUELO;
+      for (const e of world.entities) if (e.viva && dentro(e.x, e.y)) g.t[e.y * g.w + e.x] = T.SUELO;
+
+      // validar: todas las salidas siguen alcanzables desde el jugador
+      const dist = MapGen.bfsDist(g, world.player.x, world.player.y);
+      const ok = world.map.exits.every((e) => dist[e.y * g.w + e.x] >= 0);
+      if (!ok) {
+        for (let y = 0; y < CH; y++)
+          for (let x = 0; x < CH; x++)
+            g.t[(cy + y) * g.w + (cx + x)] = backup[y * CH + x];
+        continue;
+      }
+
+      // éxito: la memoria explorada se borra SOLO en la zona remodelada
+      for (let y = 0; y < CH; y++)
+        for (let x = 0; x < CH; x++)
+          world.explored[(cy + y) * g.w + (cx + x)] = 0;
+      return true;
+    }
+    return false;
   };
 
   world.rollDice = function (texto, cb) {

@@ -53,12 +53,57 @@
         slot.innerHTML = `<span class="k">${i + 1}</span><span class="n">${ic}</span>`;
         slot.title = `${def.nombre} — ${def.descripcion}`;
         if (id === 'linterna' && world.player.luz) slot.classList.add('active');
-        slot.onclick = () => Game.useItem(i);
+        slot.onclick = () => showItemInfo(i, ic);
       } else {
         slot.innerHTML = `<span class="k">${i + 1}</span>`;
       }
       inv.appendChild(slot);
     }
+  }
+
+  // ---------- ventana de información de objeto ----------
+  function efectoLegible(def) {
+    const e = def.efecto || {};
+    const partes = [];
+    if (e.salud) partes.push(`Restaura ${e.salud} ♥ de salud`);
+    if (e.cordura) partes.push(`Restaura ${e.cordura} ☯ de cordura`);
+    if (e.sed) partes.push(`Sacia ${e.sed} 💧 de sed`);
+    if (e.toggle === 'luz') partes.push('Alterna la luz (+4 de visión; atrae Deathmoths)');
+    if (e.activo === 'fuego') partes.push('USO ÚNICO: quema (−30) y ahuyenta todo en radio 3');
+    if (e.activo === 'paralisis') partes.push('USO ÚNICO: paraliza 6 turnos a lo adyacente');
+    if (e.pasivo === 'arma') partes.push('PASIVO: muévete HACIA una entidad adyacente para golpearla');
+    if (e.pasivo === 'abrigo') partes.push('PASIVO: anula el daño por frío');
+    if (e.pasivo === 'detector') partes.push('PASIVO: entidades cercanas visibles en el minimapa');
+    if (e.pasivo === 'suerte') partes.push('PASIVO: +2 a todas tus tiradas de dado');
+    if (e.pasivo === 'llave') partes.push('Se gasta al abrir una puerta de acero en The Hub');
+    return partes.join(' · ') || 'Efecto desconocido.';
+  }
+
+  function showItemInfo(slot, icono) {
+    const id = world.player.inv[slot];
+    if (!id) return;
+    const def = world.data.objects[id];
+    world.busy = true;
+    if (window.Sfx) Sfx.play('ui');
+    $('item-icon').textContent = icono;
+    $('item-name').textContent = def.nombre;
+    $('item-desc').textContent = def.descripcion;
+    $('item-effect').textContent = efectoLegible(def);
+    const wiki = $('item-wiki');
+    if (def.url) { wiki.style.display = 'inline'; wiki.href = def.url; }
+    else wiki.style.display = 'none';
+    const usable = def.efecto && (def.efecto.salud || def.efecto.cordura || def.efecto.sed ||
+      def.efecto.toggle || def.efecto.activo);
+    const btnUse = $('btn-item-use');
+    btnUse.style.display = usable ? 'inline-block' : 'none';
+    btnUse.onclick = () => { cerrarItemInfo(); Game.useItem(slot); };
+    $('btn-item-close').onclick = cerrarItemInfo;
+    $('item-modal').style.display = 'flex';
+  }
+  function cerrarItemInfo() {
+    $('item-modal').style.display = 'none';
+    if ($('exit-modal').style.display === 'none' && $('dice-overlay').style.display === 'none')
+      world.busy = false;
   }
 
   let flashT = -99999;

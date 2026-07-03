@@ -6,7 +6,7 @@
   const G = 14;                    // grosor del tabique
   const B0 = (TILE - G) / 2;       // borde izquierdo/superior de la banda (17)
   const B1 = B0 + G;               // borde derecho/inferior de la banda (31)
-  const FH = 26;                   // alto de la cara frontal
+  const FH = 34;                   // alto de la cara frontal (2.5D)
 
   function shade(hex, f) {
     const n = parseInt(hex.slice(1), 16);
@@ -600,6 +600,16 @@
     return base;
   }
 
+  // versión oscurecida de un canvas (lados extruidos del parallax 2.5D)
+  function darken(src, f) {
+    const c = canvas(src.width, src.height), ctx = c.getContext('2d');
+    ctx.drawImage(src, 0, 0);
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.fillStyle = `rgba(0,0,0,${1 - f})`;
+    ctx.fillRect(0, 0, c.width, c.height);
+    return c;
+  }
+
   // estilos por defecto si la ficha no especifica (compatibilidad)
   const FALLBACK = {
     pasillos: ['papel_rayas', 'moqueta'], garaje: ['hormigon', 'hormigon'],
@@ -618,16 +628,20 @@
       const estiloPared = levelDef.estilo?.pared ?? fb[0];
       const estiloSuelo = levelDef.estilo?.suelo ?? fb[1];
       const wallStyle = estiloPared === 'arbol' ? 'arbol' : estiloPared === 'roca' ? 'roca' : 'tabique';
-      return {
+      const out = {
         wallStyle,
         suelo: [0, 1, 2].map((v) => floorTile(pal, estiloSuelo, rng, v)),
         agua: aguaTile(pal, rng),
         decor: decorTile(pal, levelDef.bioma, estiloSuelo, rng),
         topPieces: wallStyle === 'tabique' ? buildTopPieces(pal, estiloPared, rng) : null,
+        topPiecesSombra: null, // se rellena abajo
         faceTexs: wallStyle === 'tabique' ? buildFaceTexs(pal, estiloPared, rng) : null,
         arbol: wallStyle === 'arbol' ? arbolTile(pal, rng) : null,
         roca: wallStyle === 'roca' ? rocaTile(pal, rng) : null,
       };
+      if (out.topPieces) out.topPiecesSombra = out.topPieces.map((c) => darken(c, 0.55));
+      return out;
     },
+    darken,
   };
 })();

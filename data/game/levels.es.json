@@ -269,6 +269,21 @@
     "texto": "Ciertos pasillos desembocan en la desolación de madera de Level 27",
     "destino": "level-27",
     "tipo": "normal"
+   },
+   {
+    "texto": "Una puerta dorada marcada con el símbolo «Φ» conduce a Level Phi",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Un túnel de alcantarillado desemboca en Level 34",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "El aumento gradual de luces de neón anuncia una salida a Level 699",
+    "destino": null,
+    "tipo": "sellada"
    }
   ],
   "esEscape": false,
@@ -344,6 +359,21 @@
   "salidas": [
    {
     "texto": "Las madrigueras y agujeros del terreno descienden hacia niveles sin cartografiar",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Tropezar con una rama caída puede llevarte a Level 6.1",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Entrar en un agujero del terreno conduce a Level 8",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Vagar lo suficiente, o seguir una luz anómala, lleva a Level 7",
     "destino": null,
     "tipo": "sellada"
    }
@@ -445,6 +475,11 @@
     "texto": "Caer al vacío de niebla sobre el que flota el nivel",
     "destino": null,
     "tipo": "void"
+   },
+   {
+    "texto": "Las aberturas del techo o las paredes llevan a Level 173; la mayoría de quienes saltaron desaparecieron",
+    "destino": null,
+    "tipo": "sellada"
    }
   ],
   "esEscape": false,
@@ -622,6 +657,67 @@
     "texto": "Una puerta con el rótulo «The Archives», hacia Level 80",
     "destino": "level-80",
     "tipo": "rara"
+   },
+   {
+    "texto": "Una puerta azul envía a Level 0.8",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Un panel de control con un botón rotulado «ESCAPE»: pulsarlo abre una verja hacia Level 3",
+    "destino": null,
+    "tipo": "sellada",
+    "ritual": "boton"
+   },
+   {
+    "texto": "Bajar una escalera de oficina puede llevarte a Level 4",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Romper una ventana transporta a Level 11",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Seguir un rastro de marcas de neumático hasta un garaje abierto: Level 69",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Ciertas puertas llevan a Level 339",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Una cámara secreta rotulada «Project TCCS» esconde pasillos hacia Level 443",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Encontrar césped espacial y hacer no-clip en él lleva a Level 818",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Una sustancia roja y pegajosa marca el camino a las cavernas de Level 990",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Resbalar con agua de almendras AZUL te lleva a Level 32",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Resbalar con agua de almendras VERDE te lleva a Level 48",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Resbalar con agua de almendras ROJA te lleva a Level 427",
+    "destino": null,
+    "tipo": "sellada"
    }
   ],
   "esEscape": false,
@@ -720,6 +816,47 @@
     "texto": "Escapar por una ventana rota durante una distorsión: caída hacia Level 777",
     "destino": "level-777",
     "tipo": "rara"
+   },
+   {
+    "texto": "Las zonas más oscuras y angostas llevan a Level 0.7",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Una puerta difícil de abrir en el sótano del hospital conduce a Level 3",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Atravesar la puerta de una consulta médica puede llevar a Level 4",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Diversos factores hacen que los pasillos se difuminen hacia Level 17",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Pulsar los botones «9» y «8» de la máquina expendedora de la sala de descanso transporta a Level 98",
+    "destino": null,
+    "tipo": "sellada",
+    "ritual": "vending"
+   },
+   {
+    "texto": "Los pasajes retrofuturistas de la Novelty Zone disuelven el asilo hacia Level 400",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Una silla de ruedas moviéndose sola anuncia el teletransporte a Level 223",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Un Cadillac celeste de los 70 con una foto en el parabrisas transporta a Level 69",
+    "destino": null,
+    "tipo": "sellada"
    }
   ],
   "esEscape": false,
@@ -849,6 +986,41 @@
     "texto": "Las cuevas descienden hacia la Colmena. No entres. NO ENTRES.",
     "destino": null,
     "tipo": "sellada"
+   },
+   {
+    "texto": "Hacer no-clip a través de un cerezo en flor te lleva a Level 110",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Hacer no-clip por una puerta lleva a Level 974",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Sobrevivir de milagro a una sobredosis de Agua de Neón lleva a Level 7. NO lo intentes",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Ciertas zonas imprevistas de las cuevas transicionan a Level 8",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Las zonas secas del nivel pueden llevar a Level 46",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Un sistema de alcantarillado en las cuevas conduce a Level 49",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Los carteles de neón rotos con la palabra «Range» llevan sin fallo a Level 73",
+    "destino": null,
+    "tipo": "sellada"
    }
   ],
   "esEscape": false,
@@ -900,7 +1072,8 @@
     "texto": "Tocar un reloj digital moderno: a veces lleva a los túneles de Level 2",
     "destino": "level-2",
     "tipo": "arriesgada",
-    "riesgoVoid": 0
+    "riesgoVoid": 0,
+    "ritual": "reloj"
    }
   ],
   "esEscape": false,
@@ -1002,6 +1175,16 @@
     "texto": "Un desgarro en el papel pintado: detrás, los pasillos de Level 0",
     "destino": "level-0",
     "tipo": "normal"
+   },
+   {
+    "texto": "Una rara puerta de incendios en el pasillo lleva a Level 11",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Los desgarros de deformación en las paredes transportan a Level 21",
+    "destino": null,
+    "tipo": "sellada"
    }
   ],
   "esEscape": false,
@@ -1082,6 +1265,16 @@
   "salidas": [
    {
     "texto": "La sala de embarque conecta con otros niveles espaciales, aún sin cartografiar",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Cualquier interacción letal con [ARCHIVO DAÑADO] lleva a los caídos a Level 203",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "La sala de embarque: hacer no-clip por su puerta lleva a Level 24",
     "destino": null,
     "tipo": "sellada"
    }
@@ -1166,6 +1359,31 @@
     "texto": "La Hurricane consume todo lo que toca. Ser devorado es caer al Vacío",
     "destino": null,
     "tipo": "void"
+   },
+   {
+    "texto": "Hacer no-clip en un objeto afectado tras el Fenómeno 70 puede llevar a Level 137",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Ser corrompido tiene un 2% de probabilidad de llevar a Level 690",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Un raro túnel conduce a un destino quizá peor: Level 488",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Un raro túnel subterráneo lleva a Level 899",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Un colapso mental tiene un 1,7% de probabilidad de llevar a Level 138",
+    "destino": null,
+    "tipo": "sellada"
    }
   ],
   "esEscape": false,
@@ -1211,6 +1429,26 @@
     "texto": "Una rara ventana flotante con marco: trepar hacia Level 188",
     "destino": "level-188",
     "tipo": "rara"
+   },
+   {
+    "texto": "Los raros huecos de los árboles llevan a Level 192",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Escasas fosas del terreno caen a Level 202.1",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Tocar los brotes de árbol que parecen postes de valla teletransporta a Level 204",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Hacer no-clip a través de un charco envía a Level 908",
+    "destino": null,
+    "tipo": "sellada"
    }
   ],
   "esEscape": false,
@@ -1361,6 +1599,66 @@
     "texto": "Si el espacio no se parece a nada reconocible, probablemente lleva a Level 1",
     "destino": "level-1",
     "tipo": "normal"
+   },
+   {
+    "texto": "Si la sala parece un aparcamiento, lleva a Level 22",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Si parece un almacén, lleva a Level 20",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Si parece una fábrica, lleva a Level 23",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Si hay hielo y nieve, lleva a Level 108",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Si parece una instalación deportiva, puede llevar a Level 176",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Cuestionar constantemente la naturaleza del nivel puede enviarte a Level 47",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Una puerta con la palabra «Next» grabada lleva a Level 269",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Bajar una escalera envía a Level 914 o a un interior de Level 67",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Una puerta naranja envía a Level 38 o Level 38.1",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Una gran sala cuadrada con un parche de hierba lleva a Level 10",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Una puerta iluminada por un único rayo de sol lleva a Level 268.1",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Hacer no-clip por un pasillo de tuberías con fugas envía a Level 0.8",
+    "destino": null,
+    "tipo": "sellada"
    }
   ],
   "esEscape": false,
@@ -1435,6 +1733,31 @@
     "texto": "Los espejos destrozados sirven de entrada al Vacío",
     "destino": null,
     "tipo": "void"
+   },
+   {
+    "texto": "Una puerta cubierta de sangre lleva a Level 410",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Caminar durante un tiempo indeterminado puede dejarte en Level 17",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Una puerta con barrotes conduce a Level 3",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Hacer no-clip por un espejo con neón blanco encima lleva a Level 256",
+    "destino": null,
+    "tipo": "sellada"
+   },
+   {
+    "texto": "Hacer no-clip por un espejo de neón tiene una mínima probabilidad de llevar a Level 699",
+    "destino": null,
+    "tipo": "sellada"
    }
   ],
   "esEscape": false,
@@ -1573,7 +1896,8 @@
    {
     "texto": "Un edificio idéntico a los rascacielos de la realidad. No-clip hacia dentro. Hacia casa.",
     "destino": null,
-    "tipo": "escape"
+    "tipo": "escape",
+    "ritual": "edificio"
    },
    {
     "texto": "Caer de una torre es caer al Vacío",
@@ -1719,7 +2043,8 @@
    {
     "texto": "Tocar la nave espacial de juguete del pedestal: transporte inmediato a Level 140",
     "destino": "level-140",
-    "tipo": "rara"
+    "tipo": "rara",
+    "ritual": "nave"
    },
    {
     "texto": "Ciertas puertas se abren a Level 6, Level 484 «The Whiteout» o Level 305",

@@ -166,13 +166,11 @@
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath(); ctx.ellipse(px + 24, py + 40, 11, 4, 0, 0, 7); ctx.fill();
     if (p._hitT && t - p._hitT < 170) ctx.filter = 'brightness(2.2)';
-    if (p.flip) {
-      ctx.translate(px + 48, py - 4);
-      ctx.scale(-1, 1);
-      ctx.drawImage(img, 0, 0);
-    } else {
-      ctx.drawImage(img, px, py - 4);
-    }
+    // respiración sutil en reposo (2.5D vivo)
+    const resp = world.moving ? 1 : 1 + Math.sin(t / 750) * 0.016;
+    ctx.translate(px + 24, py + 20);
+    ctx.scale(p.flip ? -resp : resp, resp);
+    ctx.drawImage(img, -24, -24);
     ctx.restore();
   }
 
@@ -185,10 +183,75 @@
     return 'puerta';
   }
 
+  // salidas rituales canon: el objeto específico de la wiki, no una puerta genérica
+  function drawRitual(ex, x, y, t, col, pulse) {
+    const cx = x + 24, base = y + 40;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath(); ctx.ellipse(cx, base + 2, 13, 4.5, 0, 0, 7); ctx.fill();
+    ctx.shadowColor = col; ctx.shadowBlur = 12 * pulse;
+    switch (ex.def.ritual) {
+      case 'nave': // pedestal con la nave espacial de juguete (L483 → L140)
+        ctx.fillStyle = '#6a6a72';
+        ctx.fillRect(cx - 7, base - 18, 14, 18);
+        ctx.fillStyle = '#8a8a92';
+        ctx.fillRect(cx - 9, base - 21, 18, 4);
+        ctx.fillStyle = '#d84a3a';                       // cohete de juguete
+        ctx.beginPath(); ctx.moveTo(cx, base - 36); ctx.lineTo(cx + 5, base - 24); ctx.lineTo(cx - 5, base - 24); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#e8e8f0';
+        ctx.fillRect(cx - 5, base - 25, 10, 4);
+        ctx.fillStyle = col; ctx.globalAlpha = pulse;
+        ctx.beginPath(); ctx.arc(cx, base - 30, 2, 0, 7); ctx.fill();
+        break;
+      case 'reloj': // reloj digital moderno (L80 → L2)
+        ctx.fillStyle = '#20242a';
+        ctx.fillRect(cx - 12, base - 26, 24, 14);
+        ctx.strokeStyle = '#4a5058';
+        ctx.strokeRect(cx - 12.5, base - 26.5, 25, 15);
+        ctx.fillStyle = Math.floor(t / 500) % 2 ? '#40ff80' : '#30cc60'; // dígitos parpadeando
+        ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('88:88', cx, base - 15.5);
+        ctx.fillStyle = '#2a2e34';
+        ctx.fillRect(cx - 3, base - 12, 6, 12);
+        break;
+      case 'vending': // máquina expendedora (L16 → L98)
+        ctx.fillStyle = '#a83848';
+        ctx.fillRect(cx - 11, base - 36, 22, 36);
+        ctx.fillStyle = '#d8e8f0'; ctx.globalAlpha = 0.8;
+        ctx.fillRect(cx - 8, base - 32, 10, 22);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#701828';
+        ctx.fillRect(cx + 4, base - 32, 5, 22);
+        ctx.fillStyle = pulse > 0.7 ? '#ffe060' : '#c8a830'; // botones 9 y 8
+        ctx.fillRect(cx + 5, base - 30, 3, 3); ctx.fillRect(cx + 5, base - 25, 3, 3);
+        break;
+      case 'boton': // panel con botón ESCAPE (L15 → L3)
+        ctx.fillStyle = '#c8ccd4';
+        ctx.fillRect(cx - 10, base - 28, 20, 20);
+        ctx.strokeStyle = '#8a92a0';
+        ctx.strokeRect(cx - 10.5, base - 28.5, 21, 21);
+        ctx.fillStyle = '#d83030';
+        ctx.beginPath(); ctx.arc(cx, base - 18, 4 + pulse, 0, 7); ctx.fill();
+        ctx.fillStyle = '#2a2e34'; ctx.font = 'bold 5px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('ESCAPE', cx, base - 9);
+        break;
+      case 'edificio': // rascacielos de la realidad (escape de L385)
+        ctx.fillStyle = '#38404c';
+        ctx.fillRect(cx - 10, base - 40, 20, 40);
+        ctx.fillStyle = '#6ae86a'; ctx.globalAlpha = 0.5 + pulse * 0.4;
+        for (let fy = 0; fy < 5; fy++)
+          for (let fx = 0; fx < 3; fx++)
+            if ((fx + fy) % 2 === 0) ctx.fillRect(cx - 7 + fx * 5.5, base - 36 + fy * 7, 3.5, 4);
+        break;
+    }
+    ctx.restore();
+  }
+
   function drawExit(ex, x, y, t, northWall) {
     const cx = x + 24;
     const pulse = 0.6 + Math.sin(t / 400) * 0.25;
     const col = ex.def.tipo === 'escape' ? '#6ae86a' : ex.def.tipo === 'sellada' ? '#666666' : '#e8c95a';
+    if (ex.def.ritual) { drawRitual(ex, x, y, t, col, pulse); return; }
     const style = exitStyle(ex.def);
     ctx.save();
 
@@ -416,11 +479,10 @@
 
     const vis = (idx) => world.explored[idx] || world.light[idx] > 0.001;
 
-    // PASE 1: suelos (también bajo los tabiques: la moqueta continúa)
+    // PASE 1: suelos — SE DIBUJA TODO el viewport; la niebla es el único límite
     for (let y = y0; y <= y1; y++)
       for (let x = x0; x <= x1; x++) {
         const idx = y * g.w + x;
-        if (!vis(idx)) continue;
         const v = g.t[idx];
         if (v === T.VACIO) continue; // el fondo es el cielo/abismo
         const sx = x * TILE - cam.x, sy = y * TILE - cam.y;
@@ -429,6 +491,13 @@
         else if (v === T.DECOR) img = world.tiles.decor;
         else img = world.tiles.suelo[(x * 7 + y * 13) % 3];
         ctx.drawImage(img, sx, sy);
+        // oclusión ambiental: sombra donde el suelo toca una pared
+        if (v !== T.PARED) {
+          ctx.fillStyle = 'rgba(0,0,0,0.16)';
+          if (MapGen.at(g, x, y - 1) === T.PARED) ctx.fillRect(sx, sy, TILE, 5);
+          if (MapGen.at(g, x - 1, y) === T.PARED) ctx.fillRect(sx, sy, 5, TILE);
+          if (MapGen.at(g, x + 1, y) === T.PARED) ctx.fillRect(sx + TILE - 5, sy, 5, TILE);
+        }
       }
 
     // índices por celda
@@ -462,7 +531,6 @@
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const idx = y * g.w + x;
-        if (!vis(idx)) continue;
         const sx = x * TILE - cam.x, sy = y * TILE - cam.y;
         const light = world.light[idx];
 
@@ -485,16 +553,17 @@
           }
 
         if (g.t[idx] === T.PARED) {
+          // parallax de perspectiva 2.5D: los techos se alejan del centro de pantalla
+          const kx = (sx + TILE / 2 - W / 2) * 0.05;
+          const ky = (sy + TILE / 2 - H / 2) * 0.05;
           if (world.tiles.wallStyle === 'arbol') {
-            ctx.drawImage(world.tiles.arbol, sx, sy - 18);
+            ctx.drawImage(world.tiles.arbol, sx + kx * 0.55, sy - 18 + ky * 0.55);
           } else if (world.tiles.wallStyle === 'roca') {
-            ctx.drawImage(world.tiles.roca, sx, sy - 10);
+            ctx.drawImage(world.tiles.roca, sx + kx * 0.45, sy - 10 + ky * 0.45);
           } else {
             const bits = (esWall(x, y - 1) ? 1 : 0) | (esWall(x + 1, y) ? 2 : 0) |
                          (esWall(x, y + 1) ? 4 : 0) | (esWall(x - 1, y) ? 8 : 0);
-            ctx.drawImage(world.tiles.topPieces[bits], sx, sy);
-            // caras frontales: TODO segmento del borde sur del tabique que quede
-            // expuesto (también en esquinas y T — el vecino sur repinta lo suyo)
+            // caras frontales primero (ancladas al suelo)
             if (MapGen.at(g, x, y + 1) !== T.VACIO) {
               const xStart = (bits & 8) ? 0 : Tiles.B0;
               const xEnd = (bits & 2) ? TILE : Tiles.B1;
@@ -510,6 +579,9 @@
                 ctx.fillRect(sx + a, sy + Tiles.B1 + Tiles.FH, wSeg, 5);
               }
             }
+            // lado extruido (silueta oscura intermedia) + techo desplazado
+            ctx.drawImage(world.tiles.topPiecesSombra[bits], sx + kx * 0.5, sy + ky * 0.5);
+            ctx.drawImage(world.tiles.topPieces[bits], sx + kx, sy + ky);
           }
         }
       }

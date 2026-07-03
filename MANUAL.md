@@ -27,8 +27,15 @@ Guía de todo lo que puedes hacer/modificar tú mismo, sin programar.
 - **Objetivo**: encontrar una de las rarísimas rutas de escape (⭐). La muerte es permanente.
 - Los muebles con **brillo dorado** se pueden registrar con `E`.
 - En niveles seguros (peligro 0-1) la cordura se recupera sola poco a poco: úsalos para descansar.
-- **Minimapa** (esquina superior derecha): dibuja solo lo que has explorado. Si el nivel
-  reordena sus pasillos (Level 0, 27…), el minimapa lo refleja. Clic o `N` para ampliarlo.
+- **Minimapa** (esquina superior derecha): dibuja lo que has explorado y **lo conserva siempre**.
+  Solo cambia si el nivel de verdad se reorganiza (Level 0, 27, 130…): lo oirás como un
+  derrumbe lejano, y esa zona (solo esa) volverá a quedar sin cartografiar. Clic o `N` amplía.
+- **Objetos**: clic en un objeto del inventario → ventana con su información y botón USAR.
+  Las teclas 1-6 lo usan directamente sin abrir la ventana.
+- **Salidas rituales**: algunas salidas no son puertas — son el objeto exacto que dice la wiki
+  (la nave de juguete de Level 483, el reloj digital de Level 80, la máquina expendedora del
+  asilo…). Si lees la wiki, sabrás qué buscar. Todas las salidas documentadas de cada nivel
+  están en el juego (las que llevan fuera del piloto aparecen grises/selladas).
 
 ### Combate y defensa
 

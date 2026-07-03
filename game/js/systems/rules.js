@@ -13,12 +13,15 @@
     no_euclidiano: {
       nombre: 'Espacio no euclidiano',
       icono: '♾',
-      desc: 'La topología cambia a tu espalda: lo explorado puede dejar de existir.',
+      desc: 'De vez en cuando, una zona lejana del nivel se reorganiza de verdad. Lo oirás.',
       turno(world, rng) {
-        if (world.turn > 0 && world.turn % 60 === 0) {
-          world.forgetExplored(0.55);
-          world.log('Los pasillos ya no están donde los dejaste.', 'event');
-          world.sanity(-2);
+        if (world.turn > 0 && world.turn % 90 === 0 && rng.chance(0.5)) {
+          if (world.remodelarZona()) {
+            world.log('Un estruendo lejano recorre el nivel: las Backrooms se reorganizan.', 'danger');
+            world.sanity(-2);
+            if (window.Sfx) Sfx.play('derrumbe');
+            if (window.Effects) Effects.doShake(3, 750);
+          }
         }
       },
     },
