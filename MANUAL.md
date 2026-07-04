@@ -30,8 +30,8 @@ fluorescentes**, bloom cinematográfico y polvo en suspensión. Alternativas por
 | C | Códice del Errante (expediente y colección) |
 | 1-6 | Usar objeto de la mochila |
 | ESC | **Ajustes**: volumen, controles y opciones (aquí vive ahora el volumen) |
-| Clic izquierdo | **Usar la mano izquierda** (linterna, tubería, fuego griego…) |
-| Clic derecho | **Usar la mano derecha** (los objetos a 2 manos solo responden al clic izq.) |
+| Q (o clic en su caja) | **Usar la mano izquierda** (linterna, tubería, fuego griego…) |
+| E (o clic en su caja) | **Usar la mano derecha** (los objetos a 2 manos solo responden a Q) |
 | G | **No-clip** (solo con su Instinto): atraviesas la pared que encaras |
 
 *(Mantener pulsada W camina a velocidad constante — sin ráfagas.)*
@@ -52,9 +52,10 @@ fluorescentes**, bloom cinematográfico y polvo en suspensión. Alternativas por
   propio panel de la mochila o en el HUD — (o botón EMPUÑAR en su ficha). Clic en una mano la
   guarda de vuelta; también puedes arrastrar la mano a la rejilla. Los pasivos (chaqueta,
   trébol, detector…) funcionan con solo llevarlos encima.
-- **Usar con el ratón**: clic izquierdo = mano izquierda, clic derecho = mano derecha.
-  Linterna: enciende/apaga. Tubería: golpe frontal a la casilla que encaras. Fuego griego
-  (2 manos) y guante: se descargan. Un objeto a 2 manos solo responde al clic izquierdo.
+- **Usar las manos**: tecla `Q` = mano izquierda, `E` = mano derecha — o clic directo en la
+  caja de esa mano (los atajos aparecen en la esquinita de cada caja). Linterna: enciende/
+  apaga. Tubería: golpe frontal a la casilla que encaras. Fuego griego (2 manos) y guante:
+  se descargan. Un objeto a 2 manos solo responde a `Q`.
 - **Tirar objetos**: en la ficha de cualquier objeto de la mochila (clic sobre él) está el
   botón «Tirar al suelo»: lo deja a tus pies y puedes recogerlo después.
 - **Cajas y contenedores**: taquillas, archivadores, neveras, cajas… TODOS se pueden
@@ -210,8 +211,16 @@ paleta y salidas (los `destino` deben ser ids que existan), y ejecuta `build-dat
 
 ## 8. El mapa de niveles (para ti, no para el juego)
 
-`data/game/mapa-piloto.html` — diagrama con flechas de qué nivel lleva a cuál, coloreado por
-peligro y con la ruta de escape marcada. Se regenera con: `node pipeline/make-map.js`
+`data/game/mapa-piloto.html` — mapa INTERACTIVO del grafo del piloto (ábrelo con doble clic):
+
+- **Pasar el ratón** por un nivel ilumina con glow todas sus conexiones (el resto se atenúa).
+- **Clic en un nivel** abre el panel lateral con su expediente: **cómo se entra** (desde qué
+  niveles y con qué frase) y **cómo se sale** (cada salida con su tipo — normal, rara,
+  arriesgada con su % de vacío, llave, escape, sellada — y avisos de "sin retorno" en las
+  caídas), fiel a las mecánicas del juego. Los nombres del panel son clicables para saltar.
+- **Buscador** arriba a la derecha (por nombre o bioma) que resalta en verde.
+
+Se regenera con: `node pipeline/make-map.js`
 
 ## 9. Actualizar la copia local de la wiki
 

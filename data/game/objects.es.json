@@ -71,7 +71,7 @@
  "fuego_griego": {
   "id": "fuego_griego",
   "nombre": "Fuego griego (Object 5)",
-  "descripcion": "Sustancia incendiaria legendaria de las Backrooms. Se empuña con LAS DOS MANOS y se lanza con el clic izquierdo. Un solo uso: quema y ahuyenta a todas las entidades cercanas.",
+  "descripcion": "Sustancia incendiaria legendaria de las Backrooms. Se empuña con LAS DOS MANOS y se lanza con Q (o clic en la mano). Un solo uso: quema y ahuyenta a todas las entidades cercanas.",
   "manos": 2,
   "efecto": {
    "activo": "fuego"
@@ -82,7 +82,7 @@
  "guante_paralisis": {
   "id": "guante_paralisis",
   "nombre": "Guante de parálisis (Object 69)",
-  "descripcion": "Un guante que paraliza lo que toca. Se empuña en una mano y se descarga con su clic. Un solo uso: inmoviliza durante 6 turnos a las entidades adyacentes.",
+  "descripcion": "Un guante que paraliza lo que toca. Se empuña en una mano y se descarga con su tecla (Q/E) o con un clic en ella. Un solo uso: inmoviliza durante 6 turnos a las entidades adyacentes.",
   "manos": 1,
   "efecto": {
    "activo": "paralisis"

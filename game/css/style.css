@@ -143,6 +143,9 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
 .mano-slot.vacia .mano-img { opacity: .3; }
 .mano-item { position: absolute; top: 3px; left: 50%; margin-left: -11px;
   filter: drop-shadow(1px 1px 0 rgba(0,0,0,.8)); }
+/* v19: atajo de teclado en pequeñito en la esquina de cada mano */
+.k-mano { position: absolute; top: 1px; right: 3px; font-size: 11px;
+  color: #6a6455; z-index: 1; text-shadow: 1px 1px 0 #000; }
 #btn-mochila { width: 52px; height: 52px; background: rgba(16,14,9,.8);
   border: 1px solid var(--amarillo-osc); cursor: pointer; display: flex;
   align-items: center; justify-content: center; margin-left: 6px; }
@@ -264,20 +267,40 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
 .codex-box h2 { color: var(--amarillo); font-size: 22px; margin-bottom: 6px; }
 .codex-records { color: var(--gris); font-size: 16px; margin-bottom: 18px; }
 .codex-box h3 { color: var(--gris); font-size: 16px; letter-spacing: 1px; margin: 18px 0 8px; }
-.codex-level { border: 1px solid var(--borde); border-left-width: 5px;
-  padding: 12px 16px; margin-bottom: 10px; background: #0f0e0a; }
-.codex-level h4 { color: var(--hueso); font-size: 18px; margin-bottom: 3px; }
-.codex-level .meta { color: #8a8470; font-size: 14px; margin-bottom: 7px; }
-.codex-level .desc { color: #cfc8b0; font-size: 15.5px; line-height: 1.5; }
-.codex-level .stats { color: var(--amarillo); font-size: 15px; margin-top: 7px; }
-.codex-level a { color: #7a90a8; font-size: 14px; }
-#codex-history { padding-left: 22px; font-size: 15px; line-height: 1.7; color: #cfc8b0; }
+#codex-history { padding-left: 34px; font-size: 14px; line-height: 1.65; color: #cfc8b0; }
+
+/* v19: códice compacto — secciones y niveles como DESPLEGABLES */
+details.cdx { border: 1px solid var(--borde); background: #0d0c08; margin-bottom: 8px; }
+details.cdx > summary { cursor: pointer; padding: 9px 14px; color: var(--amarillo);
+  font-size: 16px; letter-spacing: 1px; list-style: none;
+  display: flex; align-items: center; gap: 8px; user-select: none; }
+details.cdx > summary::-webkit-details-marker { display: none; }
+details.cdx > summary::before { content: '▸'; color: var(--amarillo-osc);
+  transition: transform .15s; font-size: 14px; }
+details.cdx[open] > summary::before { transform: rotate(90deg); }
+details.cdx > summary:hover { background: #14120c; }
+.cdx-n { margin-left: auto; color: var(--gris); font-size: 14px; letter-spacing: 0; }
+details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
+.cdx-nivel { border: 1px solid var(--borde); border-left: 4px solid #888;
+  margin-bottom: 4px; background: #0f0e0a; }
+.cdx-nivel > summary { list-style: none; cursor: pointer; padding: 6px 10px;
+  font-size: 15px; color: var(--hueso); display: flex; gap: 7px; align-items: center;
+  user-select: none; }
+.cdx-nivel > summary::-webkit-details-marker { display: none; }
+.cdx-nivel > summary:hover { background: #16130d; }
+.cdx-nivel .meta-min { margin-left: auto; color: #8a8470; font-size: 13px; white-space: nowrap; }
+.cdx-nivel .cuerpo { padding: 4px 12px 10px; }
+.cdx-nivel .meta { color: #8a8470; font-size: 13.5px; margin-bottom: 6px; }
+.cdx-nivel .desc { color: #cfc8b0; font-size: 14.5px; line-height: 1.45; }
+.cdx-nivel .stats { color: var(--amarillo); font-size: 14px; margin-top: 6px; }
+.cdx-nivel a { color: #7a90a8; font-size: 13.5px; }
+.cdx-nivel ul { padding-left: 18px; color: #cfc8b0; font-size: 14px; line-height: 1.5; }
 
 /* colección de coleccionables (v15) */
-.col-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.col-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
 .col-cuenta { width: 100%; color: var(--amarillo); font-size: 14px; margin-bottom: 2px; }
-.col-card { width: 96px; padding: 8px 4px 6px; background: #0f0e0a; text-align: center;
-  border: 1px solid var(--borde); font-size: 13px; line-height: 1.25; color: #cfc8b0; }
+.col-card { width: 78px; padding: 6px 3px 5px; background: #0f0e0a; text-align: center;
+  border: 1px solid var(--borde); font-size: 11.5px; line-height: 1.2; color: #cfc8b0; }
 .col-card img { image-rendering: pixelated; display: block; margin: 0 auto 4px; }
 .col-card.col-locked { color: #5a5546; }
 .col-nivel { border: 1px solid var(--borde); background: #0f0e0a; padding: 10px 14px;

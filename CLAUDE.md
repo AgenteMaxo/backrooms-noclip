@@ -145,6 +145,21 @@ indetectable salvo delatado (te vieron entrar o tirada 15%/4% cerca); sacado del
 = daño ×1.5; jugador invisible en ambos renders; tryMove/usarMano bloqueados dentro.
 `?abrir=instinto` fuerza el modal. sintonia/instintos/umbrales viajan en el guardado.
 
+**v19 — manos Q/E, expansión suave del todo, códice y mapa**: SIN clics en el canvas —
+usar manos = **Q/E** o clic EN la caja de la mano del HUD (`usarMano`); en el panel de la
+mochila el clic GUARDA (pintarMano(el, m, tam, enPanel), atajo `.k-mano` en la esquina).
+En `?cam=alta` Q/E siguen rotando la cámara. Render3d: las mallas fusionadas se trocean en
+FRANJAS de 16 filas (`bandas` en construirEstatica, materiales compartidos) y el swap
+asíncrono las revela 3/frame con la escena vieja aún puesta (idéntica en el solape → sin
+artefactos) — la subida a GPU repartida elimina el último micro-corte; `terminarRevelado()`
+si llega otro ciclo. Códice COMPACTO: secciones `<details class="cdx">` con contadores en
+el summary (`cdx-n-*`), niveles y salidas como `<details class="cdx-nivel">` — escala a
+cientos de fichas. `pipeline/make-map.js` REESCRITO: mapa interactivo (hover = glow en
+conexiones + atenuado del resto, clic = panel lateral con ENTRADAS y SALIDAS fieles a las
+mecánicas — tipos, % de vacío de `riesgoVoid`, sin-retorno con la MISMA regex que
+esSinRetorno de game.js, nota de la puerta de retorno persistente —, buscador, saltos
+clicables); regenerar tras tocar levels.es.json.
+
 (Todos existen y están committeados. v3: render cenital con paredes finas autotile en `tiles.js`/`render.js`,
 pixel-art data-driven en `sprites.js` con override PNG desde `game/assets/sprites/`, efectos de combate
 en `effects.js`, props/contenedores registrables en `mapgen.js`/`game.js`.)

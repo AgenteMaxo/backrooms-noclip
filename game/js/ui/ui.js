@@ -113,11 +113,18 @@
     }
   }
 
-  // pinta UNA casilla de mano (sirve para el HUD y para el panel de la mochila)
-  function pintarMano(el, m, tam) {
+  // pinta UNA casilla de mano; enPanel=true (mochila) el clic GUARDA,
+  // en el HUD el clic USA (v19) — con su atajo Q/E en la esquina
+  function pintarMano(el, m, tam, enPanel) {
     const manos = world.player.manos || [null, null];
     el.innerHTML = '';
     el.classList.remove('activa', 'vacia');
+    if (!enPanel) {
+      const k = document.createElement('span');
+      k.className = 'k-mano';
+      k.textContent = m === 0 ? 'Q' : 'E';
+      el.appendChild(k);
+    }
     if (window.Icons) {
       const hand = Icons.img('mano', tam, m === 1);
       hand.classList.add('mano-img');
@@ -125,7 +132,8 @@
       el.appendChild(hand);
     }
     const id = manos[m];
-    if (id === '=') { el.title = 'Ocupada por el objeto a dos manos'; return; }
+    const accion = enPanel ? 'clic: guardar en la mochila' : `clic o ${m === 0 ? 'Q' : 'E'}: usar`;
+    if (id === '=') { el.title = `Ocupada por el objeto a dos manos (${enPanel ? 'clic: guardar' : 'clic o Q: usar'})`; return; }
     if (id) {
       const def = world.data.objects[id];
       if (window.Icons) {
@@ -135,7 +143,7 @@
         it.style.marginLeft = (-itTam / 2) + 'px';
         el.appendChild(it);
       }
-      el.title = `${def.nombre} (clic: guardar en la mochila)`;
+      el.title = `${def.nombre} (${accion})`;
       if (id === 'linterna' && world.player.luz) el.classList.add('activa');
     } else {
       el.classList.add('vacia');
@@ -145,9 +153,9 @@
 
   function renderManos() {
     for (let m = 0; m < 2; m++) {
-      pintarMano($('mano-' + m), m, 30);
+      pintarMano($('mano-' + m), m, 30, false);
       const bp = $('bp-mano-' + m);
-      if (bp) pintarMano(bp, m, 40);
+      if (bp) pintarMano(bp, m, 40, true);
     }
   }
 
@@ -193,12 +201,14 @@
     }
   }
 
-  // manos (HUD y panel): clic desequipa; soltar un objeto arrastrado equipa;
-  // arrastrar una mano hasta la rejilla guarda el objeto en la mochila
+  // manos: en el HUD el clic USA (v19: como Q/E); en el panel de la mochila
+  // el clic GUARDA. Soltar un objeto arrastrado equipa en ambos sitios, y
+  // arrastrar una mano hasta la rejilla guarda el objeto en la mochila.
   for (const m of [0, 1]) {
     for (const el of [$('mano-' + m), $('bp-mano-' + m)]) {
       if (!el) continue;
-      el.onclick = () => Game.desequipar(m);
+      const enPanel = el.id.startsWith('bp-');
+      el.onclick = () => (enPanel ? Game.desequipar(m) : Game.usarMano(m));
       el.draggable = true;
       el.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', 'mano:' + m));
       el.addEventListener('dragover', (e) => e.preventDefault());
@@ -471,7 +481,7 @@
     if (!visible) renderJournal($('journal-list'));
   }
 
-  // ---------- códice del errante ----------
+  // ---------- códice del errante (v19: compacto, con desplegables) ----------
   function renderCodex() {
     const P = Game.Profiles;
     const perfil = P.get();
@@ -483,23 +493,29 @@
     recEl.textContent = `Expediciones: ${r.runs} · Récord de niveles en una expedición: ${r.maxNiveles} · Récord de turnos sobrevividos: ${r.maxTurnos} · Escapes logrados: ${r.escapes}`;
     const colores = ['#3fae6a', '#8bb944', '#d9a531', '#e0742c', '#d94a35', '#a12744'];
     const entries = Object.entries(perfil.codice).sort((a, b) => b[1].veces - a[1].veces);
+    $('cdx-n-niveles').textContent = `${entries.length}/${Object.keys(world.data.levels).length}`;
     if (!entries.length) lvEl.innerHTML = '<p class="codex-records">Aún no has transitado ningún nivel.</p>';
     for (const [id, c] of entries) {
       const lv = world.data.levels[id];
       if (!lv) continue;
-      const div = document.createElement('div');
-      div.className = 'codex-level';
-      div.style.borderLeftColor = colores[lv.peligro] || '#888';
+      const det = document.createElement('details');
+      det.className = 'cdx-nivel';
+      det.style.borderLeftColor = colores[lv.peligro] || '#888';
       const mejor = c.mejorTurnos !== null
         ? ` · mejor travesía: ${c.mejorTurnos} turnos` : ' · nunca lograste salir de él';
-      div.innerHTML = `<h4>${lv.nombre}${c.escapado ? ' ⭐' : ''}</h4>
-        <div class="meta">${lv.clase} · Peligro ${lv.peligro}/5 · bioma: ${lv.bioma}</div>
-        <div class="desc">${lv.descripcion}</div>
-        <div class="stats">Transitado ${c.veces} ${c.veces === 1 ? 'vez' : 'veces'}${mejor}${c.escapado ? ' · ⭐ escapaste por aquí' : ''}</div>
-        <a href="${lv.url}" target="_blank" rel="noopener">ficha original en la wiki ↗</a>`;
-      lvEl.appendChild(div);
+      det.innerHTML = `<summary><b>${lv.nombre}</b>${c.escapado ? ' ⭐' : ''}
+          <span class="meta-min">peligro ${lv.peligro}/5 · ${c.veces}×</span></summary>
+        <div class="cuerpo">
+          <div class="meta">${lv.clase} · bioma: ${lv.bioma}</div>
+          <div class="desc">${lv.descripcion}</div>
+          <div class="stats">Transitado ${c.veces} ${c.veces === 1 ? 'vez' : 'veces'}${mejor}${c.escapado ? ' · ⭐ escapaste por aquí' : ''}</div>
+          <a href="${lv.url}" target="_blank" rel="noopener">ficha original en la wiki ↗</a>
+        </div>`;
+      lvEl.appendChild(det);
     }
-    for (const h of perfil.historial || []) {
+    const hist = perfil.historial || [];
+    $('cdx-n-hist').textContent = hist.length || '—';
+    for (const h of hist) {
       const li = document.createElement('li');
       li.textContent = `${h.fecha} · semilla «${h.semilla}» · ${h.niveles} niveles, ${h.turnos} turnos · ${h.resultado}`;
       hiEl.appendChild(li);
@@ -537,7 +553,7 @@
       const spr = visto ? Sprites.get(def.glyph, 0) : null;
       const img = document.createElement('img');
       img.className = 'icono';
-      img.style.width = img.style.height = '40px';
+      img.style.width = img.style.height = '34px';
       img.src = spr ? spr.toDataURL() : (silueta(def.glyph) || (window.Icons ? Icons.url('interrogante') : ''));
       card.appendChild(img);
       const nom = document.createElement('div');
@@ -546,8 +562,7 @@
       if (visto) card.title = def.descripcion || def.nombre;
       entEl.appendChild(card);
     }
-    entEl.insertAdjacentHTML('afterbegin',
-      `<p class="col-cuenta">${vistas}/${ents.length} avistadas</p>`);
+    $('cdx-n-ent').textContent = `${vistas}/${ents.length}`;
 
     // objetos
     const objEl = $('codex-objetos');
@@ -567,25 +582,31 @@
       if (visto) card.title = def.descripcion || def.nombre;
       objEl.appendChild(card);
     }
-    objEl.insertAdjacentHTML('afterbegin',
-      `<p class="col-cuenta">${habidos}/${objs.length} conseguidos</p>`);
+    $('cdx-n-obj').textContent = `${habidos}/${objs.length}`;
 
     // salidas por nivel (solo niveles que ya pisaste: sin spoilers del resto)
     const salEl = $('codex-salidas');
     salEl.innerHTML = '';
+    let salTot = 0, salDesc = 0;
     for (const id of Object.keys(perfil.codice)) {
       const lv = world.data.levels[id];
       if (!lv || !(lv.salidas || []).length) continue;
       const halladas = lv.salidas.filter((s) => desc.salidas[`${id}::${s.texto}`]);
-      const div = document.createElement('div');
-      div.className = 'col-nivel';
+      salTot += lv.salidas.length;
+      salDesc += halladas.length;
+      const det = document.createElement('details');
+      det.className = 'cdx-nivel';
+      det.style.borderLeftColor = '#8a7a3d';
       const ul = lv.salidas.map((s) =>
         desc.salidas[`${id}::${s.texto}`]
           ? `<li>${s.texto}</li>`
           : '<li class="col-locked">??? — sin descubrir</li>').join('');
-      div.innerHTML = `<b>${lv.wikiTitle}</b> <span class="col-cuenta">salidas ${halladas.length}/${lv.salidas.length}</span><ul>${ul}</ul>`;
-      salEl.appendChild(div);
+      det.innerHTML = `<summary><b>${lv.wikiTitle}</b>
+          <span class="meta-min">${halladas.length}/${lv.salidas.length}</span></summary>
+        <div class="cuerpo"><ul>${ul}</ul></div>`;
+      salEl.appendChild(det);
     }
+    $('cdx-n-sal').textContent = salTot ? `${salDesc}/${salTot}` : '—';
     if (!salEl.children.length)
       salEl.innerHTML = '<p class="codex-records">Explora niveles para catalogar sus salidas.</p>';
   }

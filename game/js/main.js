@@ -146,9 +146,10 @@
         }
         Game.tryMove(dx, dy);
       }
-    } else if ((ev.code === 'KeyQ' || ev.code === 'KeyE') && use3D && !tercera) {
-      // solo la cámara Octopath (?cam=alta) rota con Q/E; en 3ª persona ya giran A/D
-      Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
+    } else if (ev.code === 'KeyQ' || ev.code === 'KeyE') {
+      // v19: Q usa la mano izquierda, E la derecha (en ?cam=alta rotan la cámara)
+      if (tercera || !use3D) Game.usarMano(ev.code === 'KeyQ' ? 0 : 1);
+      else Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
     } else if (ev.code === 'Space') {
       ev.preventDefault();
       Game.interact();
@@ -168,18 +169,6 @@
       else abrirSndMenu();
     } else if (/^Digit[1-6]$/.test(ev.code)) Game.useItem(parseInt(ev.code.slice(5), 10) - 1);
   });
-
-  // ---------- ratón (v17): clic izq. usa la mano izquierda, clic der. la derecha ----------
-  for (const cv of [canvas, glCanvas]) {
-    if (!cv) continue;
-    cv.addEventListener('contextmenu', (ev) => ev.preventDefault());
-    cv.addEventListener('mousedown', (ev) => {
-      if (!world.level || world.over || world.busy) return;
-      if (document.getElementById('screen-card').style.display !== 'none') return;
-      if (ev.button === 0) Game.usarMano(0);
-      else if (ev.button === 2) Game.usarMano(1);
-    });
-  }
 
   // ---------- bucle de animación (solo visual; la lógica es por turnos) ----------
   function lerp(a, b, f) { return a + (b - a) * f; }

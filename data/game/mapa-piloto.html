@@ -1,177 +1,445 @@
 <!doctype html>
+<html lang="es">
+<head>
 <meta charset="utf-8">
 <title>Mapa del piloto — Backrooms</title>
 <style>
- body{background:#0e0e12;color:#f0ead6;font-family:Segoe UI,system-ui,sans-serif;margin:0;padding:24px}
- h1{font-size:20px;margin:0 0 4px} p{color:#b8b2a0;margin:0 0 16px;font-size:13px}
- .leg{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-bottom:16px}
- .leg span{display:inline-flex;align-items:center;gap:6px}
- .dot{width:12px;height:12px;border-radius:3px;display:inline-block}
- .wrap{overflow:auto;border:1px solid #2a2a34;border-radius:12px;background:#121218}
+ :root{
+  --amarillo:#d9c66e; --amarillo-osc:#8a7a3d; --hueso:#efe8d0; --gris:#9a9482;
+  --panel:#14120d; --borde:#3a352a; --fondo:#0a0906;
+ }
+ *{box-sizing:border-box}
+ body{background:var(--fondo);color:var(--hueso);margin:0;height:100vh;display:flex;flex-direction:column;
+  font-family:'Cascadia Mono','Consolas',monospace}
+ header{padding:14px 22px 10px;border-bottom:1px solid var(--borde);background:#0d0b07}
+ h1{font-size:17px;margin:0 0 4px;color:var(--amarillo);letter-spacing:1px}
+ header p{color:var(--gris);margin:0 0 8px;font-size:12px}
+ .leg{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--gris);align-items:center}
+ .leg span{display:inline-flex;align-items:center;gap:5px}
+ .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+ .raya{width:26px;height:0;border-top:2px solid #8a8a9a;display:inline-block}
+ .raya.d{border-top-style:dashed}
+ .raya.v{border-top-color:#b08a4a}
+ #buscar{margin-left:auto;background:#0a0906;border:1px solid var(--borde);color:var(--amarillo);
+  font-family:inherit;font-size:12px;padding:5px 10px;width:210px}
+ main{flex:1;display:flex;min-height:0}
+ .wrap{flex:1;overflow:auto;background:
+  radial-gradient(ellipse at 30% 20%, #12100a 0%, #0a0906 70%)}
+ aside{width:390px;border-left:1px solid var(--borde);background:var(--panel);
+  overflow:auto;padding:18px 20px;flex-shrink:0}
+ aside .vacio{color:#6a6455;font-size:13px;line-height:1.6;margin-top:12px}
+ aside h2{font-size:16px;color:var(--amarillo);margin:0 0 2px}
+ aside .sub{color:var(--gris);font-size:12px;margin:0 0 10px}
+ aside h3{font-size:12px;color:var(--gris);letter-spacing:2px;margin:16px 0 6px;
+  border-bottom:1px solid var(--borde);padding-bottom:4px}
+ .via{background:#0f0e0a;border:1px solid var(--borde);border-left:3px solid #8a8a9a;
+  padding:7px 10px;margin-bottom:6px;font-size:12.5px;line-height:1.45}
+ .via .dest{color:var(--amarillo);cursor:pointer;text-decoration:underline dotted}
+ .via .dest:hover{color:#ffe9a0}
+ .via .nota{color:#c88a5a;font-size:11.5px;display:block;margin-top:2px}
+ .chip{display:inline-block;font-size:10px;padding:1px 7px;border-radius:8px;margin-left:6px;
+  vertical-align:1px;letter-spacing:1px}
+ .c-normal{background:#2a2a34;color:#b8b2c8}
+ .c-rara{background:#1d2a3a;color:#7ab8e8}
+ .c-arriesgada{background:#3a230f;color:#f0a860}
+ .c-llave{background:#3a3212;color:#e8d060}
+ .c-void{background:#26123a;color:#c090f0}
+ .c-escape{background:#123a22;color:#4ade80}
+ .c-sellada{background:#222;color:#777;text-decoration:line-through}
+ .peligro-badge{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+ aside a{color:#7a90a8;font-size:12px}
+ .retorno{background:#12100a;border:1px dashed var(--amarillo-osc);color:#b8ad8a;
+  padding:7px 10px;font-size:11.5px;line-height:1.45;margin-top:10px}
+ /* ------- SVG ------- */
+ svg{display:block}
+ .arista{fill:none;stroke:#8a8a9a;stroke-opacity:.45;stroke-width:1.6;transition:all .15s}
+ .arista.vuelta{stroke:#b08a4a;stroke-opacity:.5}
+ .t-rara,.t-arriesgada,.t-llave,.t-void{stroke-dasharray:6 4}
+ .t-escape{stroke:#4ade80}
+ .arista.lit{stroke:#ffd970;stroke-opacity:1;stroke-width:2.8;
+  filter:drop-shadow(0 0 5px rgba(255,217,112,.9))}
+ .arista.dim{stroke-opacity:.07}
+ .nodo{cursor:pointer}
+ .nodo rect{fill:#16141c;stroke-width:2;transition:all .15s}
+ .nodo.escape rect{fill:#14261c}
+ .nodo .tt{fill:#f0ead6;font-size:14px;font-weight:700}
+ .nodo .ts{fill:#b8b2a0;font-size:11px}
+ .nodo .tp{font-size:10px;font-weight:600}
+ .nodo:hover rect,.nodo.lit rect{filter:drop-shadow(0 0 8px rgba(255,217,112,.7));stroke-width:3}
+ .nodo.sel rect{stroke:#ffd970!important;stroke-width:3.5;
+  filter:drop-shadow(0 0 12px rgba(255,217,112,.9))}
+ .nodo.dim{opacity:.22}
+ .nodo.buscado rect{filter:drop-shadow(0 0 10px rgba(122,222,128,.9));stroke:#4ade80!important}
 </style>
-<h1>🚪 Mapa de niveles del piloto — Backrooms roguelike</h1>
-<p>Flechas continuas = salidas normales · discontinuas = raras/arriesgadas/con llave · flechas doradas = caminos de vuelta.
-Todos los niveles permiten además «volver sobre tus pasos» al nivel anterior. ⭐ = nivel de escape (victoria).</p>
-<div class="leg">
- <span><i class="dot" style="background:#3fae6a"></i>Peligro 0</span><span><i class="dot" style="background:#8bb944"></i>Peligro 1</span><span><i class="dot" style="background:#d9a531"></i>Peligro 2</span><span><i class="dot" style="background:#e0742c"></i>Peligro 3</span><span><i class="dot" style="background:#d94a35"></i>Peligro 4</span><span><i class="dot" style="background:#a12744"></i>Peligro 5</span>
-</div>
-<div class="wrap">
-<svg width="1680" height="2060" viewBox="0 0 1680 2060" xmlns="http://www.w3.org/2000/svg">
- <defs>
-  <marker id="af" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#8a8a9a"/></marker>
-  <marker id="ab" markerWidth="9" markerHeight="9" refX="1" refY="4.5" orient="auto"><path d="M9,0 L0,4.5 L9,9 z" fill="#b08a4a"/></marker>
- </defs>
- <path d="M 230 72 C 295 72, 295 72, 360 72" fill="none" stroke="#8a8a9a99" stroke-width="1.6"  marker-end="url(#af)"/><path d="M 230 72 C 295 72, 295 342, 360 342" fill="none" stroke="#8a8a9a99" stroke-width="1.6"  marker-end="url(#af)"/><path d="M 230 72 C 295 72, 295 162, 360 162" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 230 72 C 295 72, 295 432, 360 432" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 230 72 C 295 72, 295 252, 360 252" fill="none" stroke="#8a8a9a99" stroke-width="1.6"  marker-end="url(#af)"/><path d="M 550 72 C 615 72, 615 522, 680 522" fill="none" stroke="#8a8a9a99" stroke-width="1.6"  marker-end="url(#af)"/><path d="M 550 72 C 610 72, 610 72, 230 72" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/><path d="M 550 72 C 615 72, 615 612, 680 612" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 550 72 C 615 72, 615 162, 680 162" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 870 522 C 930 522, 930 72, 550 72" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/><path d="M 870 522 C 930 522, 930 162, 550 162" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/><path d="M 550 252 C 610 252, 610 432, 550 432" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/><path d="M 550 252 C 615 252, 615 1512, 680 1512" fill="none" stroke="#8a8a9a99" stroke-width="1.6"  marker-end="url(#af)"/><path d="M 550 252 C 610 252, 610 72, 550 72" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/><path d="M 550 252 C 615 252, 615 432, 680 432" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 550 252 C 615 252, 615 1602, 680 1602" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 550 432 C 615 432, 615 1962, 680 1962" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 550 432 C 615 432, 615 882, 680 882" fill="none" stroke="#8a8a9a99" stroke-width="1.6"  marker-end="url(#af)"/><path d="M 550 432 C 615 432, 615 972, 680 972" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 550 432 C 615 432, 615 1062, 680 1062" fill="none" stroke="#8a8a9a99" stroke-width="1.6"  marker-end="url(#af)"/><path d="M 550 432 C 615 432, 615 1872, 680 1872" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 870 972 C 930 972, 930 432, 550 432" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/><path d="M 870 972 C 930 972, 930 1062, 870 1062" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/><path d="M 870 972 C 930 972, 930 1782, 870 1782" fill="none" stroke="#b08a4a88" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#ab)"/><path d="M 870 972 C 930 972, 930 702, 870 702" fill="none" stroke="#b08a4a88" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#ab)"/><path d="M 870 1062 C 930 1062, 930 432, 550 432" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/><path d="M 870 1062 C 935 1062, 935 72, 1000 72" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 870 1062 C 930 1062, 930 1872, 870 1872" fill="none" stroke="#b08a4a88" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#ab)"/><path d="M 870 1062 C 930 1062, 930 1962, 870 1962" fill="none" stroke="#b08a4a88" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#ab)"/><path d="M 870 1512 C 930 1512, 930 72, 230 72" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/><path d="M 870 702 C 930 702, 930 522, 870 522" fill="none" stroke="#b08a4a88" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#ab)"/><path d="M 870 882 C 930 882, 930 432, 550 432" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/><path d="M 870 882 C 930 882, 930 72, 230 72" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/><path d="M 1190 72 C 1255 72, 1255 72, 1320 72" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 870 1332 C 930 1332, 930 162, 870 162" fill="none" stroke="#b08a4a88" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#ab)"/><path d="M 870 1872 C 930 1872, 930 72, 550 72" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/><path d="M 870 1242 C 930 1242, 930 342, 870 342" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/><path d="M 550 342 C 615 342, 615 702, 680 702" fill="none" stroke="#8a8a9a99" stroke-width="1.6"  marker-end="url(#af)"/><path d="M 550 342 C 615 342, 615 1152, 680 1152" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 550 342 C 615 342, 615 1692, 680 1692" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 550 342 C 615 342, 615 252, 680 252" fill="none" stroke="#8a8a9a99" stroke-width="1.6"  marker-end="url(#af)"/><path d="M 550 342 C 615 342, 615 1782, 680 1782" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 550 342 C 615 342, 615 1242, 680 1242" fill="none" stroke="#8a8a9a99" stroke-width="1.6"  marker-end="url(#af)"/><path d="M 550 342 C 615 342, 615 342, 680 342" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 550 342 C 615 342, 615 72, 680 72" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 550 342 C 615 342, 615 1332, 680 1332" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 550 342 C 615 342, 615 792, 680 792" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 550 342 C 615 342, 615 1422, 680 1422" fill="none" stroke="#8a8a9a99" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#af)"/><path d="M 870 1152 C 930 1152, 930 342, 550 342" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/><path d="M 870 1602 C 930 1602, 930 72, 230 72" fill="none" stroke="#b08a4a88" stroke-width="1.6"  marker-end="url(#ab)"/>
- <g transform="translate(40,40)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#8bb944" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 0</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">The Lobby</text>
-    <text x="12" y="56" fill="#8bb944" font-size="10" font-weight="600">Peligro 1/5 · pasillos</text>
-  </g><g transform="translate(360,40)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#8bb944" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 1</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Parking Zone</text>
-    <text x="12" y="56" fill="#8bb944" font-size="10" font-weight="600">Peligro 1/5 · garaje</text>
-  </g><g transform="translate(680,490)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#d9a531" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 2</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Pipe Dreams</text>
-    <text x="12" y="56" fill="#d9a531" font-size="10" font-weight="600">Peligro 2/5 · tuneles</text>
-  </g><g transform="translate(680,1750)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#d94a35" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 6</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Lights Out</text>
-    <text x="12" y="56" fill="#d94a35" font-size="10" font-weight="600">Peligro 4/5 · exterior</text>
-  </g><g transform="translate(360,220)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#8bb944" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 13</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Vitrum Madness</text>
-    <text x="12" y="56" fill="#8bb944" font-size="10" font-weight="600">Peligro 1/5 · pasillos</text>
-  </g><g transform="translate(360,400)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#d94a35" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 14</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Inhospitality</text>
-    <text x="12" y="56" fill="#d94a35" font-size="10" font-weight="600">Peligro 4/5 · hospital</text>
-  </g><g transform="translate(680,940)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#d9a531" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 15</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Futuristic Halls</text>
-    <text x="12" y="56" fill="#d9a531" font-size="10" font-weight="600">Peligro 2/5 · oficinas</text>
-  </g><g transform="translate(680,1030)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#d9a531" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 16</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">J. Barry Mental Asylum</text>
-    <text x="12" y="56" fill="#d9a531" font-size="10" font-weight="600">Peligro 2/5 · hospital</text>
-  </g><g transform="translate(360,130)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#8bb944" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 27</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Ligneous Desolation</text>
-    <text x="12" y="56" fill="#8bb944" font-size="10" font-weight="600">Peligro 1/5 · pasillos</text>
-  </g><g transform="translate(680,1480)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#e0742c" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 45</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Otherworldly Timberland</text>
-    <text x="12" y="56" fill="#e0742c" font-size="10" font-weight="600">Peligro 3/5 · bosque</text>
-  </g><g transform="translate(680,670)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#d9a531" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 80</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Time Is Ticking…</text>
-    <text x="12" y="56" fill="#d9a531" font-size="10" font-weight="600">Peligro 2/5 · oficinas</text>
-  </g><g transform="translate(680,850)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#d9a531" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 130</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">The Infinite Apartments</text>
-    <text x="12" y="56" fill="#d9a531" font-size="10" font-weight="600">Peligro 2/5 · pasillos</text>
-  </g><g transform="translate(680,1660)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#d94a35" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 140</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Dead Space</text>
-    <text x="12" y="56" fill="#d94a35" font-size="10" font-weight="600">Peligro 4/5 · oficinas</text>
-  </g><g transform="translate(1000,40)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#a12744" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 144</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">The Graveyard of Wanderers</text>
-    <text x="12" y="56" fill="#a12744" font-size="10" font-weight="600">Peligro 5/5 · exterior</text>
-  </g><g transform="translate(680,1300)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#e0742c" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 186</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Famine Forest</text>
-    <text x="12" y="56" fill="#e0742c" font-size="10" font-weight="600">Peligro 3/5 · bosque</text>
-  </g><g transform="translate(680,130)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#8bb944" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 188</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">The Windows</text>
-    <text x="12" y="56" fill="#8bb944" font-size="10" font-weight="600">Peligro 1/5 · hospital</text>
-  </g><g transform="translate(680,1840)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#d94a35" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 268</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Brutally Cramped</text>
-    <text x="12" y="56" fill="#d94a35" font-size="10" font-weight="600">Peligro 4/5 · tuneles</text>
-  </g><g transform="translate(680,1210)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#e0742c" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 305</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Reflections</text>
-    <text x="12" y="56" fill="#e0742c" font-size="10" font-weight="600">Peligro 3/5 · pasillos</text>
-  </g><g transform="translate(680,310)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#8bb944" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 306</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Blue Lucidity</text>
-    <text x="12" y="56" fill="#8bb944" font-size="10" font-weight="600">Peligro 1/5 · ciudad</text>
-  </g><g transform="translate(1320,40)">
-    <rect width="190" height="64" rx="10" fill="#1d3a2a" stroke="#4ade80" stroke-width="3"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 385 ⭐</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Troubled Towers</text>
-    <text x="12" y="56" fill="#d9a531" font-size="10" font-weight="600">Peligro 2/5 · torres</text>
-  </g><g transform="translate(680,40)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#3fae6a" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 399</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">The Neon Paradise</text>
-    <text x="12" y="56" fill="#3fae6a" font-size="10" font-weight="600">Peligro 0/5 · oficinas</text>
-  </g><g transform="translate(360,310)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#d9a531" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 483</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Grayscale Halls</text>
-    <text x="12" y="56" fill="#d9a531" font-size="10" font-weight="600">Peligro 2/5 · pasillos</text>
-  </g><g transform="translate(680,1390)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#e0742c" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 483.5</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Inverted Corridors</text>
-    <text x="12" y="56" fill="#e0742c" font-size="10" font-weight="600">Peligro 3/5 · pasillos</text>
-  </g><g transform="translate(680,220)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#8bb944" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 484</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">The Whiteout</text>
-    <text x="12" y="56" fill="#8bb944" font-size="10" font-weight="600">Peligro 1/5 · oficinas</text>
-  </g><g transform="translate(680,1120)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#e0742c" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 626</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Forest of Psychosis</text>
-    <text x="12" y="56" fill="#e0742c" font-size="10" font-weight="600">Peligro 3/5 · bosque</text>
-  </g><g transform="translate(680,1930)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#a12744" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 777</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">True Scopophobia</text>
-    <text x="12" y="56" fill="#a12744" font-size="10" font-weight="600">Peligro 5/5 · pasillos</text>
-  </g><g transform="translate(680,400)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#8bb944" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 909</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">The Last Snow</text>
-    <text x="12" y="56" fill="#8bb944" font-size="10" font-weight="600">Peligro 1/5 · exterior</text>
-  </g><g transform="translate(680,760)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#d9a531" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 995</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Karmaland Amusement Park</text>
-    <text x="12" y="56" fill="#d9a531" font-size="10" font-weight="600">Peligro 2/5 · ciudad</text>
-  </g><g transform="translate(680,1570)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#e0742c" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">Level 996</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">White Torture</text>
-    <text x="12" y="56" fill="#e0742c" font-size="10" font-weight="600">Peligro 3/5 · exterior</text>
-  </g><g transform="translate(680,580)">
-    <rect width="190" height="64" rx="10" fill="#1c1c24" stroke="#d9a531" stroke-width="2"/>
-    <text x="12" y="24" fill="#f0ead6" font-size="14" font-weight="700">The Hub</text>
-    <text x="12" y="42" fill="#b8b2a0" font-size="11">Nivel anómalo</text>
-    <text x="12" y="56" fill="#d9a531" font-size="10" font-weight="600">Peligro 2/5 · tuneles</text>
+</head>
+<body>
+<header>
+ <h1>🚪 MAPA DEL PILOTO — Backrooms roguelike</h1>
+ <p>Pasa el ratón por un nivel para iluminar sus conexiones · haz CLIC para ver cómo se entra y cómo se sale de él.</p>
+ <div class="leg">
+  <span><i class="dot" style="background:#3fae6a"></i>Peligro 0</span><span><i class="dot" style="background:#8bb944"></i>Peligro 1</span><span><i class="dot" style="background:#d9a531"></i>Peligro 2</span><span><i class="dot" style="background:#e0742c"></i>Peligro 3</span><span><i class="dot" style="background:#d94a35"></i>Peligro 4</span><span><i class="dot" style="background:#a12744"></i>Peligro 5</span>
+  <span><i class="raya"></i>salida normal</span>
+  <span><i class="raya d"></i>rara / arriesgada / llave</span>
+  <span><i class="raya v"></i>camino de vuelta</span>
+  <span>⭐ escape</span>
+  <input id="buscar" type="text" placeholder="buscar nivel… (ej: poolrooms)" spellcheck="false">
+ </div>
+</header>
+<main>
+ <div class="wrap">
+  <svg width="1830" height="2148" viewBox="0 0 1830 2148" xmlns="http://www.w3.org/2000/svg">
+   <defs>
+    <marker id="af" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#8a8a9a"/></marker>
+    <marker id="ab" markerWidth="9" markerHeight="9" refX="1" refY="4.5" orient="auto"><path d="M9,0 L0,4.5 L9,9 z" fill="#b08a4a"/></marker>
+   </defs>
+   <path class="arista t-normal" data-from="level-0" data-to="level-1" d="M 240 74 C 315 74, 315 74, 390 74" marker-end="url(#af)"/>
+<path class="arista t-normal" data-from="level-0" data-to="level-483" d="M 240 74 C 315 74, 315 356, 390 356" marker-end="url(#af)"/>
+<path class="arista t-arriesgada" data-from="level-0" data-to="level-27" d="M 240 74 C 315 74, 315 168, 390 168" marker-end="url(#af)"/>
+<path class="arista t-rara" data-from="level-0" data-to="level-14" d="M 240 74 C 315 74, 315 450, 390 450" marker-end="url(#af)"/>
+<path class="arista t-normal" data-from="level-0" data-to="level-13" d="M 240 74 C 315 74, 315 262, 390 262" marker-end="url(#af)"/>
+<path class="arista t-normal" data-from="level-1" data-to="level-2" d="M 590 74 C 665 74, 665 544, 740 544" marker-end="url(#af)"/>
+<path class="arista t-normal vuelta" data-from="level-1" data-to="level-0" d="M 590 74 C 660 74, 660 74, 240 74" marker-end="url(#ab)"/>
+<path class="arista t-rara" data-from="level-1" data-to="the-hub" d="M 590 74 C 665 74, 665 638, 740 638" marker-end="url(#af)"/>
+<path class="arista t-rara" data-from="level-1" data-to="level-188" d="M 590 74 C 665 74, 665 168, 740 168" marker-end="url(#af)"/>
+<path class="arista t-normal vuelta" data-from="level-2" data-to="level-1" d="M 940 544 C 1010 544, 1010 74, 590 74" marker-end="url(#ab)"/>
+<path class="arista t-normal vuelta" data-from="level-2" data-to="level-27" d="M 940 544 C 1010 544, 1010 168, 590 168" marker-end="url(#ab)"/>
+<path class="arista t-normal vuelta" data-from="level-13" data-to="level-14" d="M 590 262 C 660 262, 660 450, 590 450" marker-end="url(#ab)"/>
+<path class="arista t-normal" data-from="level-13" data-to="level-45" d="M 590 262 C 665 262, 665 1578, 740 1578" marker-end="url(#af)"/>
+<path class="arista t-normal vuelta" data-from="level-13" data-to="level-1" d="M 590 262 C 660 262, 660 74, 590 74" marker-end="url(#ab)"/>
+<path class="arista t-rara" data-from="level-13" data-to="level-909" d="M 590 262 C 665 262, 665 450, 740 450" marker-end="url(#af)"/>
+<path class="arista t-rara" data-from="level-13" data-to="level-996" d="M 590 262 C 665 262, 665 1672, 740 1672" marker-end="url(#af)"/>
+<path class="arista t-rara" data-from="level-14" data-to="level-777" d="M 590 450 C 665 450, 665 2048, 740 2048" marker-end="url(#af)"/>
+<path class="arista t-normal" data-from="level-14" data-to="level-130" d="M 590 450 C 665 450, 665 920, 740 920" marker-end="url(#af)"/>
+<path class="arista t-rara" data-from="level-14" data-to="level-15" d="M 590 450 C 665 450, 665 1014, 740 1014" marker-end="url(#af)"/>
+<path class="arista t-normal" data-from="level-14" data-to="level-16" d="M 590 450 C 665 450, 665 1108, 740 1108" marker-end="url(#af)"/>
+<path class="arista t-arriesgada" data-from="level-14" data-to="level-268" d="M 590 450 C 665 450, 665 1954, 740 1954" marker-end="url(#af)"/>
+<path class="arista t-normal vuelta" data-from="level-15" data-to="level-14" d="M 940 1014 C 1010 1014, 1010 450, 590 450" marker-end="url(#ab)"/>
+<path class="arista t-normal vuelta" data-from="level-15" data-to="level-16" d="M 940 1014 C 1010 1014, 1010 1108, 940 1108" marker-end="url(#ab)"/>
+<path class="arista t-arriesgada vuelta" data-from="level-15" data-to="level-6" d="M 940 1014 C 1010 1014, 1010 1860, 940 1860" marker-end="url(#ab)"/>
+<path class="arista t-rara vuelta" data-from="level-15" data-to="level-80" d="M 940 1014 C 1010 1014, 1010 732, 940 732" marker-end="url(#ab)"/>
+<path class="arista t-normal vuelta" data-from="level-16" data-to="level-14" d="M 940 1108 C 1010 1108, 1010 450, 590 450" marker-end="url(#ab)"/>
+<path class="arista t-arriesgada" data-from="level-16" data-to="level-144" d="M 940 1108 C 1015 1108, 1015 74, 1090 74" marker-end="url(#af)"/>
+<path class="arista t-rara vuelta" data-from="level-16" data-to="level-268" d="M 940 1108 C 1010 1108, 1010 1954, 940 1954" marker-end="url(#ab)"/>
+<path class="arista t-rara vuelta" data-from="level-16" data-to="level-777" d="M 940 1108 C 1010 1108, 1010 2048, 940 2048" marker-end="url(#ab)"/>
+<path class="arista t-normal vuelta" data-from="level-45" data-to="level-0" d="M 940 1578 C 1010 1578, 1010 74, 240 74" marker-end="url(#ab)"/>
+<path class="arista t-arriesgada vuelta" data-from="level-80" data-to="level-2" d="M 940 732 C 1010 732, 1010 544, 940 544" marker-end="url(#ab)"/>
+<path class="arista t-normal vuelta" data-from="level-130" data-to="level-14" d="M 940 920 C 1010 920, 1010 450, 590 450" marker-end="url(#ab)"/>
+<path class="arista t-normal vuelta" data-from="level-130" data-to="level-0" d="M 940 920 C 1010 920, 1010 74, 240 74" marker-end="url(#ab)"/>
+<path class="arista t-rara" data-from="level-144" data-to="level-385" d="M 1290 74 C 1365 74, 1365 74, 1440 74" marker-end="url(#af)"/>
+<path class="arista t-rara vuelta" data-from="level-186" data-to="level-188" d="M 940 1390 C 1010 1390, 1010 168, 940 168" marker-end="url(#ab)"/>
+<path class="arista t-normal vuelta" data-from="level-268" data-to="level-1" d="M 940 1954 C 1010 1954, 1010 74, 590 74" marker-end="url(#ab)"/>
+<path class="arista t-normal vuelta" data-from="level-305" data-to="level-306" d="M 940 1296 C 1010 1296, 1010 356, 940 356" marker-end="url(#ab)"/>
+<path class="arista t-normal" data-from="level-483" data-to="level-80" d="M 590 356 C 665 356, 665 732, 740 732" marker-end="url(#af)"/>
+<path class="arista t-rara" data-from="level-483" data-to="level-626" d="M 590 356 C 665 356, 665 1202, 740 1202" marker-end="url(#af)"/>
+<path class="arista t-rara" data-from="level-483" data-to="level-140" d="M 590 356 C 665 356, 665 1766, 740 1766" marker-end="url(#af)"/>
+<path class="arista t-normal" data-from="level-483" data-to="level-484" d="M 590 356 C 665 356, 665 262, 740 262" marker-end="url(#af)"/>
+<path class="arista t-arriesgada" data-from="level-483" data-to="level-6" d="M 590 356 C 665 356, 665 1860, 740 1860" marker-end="url(#af)"/>
+<path class="arista t-normal" data-from="level-483" data-to="level-305" d="M 590 356 C 665 356, 665 1296, 740 1296" marker-end="url(#af)"/>
+<path class="arista t-rara" data-from="level-483" data-to="level-306" d="M 590 356 C 665 356, 665 356, 740 356" marker-end="url(#af)"/>
+<path class="arista t-rara" data-from="level-483" data-to="level-399" d="M 590 356 C 665 356, 665 74, 740 74" marker-end="url(#af)"/>
+<path class="arista t-rara" data-from="level-483" data-to="level-186" d="M 590 356 C 665 356, 665 1390, 740 1390" marker-end="url(#af)"/>
+<path class="arista t-rara" data-from="level-483" data-to="level-995" d="M 590 356 C 665 356, 665 826, 740 826" marker-end="url(#af)"/>
+<path class="arista t-rara" data-from="level-483" data-to="level-483-5" d="M 590 356 C 665 356, 665 1484, 740 1484" marker-end="url(#af)"/>
+<path class="arista t-normal vuelta" data-from="level-626" data-to="level-483" d="M 940 1202 C 1010 1202, 1010 356, 590 356" marker-end="url(#ab)"/>
+<path class="arista t-normal vuelta" data-from="level-996" data-to="level-0" d="M 940 1672 C 1010 1672, 1010 74, 240 74" marker-end="url(#ab)"/>
+
+   <g class="nodo" data-id="level-0" transform="translate(40,40)">
+    <rect width="200" height="68" rx="9" stroke="#8bb944"/>
+    <text class="tt" x="12" y="24">Level 0</text>
+    <text class="ts" x="12" y="42">The Lobby</text>
+    <text class="tp" x="12" y="58" fill="#8bb944">Peligro 1/5 · pasillos</text>
   </g>
-</svg>
-</div>
+<g class="nodo" data-id="level-1" transform="translate(390,40)">
+    <rect width="200" height="68" rx="9" stroke="#8bb944"/>
+    <text class="tt" x="12" y="24">Level 1</text>
+    <text class="ts" x="12" y="42">Parking Zone</text>
+    <text class="tp" x="12" y="58" fill="#8bb944">Peligro 1/5 · garaje</text>
+  </g>
+<g class="nodo" data-id="level-2" transform="translate(740,510)">
+    <rect width="200" height="68" rx="9" stroke="#d9a531"/>
+    <text class="tt" x="12" y="24">Level 2</text>
+    <text class="ts" x="12" y="42">Pipe Dreams</text>
+    <text class="tp" x="12" y="58" fill="#d9a531">Peligro 2/5 · tuneles</text>
+  </g>
+<g class="nodo" data-id="level-6" transform="translate(740,1826)">
+    <rect width="200" height="68" rx="9" stroke="#d94a35"/>
+    <text class="tt" x="12" y="24">Level 6</text>
+    <text class="ts" x="12" y="42">Lights Out</text>
+    <text class="tp" x="12" y="58" fill="#d94a35">Peligro 4/5 · exterior</text>
+  </g>
+<g class="nodo" data-id="level-13" transform="translate(390,228)">
+    <rect width="200" height="68" rx="9" stroke="#8bb944"/>
+    <text class="tt" x="12" y="24">Level 13</text>
+    <text class="ts" x="12" y="42">Vitrum Madness</text>
+    <text class="tp" x="12" y="58" fill="#8bb944">Peligro 1/5 · invernadero</text>
+  </g>
+<g class="nodo" data-id="level-14" transform="translate(390,416)">
+    <rect width="200" height="68" rx="9" stroke="#d94a35"/>
+    <text class="tt" x="12" y="24">Level 14</text>
+    <text class="ts" x="12" y="42">Inhospitality</text>
+    <text class="tp" x="12" y="58" fill="#d94a35">Peligro 4/5 · hospital</text>
+  </g>
+<g class="nodo" data-id="level-15" transform="translate(740,980)">
+    <rect width="200" height="68" rx="9" stroke="#d9a531"/>
+    <text class="tt" x="12" y="24">Level 15</text>
+    <text class="ts" x="12" y="42">Futuristic Halls</text>
+    <text class="tp" x="12" y="58" fill="#d9a531">Peligro 2/5 · oficinas</text>
+  </g>
+<g class="nodo" data-id="level-16" transform="translate(740,1074)">
+    <rect width="200" height="68" rx="9" stroke="#d9a531"/>
+    <text class="tt" x="12" y="24">Level 16</text>
+    <text class="ts" x="12" y="42">J. Barry Mental Asylum</text>
+    <text class="tp" x="12" y="58" fill="#d9a531">Peligro 2/5 · hospital</text>
+  </g>
+<g class="nodo" data-id="level-27" transform="translate(390,134)">
+    <rect width="200" height="68" rx="9" stroke="#8bb944"/>
+    <text class="tt" x="12" y="24">Level 27</text>
+    <text class="ts" x="12" y="42">Ligneous Desolation</text>
+    <text class="tp" x="12" y="58" fill="#8bb944">Peligro 1/5 · pasillos</text>
+  </g>
+<g class="nodo" data-id="level-45" transform="translate(740,1544)">
+    <rect width="200" height="68" rx="9" stroke="#e0742c"/>
+    <text class="tt" x="12" y="24">Level 45</text>
+    <text class="ts" x="12" y="42">Otherworldly Timberland</text>
+    <text class="tp" x="12" y="58" fill="#e0742c">Peligro 3/5 · bosque</text>
+  </g>
+<g class="nodo" data-id="level-80" transform="translate(740,698)">
+    <rect width="200" height="68" rx="9" stroke="#d9a531"/>
+    <text class="tt" x="12" y="24">Level 80</text>
+    <text class="ts" x="12" y="42">Time Is Ticking…</text>
+    <text class="tp" x="12" y="58" fill="#d9a531">Peligro 2/5 · oficinas</text>
+  </g>
+<g class="nodo" data-id="level-130" transform="translate(740,886)">
+    <rect width="200" height="68" rx="9" stroke="#d9a531"/>
+    <text class="tt" x="12" y="24">Level 130</text>
+    <text class="ts" x="12" y="42">The Infinite Apartments</text>
+    <text class="tp" x="12" y="58" fill="#d9a531">Peligro 2/5 · oficinas</text>
+  </g>
+<g class="nodo" data-id="level-140" transform="translate(740,1732)">
+    <rect width="200" height="68" rx="9" stroke="#d94a35"/>
+    <text class="tt" x="12" y="24">Level 140</text>
+    <text class="ts" x="12" y="42">Dead Space</text>
+    <text class="tp" x="12" y="58" fill="#d94a35">Peligro 4/5 · oficinas</text>
+  </g>
+<g class="nodo" data-id="level-144" transform="translate(1090,40)">
+    <rect width="200" height="68" rx="9" stroke="#a12744"/>
+    <text class="tt" x="12" y="24">Level 144</text>
+    <text class="ts" x="12" y="42">The Graveyard of Wanderers</text>
+    <text class="tp" x="12" y="58" fill="#a12744">Peligro 5/5 · exterior</text>
+  </g>
+<g class="nodo" data-id="level-186" transform="translate(740,1356)">
+    <rect width="200" height="68" rx="9" stroke="#e0742c"/>
+    <text class="tt" x="12" y="24">Level 186</text>
+    <text class="ts" x="12" y="42">Famine Forest</text>
+    <text class="tp" x="12" y="58" fill="#e0742c">Peligro 3/5 · bosque</text>
+  </g>
+<g class="nodo" data-id="level-188" transform="translate(740,134)">
+    <rect width="200" height="68" rx="9" stroke="#8bb944"/>
+    <text class="tt" x="12" y="24">Level 188</text>
+    <text class="ts" x="12" y="42">The Windows</text>
+    <text class="tp" x="12" y="58" fill="#8bb944">Peligro 1/5 · hospital</text>
+  </g>
+<g class="nodo" data-id="level-268" transform="translate(740,1920)">
+    <rect width="200" height="68" rx="9" stroke="#d94a35"/>
+    <text class="tt" x="12" y="24">Level 268</text>
+    <text class="ts" x="12" y="42">Brutally Cramped</text>
+    <text class="tp" x="12" y="58" fill="#d94a35">Peligro 4/5 · tuneles</text>
+  </g>
+<g class="nodo" data-id="level-305" transform="translate(740,1262)">
+    <rect width="200" height="68" rx="9" stroke="#e0742c"/>
+    <text class="tt" x="12" y="24">Level 305</text>
+    <text class="ts" x="12" y="42">Reflections</text>
+    <text class="tp" x="12" y="58" fill="#e0742c">Peligro 3/5 · pasillos</text>
+  </g>
+<g class="nodo" data-id="level-306" transform="translate(740,322)">
+    <rect width="200" height="68" rx="9" stroke="#8bb944"/>
+    <text class="tt" x="12" y="24">Level 306</text>
+    <text class="ts" x="12" y="42">Blue Lucidity</text>
+    <text class="tp" x="12" y="58" fill="#8bb944">Peligro 1/5 · ciudad</text>
+  </g>
+<g class="nodo escape" data-id="level-385" transform="translate(1440,40)">
+    <rect width="200" height="68" rx="9" stroke="#4ade80"/>
+    <text class="tt" x="12" y="24">Level 385 ⭐</text>
+    <text class="ts" x="12" y="42">Troubled Towers</text>
+    <text class="tp" x="12" y="58" fill="#d9a531">Peligro 2/5 · torres</text>
+  </g>
+<g class="nodo" data-id="level-399" transform="translate(740,40)">
+    <rect width="200" height="68" rx="9" stroke="#3fae6a"/>
+    <text class="tt" x="12" y="24">Level 399</text>
+    <text class="ts" x="12" y="42">The Neon Paradise</text>
+    <text class="tp" x="12" y="58" fill="#3fae6a">Peligro 0/5 · oficinas</text>
+  </g>
+<g class="nodo" data-id="level-483" transform="translate(390,322)">
+    <rect width="200" height="68" rx="9" stroke="#d9a531"/>
+    <text class="tt" x="12" y="24">Level 483</text>
+    <text class="ts" x="12" y="42">Grayscale Halls</text>
+    <text class="tp" x="12" y="58" fill="#d9a531">Peligro 2/5 · oficinas</text>
+  </g>
+<g class="nodo" data-id="level-483-5" transform="translate(740,1450)">
+    <rect width="200" height="68" rx="9" stroke="#e0742c"/>
+    <text class="tt" x="12" y="24">Level 483.5</text>
+    <text class="ts" x="12" y="42">Inverted Corridors</text>
+    <text class="tp" x="12" y="58" fill="#e0742c">Peligro 3/5 · pasillos</text>
+  </g>
+<g class="nodo" data-id="level-484" transform="translate(740,228)">
+    <rect width="200" height="68" rx="9" stroke="#8bb944"/>
+    <text class="tt" x="12" y="24">Level 484</text>
+    <text class="ts" x="12" y="42">The Whiteout</text>
+    <text class="tp" x="12" y="58" fill="#8bb944">Peligro 1/5 · oficinas</text>
+  </g>
+<g class="nodo" data-id="level-626" transform="translate(740,1168)">
+    <rect width="200" height="68" rx="9" stroke="#e0742c"/>
+    <text class="tt" x="12" y="24">Level 626</text>
+    <text class="ts" x="12" y="42">Forest of Psychosis</text>
+    <text class="tp" x="12" y="58" fill="#e0742c">Peligro 3/5 · bosque</text>
+  </g>
+<g class="nodo" data-id="level-777" transform="translate(740,2014)">
+    <rect width="200" height="68" rx="9" stroke="#a12744"/>
+    <text class="tt" x="12" y="24">Level 777</text>
+    <text class="ts" x="12" y="42">True Scopophobia</text>
+    <text class="tp" x="12" y="58" fill="#a12744">Peligro 5/5 · pasillos</text>
+  </g>
+<g class="nodo" data-id="level-909" transform="translate(740,416)">
+    <rect width="200" height="68" rx="9" stroke="#8bb944"/>
+    <text class="tt" x="12" y="24">Level 909</text>
+    <text class="ts" x="12" y="42">The Last Snow</text>
+    <text class="tp" x="12" y="58" fill="#8bb944">Peligro 1/5 · exterior</text>
+  </g>
+<g class="nodo" data-id="level-995" transform="translate(740,792)">
+    <rect width="200" height="68" rx="9" stroke="#d9a531"/>
+    <text class="tt" x="12" y="24">Level 995</text>
+    <text class="ts" x="12" y="42">Karmaland Amusement Park</text>
+    <text class="tp" x="12" y="58" fill="#d9a531">Peligro 2/5 · ciudad</text>
+  </g>
+<g class="nodo" data-id="level-996" transform="translate(740,1638)">
+    <rect width="200" height="68" rx="9" stroke="#e0742c"/>
+    <text class="tt" x="12" y="24">Level 996</text>
+    <text class="ts" x="12" y="42">White Torture</text>
+    <text class="tp" x="12" y="58" fill="#e0742c">Peligro 3/5 · exterior</text>
+  </g>
+<g class="nodo" data-id="the-hub" transform="translate(740,604)">
+    <rect width="200" height="68" rx="9" stroke="#d9a531"/>
+    <text class="tt" x="12" y="24">The Hub</text>
+    <text class="ts" x="12" y="42">Nivel anómalo</text>
+    <text class="tp" x="12" y="58" fill="#d9a531">Peligro 2/5 · tuneles</text>
+  </g>
+
+  </svg>
+ </div>
+ <aside id="panel">
+  <p class="vacio">Haz clic en cualquier nivel del mapa para leer su expediente:
+  por dónde se ENTRA, por dónde se SALE, y qué riesgos tiene cada camino —
+  tal y como funcionan dentro del juego.</p>
+ </aside>
+</main>
+<script>
+const DATA = {"level-0":{"id":"level-0","wikiTitle":"Level 0","nombre":"Level 0: «The Lobby»","clase":"Seguro · Inestable · Sin entidades","peligro":1,"bioma":"pasillos","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_0","salidas":[{"texto":"Caminar sin rumbo hasta que los pasillos se conviertan en los garajes de Level 1","tipo":"normal","destino":"level-1","destinoNombre":"Level 1","riesgoVoid":0,"sinRetorno":false},{"texto":"Romper una pared y atravesarla hacia Level 483","tipo":"normal","destino":"level-483","destinoNombre":"Level 483","riesgoVoid":0,"sinRetorno":false},{"texto":"Romper el suelo y caer a Level 27… o al Vacío","tipo":"arriesgada","destino":"level-27","destinoNombre":"Level 27","riesgoVoid":0.15,"sinRetorno":true},{"texto":"Una rara salida de emergencia que lleva a Level 14","tipo":"rara","destino":"level-14","destinoNombre":"Level 14","riesgoVoid":0,"sinRetorno":false},{"texto":"Puertas correderas de cristal, como de invernadero, hacia Level 13","tipo":"normal","destino":"level-13","destinoNombre":"Level 13","riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-1","desdeNombre":"Level 1","texto":"Volver por los pasillos amarillos hacia Level 0","tipo":"normal","sinRetorno":false},{"desde":"level-45","desdeNombre":"Level 45","texto":"Hacer no-clip a través de un árbol inestable devuelve, con consistencia, a Level 0","tipo":"normal","sinRetorno":false},{"desde":"level-130","desdeNombre":"Level 130","texto":"Un desgarro en el papel pintado: detrás, los pasillos de Level 0","tipo":"normal","sinRetorno":false},{"desde":"level-996","desdeNombre":"Level 996","texto":"Vagar por el Edificio hasta que la blancura se funde con los pasillos de Level 0","tipo":"normal","sinRetorno":false}]},"level-1":{"id":"level-1","wikiTitle":"Level 1","nombre":"Level 1: «Parking Zone»","clase":"Seguro · Estable · Pocas entidades","peligro":1,"bioma":"garaje","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_1","salidas":[{"texto":"Seguir explorando hasta que las escaleras lleven a Level 2","tipo":"normal","destino":"level-2","destinoNombre":"Level 2","riesgoVoid":0,"sinRetorno":false},{"texto":"Volver por los pasillos amarillos hacia Level 0","tipo":"normal","destino":"level-0","destinoNombre":"Level 0","riesgoVoid":0,"sinRetorno":false},{"texto":"Subir dos tramos de escaleras y bajarlos de inmediato: el camino a The Hub","tipo":"rara","destino":"the-hub","destinoNombre":"The Hub","riesgoVoid":0,"sinRetorno":false},{"texto":"Hacer no-clip a través de una pared con enchufes hacia Level 188","tipo":"rara","destino":"level-188","destinoNombre":"Level 188","riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-0","desdeNombre":"Level 0","texto":"Caminar sin rumbo hasta que los pasillos se conviertan en los garajes de Level 1","tipo":"normal","sinRetorno":false},{"desde":"level-2","desdeNombre":"Level 2","texto":"Salidas de incendios que llevan de vuelta a Level 1","tipo":"normal","sinRetorno":false},{"desde":"level-13","desdeNombre":"Level 13","texto":"Suelo inestable de texturas extrañas: no-clip hacia Level 1","tipo":"normal","sinRetorno":false},{"desde":"level-268","desdeNombre":"Level 268","texto":"Si el espacio no se parece a nada reconocible, probablemente lleva a Level 1","tipo":"normal","sinRetorno":false}]},"level-2":{"id":"level-2","wikiTitle":"Level 2","nombre":"Level 2: «Pipe Dreams»","clase":"Peligroso · Calor extremo · Pocas entidades","peligro":2,"bioma":"tuneles","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_2","salidas":[{"texto":"Salidas de incendios que llevan de vuelta a Level 1","tipo":"normal","destino":"level-1","destinoNombre":"Level 1","riesgoVoid":0,"sinRetorno":false},{"texto":"Ciertos pasillos desembocan en la desolación de madera de Level 27","tipo":"normal","destino":"level-27","destinoNombre":"Level 27","riesgoVoid":0,"sinRetorno":false},{"texto":"Una puerta dorada marcada con el símbolo «Φ» conduce a Level Phi","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Un túnel de alcantarillado desemboca en Level 34","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"El aumento gradual de luces de neón anuncia una salida a Level 699","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-1","desdeNombre":"Level 1","texto":"Seguir explorando hasta que las escaleras lleven a Level 2","tipo":"normal","sinRetorno":false},{"desde":"level-80","desdeNombre":"Level 80","texto":"Tocar un reloj digital moderno: a veces lleva a los túneles de Level 2","tipo":"arriesgada","sinRetorno":false}]},"level-6":{"id":"level-6","wikiTitle":"Level 6","nombre":"Level 6: «Lights Out»","clase":"Indeterminado · Oscuridad absoluta","peligro":4,"bioma":"exterior","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_6","salidas":[{"texto":"Las madrigueras y agujeros del terreno descienden hacia niveles sin cartografiar","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":true},{"texto":"Tropezar con una rama caída puede llevarte a Level 6.1","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":true},{"texto":"Entrar en un agujero del terreno conduce a Level 8","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":true},{"texto":"Vagar lo suficiente, o seguir una luz anómala, lleva a Level 7","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-15","desdeNombre":"Level 15","texto":"Permanecer en zonas oscuras hasta desmayarse… y despertar en Level 6","tipo":"arriesgada","sinRetorno":false},{"desde":"level-483","desdeNombre":"Level 483","texto":"Otra de esas puertas, hacia la oscuridad de Level 6","tipo":"arriesgada","sinRetorno":false}]},"level-13":{"id":"level-13","wikiTitle":"Level 13","nombre":"Level 13: «Vitrum Madness»","clase":"Clase 1 · Peligro psicológico","peligro":1,"bioma":"invernadero","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_13","salidas":[{"texto":"Bajo condiciones desconocidas, uno puede acabar en el hospital de Level 14","tipo":"normal","destino":"level-14","destinoNombre":"Level 14","riesgoVoid":0,"sinRetorno":false},{"texto":"Una pérdida súbita de consciencia anuncia el bosque de Level 45","tipo":"normal","destino":"level-45","destinoNombre":"Level 45","riesgoVoid":0,"sinRetorno":false},{"texto":"Suelo inestable de texturas extrañas: no-clip hacia Level 1","tipo":"normal","destino":"level-1","destinoNombre":"Level 1","riesgoVoid":0,"sinRetorno":false},{"texto":"Cuando el espacio tiembla, hay una vía hacia la nieve de Level 909","tipo":"rara","destino":"level-909","destinoNombre":"Level 909","riesgoVoid":0,"sinRetorno":false},{"texto":"Ciertas zonas envían bruscamente a la blancura de Level 996","tipo":"rara","destino":"level-996","destinoNombre":"Level 996","riesgoVoid":0,"sinRetorno":false},{"texto":"Caer al vacío de niebla sobre el que flota el nivel","tipo":"void","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":true},{"texto":"Las aberturas del techo o las paredes llevan a Level 173; la mayoría de quienes saltaron desaparecieron","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-0","desdeNombre":"Level 0","texto":"Puertas correderas de cristal, como de invernadero, hacia Level 13","tipo":"normal","sinRetorno":false}]},"level-14":{"id":"level-14","wikiTitle":"Level 14","nombre":"Level 14: «Inhospitality»","clase":"Clase 4 · Inseguro · Entidad hostil","peligro":4,"bioma":"hospital","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_14","salidas":[{"texto":"Una ventana brillante y resplandeciente que lleva a Level 777","tipo":"rara","destino":"level-777","destinoNombre":"Level 777","riesgoVoid":0,"sinRetorno":false},{"texto":"Seguir las flechas del suelo hasta la salida principal, hacia Level 130","tipo":"normal","destino":"level-130","destinoNombre":"Level 130","riesgoVoid":0,"sinRetorno":false},{"texto":"Una extraña puerta futurista hacia Level 15","tipo":"rara","destino":"level-15","destinoNombre":"Level 15","riesgoVoid":0,"sinRetorno":false},{"texto":"Adentrarse demasiado en el hospital lleva al asilo de Level 16","tipo":"normal","destino":"level-16","destinoNombre":"Level 16","riesgoVoid":0,"sinRetorno":false},{"texto":"Manipular el equipamiento médico puede enviarte a Level 268","tipo":"arriesgada","destino":"level-268","destinoNombre":"Level 268","riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-0","desdeNombre":"Level 0","texto":"Una rara salida de emergencia que lleva a Level 14","tipo":"rara","sinRetorno":false},{"desde":"level-13","desdeNombre":"Level 13","texto":"Bajo condiciones desconocidas, uno puede acabar en el hospital de Level 14","tipo":"normal","sinRetorno":false},{"desde":"level-15","desdeNombre":"Level 15","texto":"Una puerta futurista con el rótulo «Medical Center», hacia Level 14","tipo":"normal","sinRetorno":false},{"desde":"level-16","desdeNombre":"Level 16","texto":"Puertas aleatorias del asilo devuelven al hospital de Level 14","tipo":"normal","sinRetorno":false},{"desde":"level-130","desdeNombre":"Level 130","texto":"Los ascensores ascienden, a veces, hasta el hospital de Level 14","tipo":"normal","sinRetorno":false}]},"level-15":{"id":"level-15","wikiTitle":"Level 15","nombre":"Level 15: «Futuristic Halls»","clase":"Clase 1e · Aislamiento","peligro":2,"bioma":"oficinas","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_15","salidas":[{"texto":"Una puerta futurista con el rótulo «Medical Center», hacia Level 14","tipo":"normal","destino":"level-14","destinoNombre":"Level 14","riesgoVoid":0,"sinRetorno":false},{"texto":"Una puerta de hospital que conecta con Level 16","tipo":"normal","destino":"level-16","destinoNombre":"Level 16","riesgoVoid":0,"sinRetorno":false},{"texto":"Permanecer en zonas oscuras hasta desmayarse… y despertar en Level 6","tipo":"arriesgada","destino":"level-6","destinoNombre":"Level 6","riesgoVoid":0,"sinRetorno":false},{"texto":"Una puerta con el rótulo «The Archives», hacia Level 80","tipo":"rara","destino":"level-80","destinoNombre":"Level 80","riesgoVoid":0,"sinRetorno":false},{"texto":"Una puerta azul envía a Level 0.8","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Un panel de control con un botón rotulado «ESCAPE»: pulsarlo abre una verja hacia Level 3","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Bajar una escalera de oficina puede llevarte a Level 4","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Romper una ventana transporta a Level 11","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Seguir un rastro de marcas de neumático hasta un garaje abierto: Level 69","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Ciertas puertas llevan a Level 339","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Una cámara secreta rotulada «Project TCCS» esconde pasillos hacia Level 443","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Encontrar césped espacial y hacer no-clip en él lleva a Level 818","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Una sustancia roja y pegajosa marca el camino a las cavernas de Level 990","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Resbalar con agua de almendras AZUL te lleva a Level 32","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Resbalar con agua de almendras VERDE te lleva a Level 48","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Resbalar con agua de almendras ROJA te lleva a Level 427","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-14","desdeNombre":"Level 14","texto":"Una extraña puerta futurista hacia Level 15","tipo":"rara","sinRetorno":false}]},"level-16":{"id":"level-16","wikiTitle":"Level 16","nombre":"Level 16: «J. Barry Mental Asylum»","clase":"Clase 2 · Peligro mental","peligro":2,"bioma":"hospital","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_16","salidas":[{"texto":"Puertas aleatorias del asilo devuelven al hospital de Level 14","tipo":"normal","destino":"level-14","destinoNombre":"Level 14","riesgoVoid":0,"sinRetorno":false},{"texto":"Un colapso cognitivo severo hace despertar en Level 144","tipo":"arriesgada","destino":"level-144","destinoNombre":"Level 144","riesgoVoid":0,"sinRetorno":false},{"texto":"Manipular el equipamiento hospitalario lleva a Level 268","tipo":"rara","destino":"level-268","destinoNombre":"Level 268","riesgoVoid":0,"sinRetorno":false},{"texto":"Escapar por una ventana rota durante una distorsión: caída hacia Level 777","tipo":"rara","destino":"level-777","destinoNombre":"Level 777","riesgoVoid":0,"sinRetorno":true},{"texto":"Las zonas más oscuras y angostas llevan a Level 0.7","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Una puerta difícil de abrir en el sótano del hospital conduce a Level 3","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Atravesar la puerta de una consulta médica puede llevar a Level 4","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Diversos factores hacen que los pasillos se difuminen hacia Level 17","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Pulsar los botones «9» y «8» de la máquina expendedora de la sala de descanso transporta a Level 98","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Los pasajes retrofuturistas de la Novelty Zone disuelven el asilo hacia Level 400","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Una silla de ruedas moviéndose sola anuncia el teletransporte a Level 223","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Un Cadillac celeste de los 70 con una foto en el parabrisas transporta a Level 69","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-14","desdeNombre":"Level 14","texto":"Adentrarse demasiado en el hospital lleva al asilo de Level 16","tipo":"normal","sinRetorno":false},{"desde":"level-15","desdeNombre":"Level 15","texto":"Una puerta de hospital que conecta con Level 16","tipo":"normal","sinRetorno":false}]},"level-27":{"id":"level-27","wikiTitle":"Level 27","nombre":"Level 27: «Ligneous Desolation»","clase":"Clase 1 · Sin entidades","peligro":1,"bioma":"pasillos","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_27","salidas":[{"texto":"Una puerta de madera solitaria y anodina, en una de sus incontables salas","tipo":"rara","destino":null,"destinoNombre":"un nivel al azar","riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-0","desdeNombre":"Level 0","texto":"Romper el suelo y caer a Level 27… o al Vacío","tipo":"arriesgada","sinRetorno":true},{"desde":"level-2","desdeNombre":"Level 2","texto":"Ciertos pasillos desembocan en la desolación de madera de Level 27","tipo":"normal","sinRetorno":false}]},"level-45":{"id":"level-45","wikiTitle":"Level 45","nombre":"Level 45: «Otherworldly Timberland»","clase":"Clase variable · Bosque alienígena","peligro":3,"bioma":"bosque","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_45","salidas":[{"texto":"Hacer no-clip a través de un árbol inestable devuelve, con consistencia, a Level 0","tipo":"normal","destino":"level-0","destinoNombre":"Level 0","riesgoVoid":0,"sinRetorno":false},{"texto":"Las cuevas descienden hacia la Colmena. No entres. NO ENTRES.","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Hacer no-clip a través de un cerezo en flor te lleva a Level 110","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Hacer no-clip por una puerta lleva a Level 974","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Sobrevivir de milagro a una sobredosis de Agua de Neón lleva a Level 7. NO lo intentes","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Ciertas zonas imprevistas de las cuevas transicionan a Level 8","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Las zonas secas del nivel pueden llevar a Level 46","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Un sistema de alcantarillado en las cuevas conduce a Level 49","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Los carteles de neón rotos con la palabra «Range» llevan sin fallo a Level 73","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-13","desdeNombre":"Level 13","texto":"Una pérdida súbita de consciencia anuncia el bosque de Level 45","tipo":"normal","sinRetorno":false}]},"level-80":{"id":"level-80","wikiTitle":"Level 80","nombre":"Level 80: «Time Is Ticking…»","clase":"Clase Ψ · Peligro mental","peligro":2,"bioma":"oficinas","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_80","salidas":[{"texto":"Tocar un reloj digital moderno: a veces lleva a los túneles de Level 2","tipo":"arriesgada","destino":"level-2","destinoNombre":"Level 2","riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-15","desdeNombre":"Level 15","texto":"Una puerta con el rótulo «The Archives», hacia Level 80","tipo":"rara","sinRetorno":false},{"desde":"level-483","desdeNombre":"Level 483","texto":"Vagar lo suficiente lleva hasta la cabaña de relojes de Level 80","tipo":"normal","sinRetorno":false}]},"level-130":{"id":"level-130","wikiTitle":"Level 130","nombre":"Level 130: «The Infinite Apartments»","clase":"Clase 2 · Peligroso","peligro":2,"bioma":"oficinas","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_130","salidas":[{"texto":"Los ascensores ascienden, a veces, hasta el hospital de Level 14","tipo":"normal","destino":"level-14","destinoNombre":"Level 14","riesgoVoid":0,"sinRetorno":false},{"texto":"Un desgarro en el papel pintado: detrás, los pasillos de Level 0","tipo":"normal","destino":"level-0","destinoNombre":"Level 0","riesgoVoid":0,"sinRetorno":false},{"texto":"Una rara puerta de incendios en el pasillo lleva a Level 11","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Los desgarros de deformación en las paredes transportan a Level 21","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-14","desdeNombre":"Level 14","texto":"Seguir las flechas del suelo hasta la salida principal, hacia Level 130","tipo":"normal","sinRetorno":false}]},"level-140":{"id":"level-140","wikiTitle":"Level 140","nombre":"Level 140: «Dead Space»","clase":"Seguridad en deterioro · Espero que esto duela","peligro":4,"bioma":"oficinas","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_140","salidas":[{"texto":"La sala de embarque conecta con otros niveles espaciales, aún sin cartografiar","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Cualquier interacción letal con [ARCHIVO DAÑADO] lleva a los caídos a Level 203","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"La sala de embarque: hacer no-clip por su puerta lleva a Level 24","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-483","desdeNombre":"Level 483","texto":"Tocar la nave espacial de juguete del pedestal: transporte inmediato a Level 140","tipo":"rara","sinRetorno":false}]},"level-144":{"id":"level-144","wikiTitle":"Level 144","nombre":"Level 144: «The Graveyard of Wanderers»","clase":"Peligroso · Glitched · Lluvia ácida","peligro":5,"bioma":"exterior","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_144","salidas":[{"texto":"Alcanzar el mar de nubes: ascender hacia las torres de Level 385","tipo":"rara","destino":"level-385","destinoNombre":"Level 385","riesgoVoid":0,"sinRetorno":false},{"texto":"La Hurricane consume todo lo que toca. Ser devorado es caer al Vacío","tipo":"void","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":true},{"texto":"Hacer no-clip en un objeto afectado tras el Fenómeno 70 puede llevar a Level 137","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Ser corrompido tiene un 2% de probabilidad de llevar a Level 690","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Un raro túnel conduce a un destino quizá peor: Level 488","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Un raro túnel subterráneo lleva a Level 899","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Un colapso mental tiene un 1,7% de probabilidad de llevar a Level 138","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-16","desdeNombre":"Level 16","texto":"Un colapso cognitivo severo hace despertar en Level 144","tipo":"arriesgada","sinRetorno":false}]},"level-186":{"id":"level-186","wikiTitle":"Level 186","nombre":"Level 186: «Famine Forest»","clase":"Clase 4 · Hambre extrema","peligro":3,"bioma":"bosque","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_186","salidas":[{"texto":"Una rara ventana flotante con marco: trepar hacia Level 188","tipo":"rara","destino":"level-188","destinoNombre":"Level 188","riesgoVoid":0,"sinRetorno":false},{"texto":"Los raros huecos de los árboles llevan a Level 192","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Escasas fosas del terreno caen a Level 202.1","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Tocar los brotes de árbol que parecen postes de valla teletransporta a Level 204","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Hacer no-clip a través de un charco envía a Level 908","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-483","desdeNombre":"Level 483","texto":"Rarísimos agujeros de un solo sentido en las paredes, hacia Level 186","tipo":"rara","sinRetorno":true}]},"level-188":{"id":"level-188","wikiTitle":"Level 188","nombre":"Level 188: «The Windows»","clase":"Seguro · Anómalo","peligro":1,"bioma":"hospital","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_188","salidas":[],"entradas":[{"desde":"level-1","desdeNombre":"Level 1","texto":"Hacer no-clip a través de una pared con enchufes hacia Level 188","tipo":"rara","sinRetorno":false},{"desde":"level-186","desdeNombre":"Level 186","texto":"Una rara ventana flotante con marco: trepar hacia Level 188","tipo":"rara","sinRetorno":false}]},"level-268":{"id":"level-268","wikiTitle":"Level 268","nombre":"Level 268: «Brutally Cramped»","clase":"Peligroso · Frígido · Claustrofóbico","peligro":4,"bioma":"tuneles","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_268","salidas":[{"texto":"Si el espacio no se parece a nada reconocible, probablemente lleva a Level 1","tipo":"normal","destino":"level-1","destinoNombre":"Level 1","riesgoVoid":0,"sinRetorno":false},{"texto":"Si la sala parece un aparcamiento, lleva a Level 22","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Si parece un almacén, lleva a Level 20","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Si parece una fábrica, lleva a Level 23","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Si hay hielo y nieve, lleva a Level 108","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Si parece una instalación deportiva, puede llevar a Level 176","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Cuestionar constantemente la naturaleza del nivel puede enviarte a Level 47","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Una puerta con la palabra «Next» grabada lleva a Level 269","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Bajar una escalera envía a Level 914 o a un interior de Level 67","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Una puerta naranja envía a Level 38 o Level 38.1","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Una gran sala cuadrada con un parche de hierba lleva a Level 10","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Una puerta iluminada por un único rayo de sol lleva a Level 268.1","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Hacer no-clip por un pasillo de tuberías con fugas envía a Level 0.8","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-14","desdeNombre":"Level 14","texto":"Manipular el equipamiento médico puede enviarte a Level 268","tipo":"arriesgada","sinRetorno":false},{"desde":"level-16","desdeNombre":"Level 16","texto":"Manipular el equipamiento hospitalario lleva a Level 268","tipo":"rara","sinRetorno":false}]},"level-305":{"id":"level-305","wikiTitle":"Level 305","nombre":"Level 305: «Reflections»","clase":"Manipulación psicológica · Muchas entidades","peligro":3,"bioma":"pasillos","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_305","salidas":[{"texto":"Seguir un destello azul hasta la ciudad lúcida de Level 306","tipo":"normal","destino":"level-306","destinoNombre":"Level 306","riesgoVoid":0,"sinRetorno":false},{"texto":"Los espejos destrozados sirven de entrada al Vacío","tipo":"void","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":true},{"texto":"Una puerta cubierta de sangre lleva a Level 410","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Caminar durante un tiempo indeterminado puede dejarte en Level 17","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Una puerta con barrotes conduce a Level 3","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Hacer no-clip por un espejo con neón blanco encima lleva a Level 256","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Hacer no-clip por un espejo de neón tiene una mínima probabilidad de llevar a Level 699","tipo":"sellada","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-483","desdeNombre":"Level 483","texto":"Y otra más, hacia los espejos de Level 305","tipo":"normal","sinRetorno":false}]},"level-306":{"id":"level-306","wikiTitle":"Level 306","nombre":"Level 306: «Blue Lucidity»","clase":"Clase 1e · Seguro · Anomalías abstractas","peligro":1,"bioma":"ciudad","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_306","salidas":[],"entradas":[{"desde":"level-305","desdeNombre":"Level 305","texto":"Seguir un destello azul hasta la ciudad lúcida de Level 306","tipo":"normal","sinRetorno":false},{"desde":"level-483","desdeNombre":"Level 483","texto":"Una puerta que emite luz azul, hacia Level 306","tipo":"rara","sinRetorno":false}]},"level-385":{"id":"level-385","wikiTitle":"Level 385","nombre":"Level 385: «Troubled Towers»","clase":"Comunidades asentadas · Sin entidades dañinas","peligro":2,"bioma":"torres","esEscape":true,"url":"https://backrooms.fandom.com/wiki/Level_385","salidas":[{"texto":"Un edificio idéntico a los rascacielos de la realidad. No-clip hacia dentro. Hacia casa.","tipo":"escape","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":false},{"texto":"Caer de una torre es caer al Vacío","tipo":"void","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":true}],"entradas":[{"desde":"level-144","desdeNombre":"Level 144","texto":"Alcanzar el mar de nubes: ascender hacia las torres de Level 385","tipo":"rara","sinRetorno":false}]},"level-399":{"id":"level-399","wikiTitle":"Level 399","nombre":"Level 399: «The Neon Paradise»","clase":"Habitable · Secreto","peligro":0,"bioma":"oficinas","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_399","salidas":[],"entradas":[{"desde":"level-483","desdeNombre":"Level 483","texto":"Puertas numeradas «399» llevan al nivel designado","tipo":"rara","sinRetorno":false}]},"level-483":{"id":"level-483","wikiTitle":"Level 483","nombre":"Level 483: «Grayscale Halls»","clase":"Clase 2 · Inestable · Propiedad «Alone»","peligro":2,"bioma":"oficinas","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_483","salidas":[{"texto":"Vagar lo suficiente lleva hasta la cabaña de relojes de Level 80","tipo":"normal","destino":"level-80","destinoNombre":"Level 80","riesgoVoid":0,"sinRetorno":false},{"texto":"Una escalera de mano rara asciende a las cabañas del bosque púrpura de Level 626","tipo":"rara","destino":"level-626","destinoNombre":"Level 626","riesgoVoid":0,"sinRetorno":false},{"texto":"Tocar la nave espacial de juguete del pedestal: transporte inmediato a Level 140","tipo":"rara","destino":"level-140","destinoNombre":"Level 140","riesgoVoid":0,"sinRetorno":false},{"texto":"Ciertas puertas se abren a Level 6, Level 484 «The Whiteout» o Level 305","tipo":"normal","destino":"level-484","destinoNombre":"Level 484","riesgoVoid":0,"sinRetorno":false},{"texto":"Otra de esas puertas, hacia la oscuridad de Level 6","tipo":"arriesgada","destino":"level-6","destinoNombre":"Level 6","riesgoVoid":0,"sinRetorno":false},{"texto":"Y otra más, hacia los espejos de Level 305","tipo":"normal","destino":"level-305","destinoNombre":"Level 305","riesgoVoid":0,"sinRetorno":false},{"texto":"Una puerta que emite luz azul, hacia Level 306","tipo":"rara","destino":"level-306","destinoNombre":"Level 306","riesgoVoid":0,"sinRetorno":false},{"texto":"Puertas numeradas «399» llevan al nivel designado","tipo":"rara","destino":"level-399","destinoNombre":"Level 399","riesgoVoid":0,"sinRetorno":false},{"texto":"Agujeros y fosos en el suelo caen al Vacío","tipo":"void","destino":null,"destinoNombre":null,"riesgoVoid":0,"sinRetorno":true},{"texto":"Rarísimos agujeros de un solo sentido en las paredes, hacia Level 186","tipo":"rara","destino":"level-186","destinoNombre":"Level 186","riesgoVoid":0,"sinRetorno":true},{"texto":"Tras caer por un agujero, a veces, el parque de atracciones de Level 995","tipo":"rara","destino":"level-995","destinoNombre":"Level 995","riesgoVoid":0,"sinRetorno":true},{"texto":"???","tipo":"rara","destino":"level-483-5","destinoNombre":"Level 483.5","riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-0","desdeNombre":"Level 0","texto":"Romper una pared y atravesarla hacia Level 483","tipo":"normal","sinRetorno":false},{"desde":"level-626","desdeNombre":"Level 626","texto":"El sótano de ciertas cabañas esconde una trampilla con escalera: baja hasta Level 483","tipo":"normal","sinRetorno":true}]},"level-483-5":{"id":"level-483-5","wikiTitle":"Level 483.5","nombre":"Level 483.5: «Inverted Corridors»","clase":"Propiedades inusuales · Difícil de abandonar","peligro":3,"bioma":"pasillos","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_483.5","salidas":[{"texto":"La única salida conocida: hacer no-clip a ciegas y rezar","tipo":"arriesgada","destino":null,"destinoNombre":"un nivel al azar","riesgoVoid":0.25,"sinRetorno":false}],"entradas":[{"desde":"level-483","desdeNombre":"Level 483","texto":"???","tipo":"rara","sinRetorno":false}]},"level-484":{"id":"level-484","wikiTitle":"Level 484","nombre":"Level 484: «The Whiteout»","clase":"Seguro · En expansión","peligro":1,"bioma":"oficinas","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_484","salidas":[],"entradas":[{"desde":"level-483","desdeNombre":"Level 483","texto":"Ciertas puertas se abren a Level 6, Level 484 «The Whiteout» o Level 305","tipo":"normal","sinRetorno":false}]},"level-626":{"id":"level-626","wikiTitle":"Level 626","nombre":"Level 626: «Forest of Psychosis»","clase":"Clase Ψ · Peligro mental · Bosque","peligro":3,"bioma":"bosque","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_626","salidas":[{"texto":"El sótano de ciertas cabañas esconde una trampilla con escalera: baja hasta Level 483","tipo":"normal","destino":"level-483","destinoNombre":"Level 483","riesgoVoid":0,"sinRetorno":true}],"entradas":[{"desde":"level-483","desdeNombre":"Level 483","texto":"Una escalera de mano rara asciende a las cabañas del bosque púrpura de Level 626","tipo":"rara","sinRetorno":false}]},"level-777":{"id":"level-777","wikiTitle":"Level 777","nombre":"Level 777: «True Scopophobia»","clase":"Indeterminado · Supervivencia mínima","peligro":5,"bioma":"pasillos","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_777","salidas":[{"texto":"Una escalera de caracol descendente, oculta tras la puerta de un armario","tipo":"rara","destino":null,"destinoNombre":"un nivel al azar","riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-14","desdeNombre":"Level 14","texto":"Una ventana brillante y resplandeciente que lleva a Level 777","tipo":"rara","sinRetorno":false},{"desde":"level-16","desdeNombre":"Level 16","texto":"Escapar por una ventana rota durante una distorsión: caída hacia Level 777","tipo":"rara","sinRetorno":true}]},"level-909":{"id":"level-909","wikiTitle":"Level 909","nombre":"Level 909: «The Last Snow»","clase":"Indeterminado · Propiedades misteriosas","peligro":1,"bioma":"exterior","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_909","salidas":[],"entradas":[{"desde":"level-13","desdeNombre":"Level 13","texto":"Cuando el espacio tiembla, hay una vía hacia la nieve de Level 909","tipo":"rara","sinRetorno":false}]},"level-995":{"id":"level-995","wikiTitle":"Level 995","nombre":"Level 995: «Karmaland Amusement Park»","clase":"Clase variable","peligro":2,"bioma":"ciudad","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_995","salidas":[],"entradas":[{"desde":"level-483","desdeNombre":"Level 483","texto":"Tras caer por un agujero, a veces, el parque de atracciones de Level 995","tipo":"rara","sinRetorno":true}]},"level-996":{"id":"level-996","wikiTitle":"Level 996","nombre":"Level 996: «White Torture»","clase":"Clase Ψ · Aislamiento severo","peligro":3,"bioma":"exterior","esEscape":false,"url":"https://backrooms.fandom.com/wiki/Level_996","salidas":[{"texto":"Vagar por el Edificio hasta que la blancura se funde con los pasillos de Level 0","tipo":"normal","destino":"level-0","destinoNombre":"Level 0","riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-13","desdeNombre":"Level 13","texto":"Ciertas zonas envían bruscamente a la blancura de Level 996","tipo":"rara","sinRetorno":false}]},"the-hub":{"id":"the-hub","wikiTitle":"The Hub","nombre":"The Hub","clase":"Nivel anómalo · Nexo","peligro":2,"bioma":"tuneles","esEscape":false,"url":"https://backrooms.fandom.com/wiki/The_Hub","salidas":[{"texto":"Las puertas de acero: con una Llave de Nivel, cualquier nivel que hayas visitado","tipo":"llave","destino":null,"destinoNombre":"un nivel ya visitado","riesgoVoid":0,"sinRetorno":false}],"entradas":[{"desde":"level-1","desdeNombre":"Level 1","texto":"Subir dos tramos de escaleras y bajarlos de inmediato: el camino a The Hub","tipo":"rara","sinRetorno":false}]}};
+const PELIGRO = ["#3fae6a","#8bb944","#d9a531","#e0742c","#d94a35","#a12744"];
+const TIPO_NOMBRE = { normal:'normal', rara:'rara', arriesgada:'arriesgada', llave:'requiere llave',
+  void:'vacío', escape:'ESCAPE', sellada:'sellada (fuera del piloto)', retorno:'retorno' };
+
+const aristas = [...document.querySelectorAll('.arista')];
+const nodos = [...document.querySelectorAll('.nodo')];
+let seleccion = null;
+
+function resaltar(id) {
+  const con = new Set([id]);
+  for (const a of aristas) {
+    const toca = a.dataset.from === id || a.dataset.to === id;
+    a.classList.toggle('lit', toca);
+    a.classList.toggle('dim', !toca);
+    if (toca) { con.add(a.dataset.from); con.add(a.dataset.to); }
+  }
+  for (const n of nodos) {
+    const esta = con.has(n.dataset.id);
+    n.classList.toggle('lit', esta && n.dataset.id !== id);
+    n.classList.toggle('dim', !esta);
+  }
+}
+function limpiar() {
+  if (seleccion) { resaltar(seleccion); return; }
+  for (const a of aristas) a.classList.remove('lit', 'dim');
+  for (const n of nodos) n.classList.remove('lit', 'dim');
+}
+
+function chip(tipo) {
+  return '<span class="chip c-' + tipo + '">' + (TIPO_NOMBRE[tipo] ?? tipo) + '</span>';
+}
+function mostrarPanel(id) {
+  const d = DATA[id];
+  const panel = document.getElementById('panel');
+  const salidas = d.salidas.map((s) => {
+    let dest = s.destinoNombre
+      ? (s.destino
+          ? '→ <span class="dest" data-ir="' + s.destino + '">' + s.destinoNombre + '</span>'
+          : '→ ' + s.destinoNombre)
+      : (s.tipo === 'escape' ? '→ LA REALIDAD' : '→ nivel sin cartografiar');
+    let notas = '';
+    if (s.tipo === 'arriesgada' && s.riesgoVoid > 0)
+      notas += '<span class="nota">⚠ camino inestable: ' + Math.round(s.riesgoVoid * 100) + '% de caer al Vacío (dado)</span>';
+    if (s.tipo === 'llave') notas += '<span class="nota">🗝 solo se abre con una Llave de Nivel (un uso)</span>';
+    if (s.sinRetorno) notas += '<span class="nota">⛔ SIN RETORNO: es una caída — nadie escala eso</span>';
+    if (s.tipo === 'sellada') notas += '<span class="nota">⌀ lleva fuera de los 30 niveles del piloto (cordura −2 al intentarlo)</span>';
+    if (s.tipo === 'escape') notas += '<span class="nota">⭐ VICTORIA… si la realidad te reconoce (tirada contra tu Sintonía)</span>';
+    return '<div class="via">«' + s.texto + '»' + chip(s.tipo) + '<br>' + dest + notas + '</div>';
+  }).join('') || '<div class="via">Sin salidas catalogadas.</div>';
+
+  const entradas = d.entradas.map((e) =>
+    '<div class="via">desde <span class="dest" data-ir="' + e.desde + '">' + e.desdeNombre + '</span>' +
+    chip(e.tipo) + '<br>«' + e.texto + '»' +
+    (e.sinRetorno ? '<span class="nota">⛔ al llegar así NO se abre puerta de vuelta (fue una caída)</span>' : '') +
+    '</div>'
+  ).join('') || '<div class="via">Nadie llega aquí desde el piloto (nivel de arranque u oculto).</div>';
+
+  panel.innerHTML =
+    '<h2><span class="peligro-badge" style="background:' + PELIGRO[d.peligro] + '"></span>' +
+    d.wikiTitle + (d.esEscape ? ' ⭐' : '') + '</h2>' +
+    '<p class="sub">' + d.nombre + '<br>' + d.clase + ' · Peligro ' + d.peligro + '/5 · bioma: ' + d.bioma + '</p>' +
+    '<h3>CÓMO SE ENTRA (' + d.entradas.length + ')</h3>' + entradas +
+    '<h3>CÓMO SE SALE (' + d.salidas.length + ')</h3>' + salidas +
+    '<div class="retorno">↩ Además, EN PARTIDA: al entrar desde otro nivel queda abierta una puerta de ' +
+    'RETORNO en tu punto de aparición (el mundo es persistente) — salvo que llegaras por una caída.</div>' +
+    (d.url ? '<p style="margin-top:10px"><a href="' + d.url + '" target="_blank" rel="noopener">ficha original en la wiki ↗</a></p>' : '');
+
+  for (const el of panel.querySelectorAll('[data-ir]'))
+    el.addEventListener('click', () => seleccionar(el.dataset.ir, true));
+}
+
+function seleccionar(id, centrar) {
+  seleccion = id;
+  for (const n of nodos) n.classList.toggle('sel', n.dataset.id === id);
+  resaltar(id);
+  mostrarPanel(id);
+  if (centrar) {
+    const n = nodos.find((x) => x.dataset.id === id);
+    if (n) n.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+  }
+}
+
+for (const n of nodos) {
+  n.addEventListener('mouseenter', () => resaltar(n.dataset.id));
+  n.addEventListener('mouseleave', limpiar);
+  n.addEventListener('click', (ev) => { ev.stopPropagation(); seleccionar(n.dataset.id, false); });
+}
+document.querySelector('svg').addEventListener('click', () => {
+  seleccion = null;
+  for (const n of nodos) n.classList.remove('sel');
+  limpiar();
+  document.getElementById('panel').innerHTML =
+    '<p class="vacio">Haz clic en cualquier nivel del mapa para leer su expediente.</p>';
+});
+
+// buscador: resalta los niveles cuyo nombre encaje
+const buscar = document.getElementById('buscar');
+buscar.addEventListener('input', () => {
+  const t = buscar.value.trim().toLowerCase();
+  for (const n of nodos) {
+    const d = DATA[n.dataset.id];
+    const hit = t && (d.wikiTitle.toLowerCase().includes(t) || d.nombre.toLowerCase().includes(t) ||
+      d.bioma.toLowerCase().includes(t));
+    n.classList.toggle('buscado', !!hit);
+  }
+});
+</script>
+</body>
+</html>

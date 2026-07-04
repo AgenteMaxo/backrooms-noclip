@@ -349,7 +349,28 @@
     // la textura macro cubre 2×2 tiles → los UV de mundo se dividen entre 2
     const uvEsc = tiles.sueloSeam ? 0.5 : 1;
     const aguaTex = tex(tiles.agua, 'agua-tile');
-    const floorPos = [], floorUv = [], floorIdx = [], floorNor = [];
+    // v19: las mallas grandes se trocean en FRANJAS de 16 filas — el swap del
+    // rebuild las revela escalonadas y la subida a GPU se reparte entre frames
+    const bandas = [];
+    const mkFlat = (pos, uv, idx, nor, material) => {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+      geo.setIndex(idx);
+      const m = new THREE.Mesh(geo, material);
+      m.receiveShadow = true;
+      return m;
+    };
+    const matSuelo = new THREE.MeshLambertMaterial({ map: floorTex });
+    let floorPos = [], floorUv = [], floorIdx = [], floorNor = [];
+    const flushSuelo = () => {
+      if (!floorPos.length) return;
+      const m = mkFlat(floorPos, floorUv, floorIdx, floorNor, matSuelo);
+      grupo.add(m);
+      bandas.push(m);
+      floorPos = []; floorUv = []; floorIdx = []; floorNor = [];
+    };
     const aguaPos = [], aguaUv = [], aguaIdx = [], aguaNor = [];
     const plantas = [];
     const esVerde = world.level.bioma === 'invernadero' || world.level.bioma === 'bosque';
@@ -367,19 +388,9 @@
             [0, 0, 1, 1], aguaNor);
         else if (v === T.DECOR && esVerde) plantas.push([x, y]);
       }
-      if ((y & 15) === 15) yield;
+      if ((y & 15) === 15) { flushSuelo(); yield; }
     }
-    const mkFlat = (pos, uv, idx, nor, material) => {
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-      geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
-      geo.setIndex(idx);
-      const m = new THREE.Mesh(geo, material);
-      m.receiveShadow = true;
-      return m;
-    };
-    grupo.add(mkFlat(floorPos, floorUv, floorIdx, floorNor, new THREE.MeshLambertMaterial({ map: floorTex })));
+    flushSuelo();
     if (aguaPos.length)
       grupo.add(mkFlat(aguaPos, aguaUv, aguaIdx, aguaNor, new THREE.MeshLambertMaterial({ map: aguaTex })));
     yield;
@@ -400,8 +411,29 @@
     // --- muros ---
     const esWall = (x, y) => MapGen.at(g, x, y) === T.PARED;
     if (tiles.wallStyle === 'tabique') {
-      const sidePos = [], sideUv = [], sideIdx = [], sideNor = [];
-      const topPos = [], topUv = [], topIdx = [], topNor = [];
+      // cara sin la franja de techo (solo el muro): recorte del caraFull
+      let caraSolo = texCache.get('muro-lado') ? null : document.createElement('canvas');
+      if (caraSolo) {
+        caraSolo.width = 48; caraSolo.height = 48;
+        caraSolo.getContext('2d').drawImage(tiles.caraFull[1], 0, Tiles.RF, 48, Tiles.FH, 0, 0, 48, 48);
+      }
+      const matLado = new THREE.MeshLambertMaterial({ map: tex(caraSolo, 'muro-lado') });
+      const matTecho = new THREE.MeshLambertMaterial({ map: tex(tiles.techo, 'muro-techo') });
+      let sidePos = [], sideUv = [], sideIdx = [], sideNor = [];
+      let topPos = [], topUv = [], topIdx = [], topNor = [];
+      const flushMuros = () => {
+        if (sidePos.length) {
+          const m = mkFlat(sidePos, sideUv, sideIdx, sideNor, matLado);
+          m.castShadow = true;
+          grupo.add(m); bandas.push(m); solidos.push(m);
+        }
+        if (topPos.length) {
+          const m = mkFlat(topPos, topUv, topIdx, topNor, matTecho);
+          grupo.add(m); bandas.push(m); solidos.push(m);
+        }
+        sidePos = []; sideUv = []; sideIdx = []; sideNor = [];
+        topPos = []; topUv = []; topIdx = []; topNor = [];
+      };
       for (let y = 0; y < g.h; y++) {
         for (let x = 0; x < g.w; x++) {
           if (!esWall(x, y)) continue;
@@ -418,29 +450,9 @@
           quad(topPos, topUv, topIdx,
             [[x, h, y + 1], [x + 1, h, y + 1], [x + 1, h, y], [x, h, y]], [0, 0, 1, 1], topNor);
         }
-        if ((y & 15) === 15) yield;
+        if ((y & 15) === 15) { flushMuros(); yield; }
       }
-      const mkMesh = (pos, uv, idx, nor, canvas, key, sombra) => {
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-        geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-        geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
-        geo.setIndex(idx);
-        const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex(canvas, key) }));
-        m.castShadow = sombra;
-        m.receiveShadow = true;
-        return m;
-      };
-      // cara sin la franja de techo (solo el muro): recorte del caraFull
-      let caraSolo = texCache.get('muro-lado') ? null : document.createElement('canvas');
-      if (caraSolo) {
-        caraSolo.width = 48; caraSolo.height = 48;
-        caraSolo.getContext('2d').drawImage(tiles.caraFull[1], 0, Tiles.RF, 48, Tiles.FH, 0, 0, 48, 48);
-      }
-      const lados = mkMesh(sidePos, sideUv, sideIdx, sideNor, caraSolo, 'muro-lado', true);
-      const techos = mkMesh(topPos, topUv, topIdx, topNor, tiles.techo, 'muro-techo', false);
-      grupo.add(lados, techos);
-      solidos.push(lados, techos); // para la colisión de la cámara
+      flushMuros();
       yield;
 
       // --- TECHO REAL (solo 3ª persona e interiores): la cámara va por debajo,
@@ -456,8 +468,15 @@
           ctx2.fillRect(6, 8, 10, 6); ctx2.fillRect(30, 26, 8, 9);
         }));
         plafonTex.wrapS = plafonTex.wrapT = THREE.RepeatWrapping;
-        const cPos = [], cUv = [], cIdx = [], cNor = [];
+        const matPlafon = new THREE.MeshLambertMaterial({ map: plafonTex });
+        let cPos = [], cUv = [], cIdx = [], cNor = [];
         const pPos = [], pUv = [], pIdx = [];
+        const flushTecho = () => {
+          if (!cPos.length) return;
+          const m = mkFlat(cPos, cUv, cIdx, cNor, matPlafon);
+          grupo.add(m); bandas.push(m);
+          cPos = []; cUv = []; cIdx = []; cNor = [];
+        };
         // paneles cada 4×4 tiles en niveles iluminados, 6×6 en penumbra, ninguno a oscuras
         const osc = world.level.oscuridad || 0;
         const cada = osc < 0.45 ? 4 : osc < 0.75 ? 6 : 0;
@@ -479,16 +498,9 @@
                 [0, 0, 1, 1]);
             }
           }
-          if ((y & 15) === 15) yield;
+          if ((y & 15) === 15) { flushTecho(); yield; }
         }
-        if (cPos.length) {
-          const cgeo = new THREE.BufferGeometry();
-          cgeo.setAttribute('position', new THREE.Float32BufferAttribute(cPos, 3));
-          cgeo.setAttribute('uv', new THREE.Float32BufferAttribute(cUv, 2));
-          cgeo.setAttribute('normal', new THREE.Float32BufferAttribute(cNor, 3));
-          cgeo.setIndex(cIdx);
-          grupo.add(new THREE.Mesh(cgeo, new THREE.MeshLambertMaterial({ map: plafonTex })));
-        }
+        flushTecho();
         if (pPos.length) {
           const pgeo = new THREE.BufferGeometry();
           pgeo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
@@ -497,7 +509,9 @@
           panelMatNuevo = new THREE.MeshBasicMaterial({
             color: 0xfff6dc, toneMapped: false, fog: false,
           });
-          grupo.add(new THREE.Mesh(pgeo, panelMatNuevo));
+          const pm = new THREE.Mesh(pgeo, panelMatNuevo);
+          grupo.add(pm);
+          bandas.push(pm);
         }
         yield;
       }
@@ -738,12 +752,15 @@
       }
     }
 
-    return { grupo, solidos, panelMatNuevo };
+    return { grupo, solidos, panelMatNuevo, bandas };
   }
 
-  // instala la estática recién construida (swap) y la atmósfera del nivel
-  function aplicarEstatica(world, res) {
-    if (staticGroup) disposeGrupo(staticGroup, true);
+  // instala la estática recién construida (swap) y la atmósfera del nivel.
+  // `progresivo` (expansiones): las bandas entran ocultas y se revelan unas
+  // pocas por frame — la subida a GPU se reparte y no hay micro-corte (v19)
+  let revelando = null;
+  function aplicarEstatica(world, res, progresivo) {
+    const viejo = staticGroup;
     staticGroup = res.grupo;
     scene.add(staticGroup);
     solidosCamara = res.solidos;
@@ -759,6 +776,22 @@
     amb.intensity = Math.max(0.12, 0.55 - world.level.oscuridad * 0.4);
     plight.color = new THREE.Color(pal.luz);
     plight.distance = (world.visionActual() + 3) * 1.6;
+
+    if (progresivo && viejo && res.bandas.length) {
+      // la escena vieja (realineada) sigue tapando: idéntica en el solape
+      for (const b of res.bandas) b.visible = false;
+      revelando = { bandas: res.bandas, i: 0, viejo };
+    } else if (viejo) {
+      disposeGrupo(viejo, true);
+    }
+  }
+
+  // termina de golpe un revelado a medias (llega otro ciclo de rebuild)
+  function terminarRevelado() {
+    if (!revelando) return;
+    for (const b of revelando.bandas) b.visible = true;
+    disposeGrupo(revelando.viejo, true);
+    revelando = null;
   }
 
   // sprites de los objetos del suelo: baratos, indexados por posición en el
@@ -848,6 +881,7 @@
       const esMismoNivel = lastLevelId === world.level.id && staticGroup;
       levelKey = key;
       lastLevelId = world.level.id;
+      terminarRevelado(); // si había un revelado a medias, se completa YA
       if (world._shift3d) {
         // expansión del nivel infinito: cámara y escena vieja se desplazan
         // EXACTAMENTE con el mundo → ni un píxel de salto en pantalla
@@ -889,8 +923,17 @@
       let r;
       do { r = rebuild.gen.next(); } while (!r.done && performance.now() - t0 < 5);
       if (r.done) {
-        aplicarEstatica(world, r.value);
+        aplicarEstatica(world, r.value, true);
         rebuild = null;
+      }
+    }
+    // revelado escalonado tras el swap: 3 bandas por frame (subida a GPU suave)
+    if (revelando && !rebuild) {
+      const rv = revelando;
+      for (let k = 0; k < 3 && rv.i < rv.bandas.length; k++) rv.bandas[rv.i++].visible = true;
+      if (rv.i >= rv.bandas.length) {
+        disposeGrupo(rv.viejo, true);
+        revelando = null;
       }
     }
     // items del suelo: rehacer si la lógica los cambió (tirar/arrojar objetos)
