@@ -7,10 +7,12 @@ fiel al lore: niveles, entidades, salidas y mecánicas salen de las páginas rea
 
 **Doble clic en `game/index.html`.** No hace falta servidor, ni internet, ni instalar nada.
 
-- **WASD / flechas**: moverte (cada paso = 1 turno; el mundo solo avanza cuando tú lo haces)
-- **E**: interactuar — cruzar salidas y **registrar muebles** (taquillas, archivadores… con tirada de dado)
-- **Espacio**: esperar · **F**: linterna · **R**: volver al nivel anterior
-- **J**: diario de ruta · **C**: Códice del Errante · **1-6**: usar objeto del inventario
+- **W / S**: avanzar y retroceder · **A / D**: girar (cada paso = 1 turno)
+- **Espacio**: interactuar — cruzar salidas y **registrar muebles** (taquillas, archivadores… con tirada de dado)
+- **X**: esperar · **Q / E**: usar la mano izquierda/derecha · **F**: linterna
+- **B**: mochila · **M / N**: mapa · **L**: registro · **J**: diario · **C**: Códice
+- **1-6**: usar un objeto de la mochila · **ESC**: ajustes · **G**: no-clip (si desbloqueas el Instinto)
+- Los niveles visitados persisten durante la expedición; las puertas de retorno sustituyen al antiguo atajo **R**.
 - **Perfiles**: crea tu usuario en el título; el Códice registra para siempre los niveles
   que transitas (con su descripción), veces visitados, mejores marcas y escapes.
   Exportable/importable como JSON.
@@ -21,16 +23,16 @@ fiel al lore: niveles, entidades, salidas y mecánicas salen de las páginas rea
 Objetivo: encontrar una de las rarísimas rutas de escape de vuelta a la realidad.
 La muerte es permanente: despiertas otra vez en Level 0.
 
-Parámetros de URL útiles para el directo: `?seed=misemilla&autostart=1`
+Parámetros de URL útiles: `?seed=misemilla&autostart=1`, `?render=2d` y `?nofx=1`.
 
 ## Estructura
 
 ```
-pipeline/   Scripts Node (descarga de la wiki, parseo, fichas, mapa, empaquetado)
-data/raw/       La wiki entera en local (1.113 páginas, descargada 2026-07)
-data/parsed/    Grafo estructurado: 734 niveles, 182 entidades, 82 objetos
-data/game/      Fichas jugables en español del piloto (30 niveles) + mapa-piloto.html
-game/       El juego (HTML/JS/Canvas puro, cero dependencias)
+pipeline/       Scripts Node (descarga de la wiki, parseo, fichas, mapa, empaquetado)
+data/raw/       Snapshot local de Levels, Entities, Objects, Phenomena y Groups (1.113 páginas)
+data/parsed/    Grafo estructurado: 734 niveles, 197 entidades, 89 objetos y 137 fenómenos/grupos
+data/game/      Fichas jugables en español: 30 niveles, 16 entidades y 13 objetos + mapa-piloto.html
+game/           El juego (HTML/JS/Canvas puro, cero dependencias)
 ```
 
 ## Comandos del pipeline (Node)
@@ -38,6 +40,7 @@ game/       El juego (HTML/JS/Canvas puro, cero dependencias)
 ```
 node pipeline/download.js    # re-descargar la wiki (incremental)
 node pipeline/parse.js       # wikitext -> data/parsed/*.json
+node pipeline/parse.test.js  # pruebas del parser (sin dependencias)
 node pipeline/select-pilot.js# elegir niveles del piloto (BFS desde Level 0)
 node pipeline/make-map.js    # regenerar data/game/mapa-piloto.html
 node pipeline/build-data.js  # OBLIGATORIO tras editar data/game/*.json -> game/js/data.js
