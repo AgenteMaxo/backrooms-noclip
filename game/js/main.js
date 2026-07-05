@@ -326,7 +326,12 @@
   
   let usingGamepad = false;
   let wasUIOpen = false;
-  const hideGamepadCursor = () => { usingGamepad = false; if (vCursor) vCursor.style.display = 'none'; };
+  const hideGamepadCursor = () => { 
+    usingGamepad = false; 
+    if (vCursor) vCursor.style.display = 'none'; 
+    const st = document.getElementById('no-cursor-style');
+    if (st) st.remove();
+  };
   document.addEventListener('mousemove', hideGamepadCursor);
   document.addEventListener('mousedown', hideGamepadCursor);
   document.addEventListener('wheel', hideGamepadCursor);
@@ -373,6 +378,15 @@
     let anyInput = false;
     for(let i=0; i<btns.length; i++) if (pressed(i)) anyInput = true;
     if (anyInput || Math.abs(gp.axes[0]) > 0.1 || Math.abs(gp.axes[1]) > 0.1) {
+      if (!usingGamepad) {
+        let st = document.getElementById('no-cursor-style');
+        if (!st) {
+          st = document.createElement('style');
+          st.id = 'no-cursor-style';
+          st.textContent = '* { cursor: none !important; }';
+          document.head.appendChild(st);
+        }
+      }
       usingGamepad = true;
     }
 
