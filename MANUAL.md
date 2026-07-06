@@ -271,8 +271,24 @@ que solo tú puedes aceptar o rechazar.
   de que decidas.
 - **Aceptar un PR**: botón verde **Merge pull request** en la web (solo tú lo ves).
   Consejo: nunca aceptes un PR sin que Claude lo haya revisado antes.
+- **Inspeccionar un PR tú mismo** (no hace falta ningún programa, todo en el navegador):
+  - Pestaña **Conversation** del PR: la explicación del autor y los comentarios. Si el PR
+    trae sonidos o vídeos de muestra, se reproducen ahí mismo con el play.
+  - Pestaña **Files changed**: todos los archivos que toca, con los cambios en colores —
+    **rojo = línea que se quita, verde = línea que entra**. Los archivos de audio/imagen
+    salen como «Binary file» (GitHub no puede mostrarlos como texto).
+  - Pasa el ratón por una línea y aparece un **+** azul: deja un comentario al autor ahí
+    mismo para pedir cambios antes de aceptar.
+  - Para rechazar: botón **Close pull request**, mejor con un comentario amable del porqué.
 - **Issues**: la pestaña «Issues» es el buzón de bugs y sugerencias de la comunidad —
   puedes enseñarla en directo y pedirle a Claude que arregle los que te convenzan.
+- **Noticias automáticas en Discord** (ya configurado, 2026-07-06): cada push a `main`,
+  PR, issue y release aparece solo en el canal de Discord. Cómo se montó, por si hay que
+  repetirlo: en Discord → rueda del canal → Integraciones → Webhooks → Nuevo webhook →
+  Copiar URL; y esa URL (añadiéndole `/github` al final) se registra en GitHub →
+  Settings → Webhooks (o se le pega a Claude y lo hace con `gh`). ⚠ La URL del webhook
+  es SECRETA (quien la tenga puede escribir en tu canal): no la enseñes en directo ni la
+  subas al repositorio. Si se filtra: bórrala en Discord, crea otra y reconfigura.
 
 ## 12. Si algo falla
 

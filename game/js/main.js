@@ -152,12 +152,29 @@
     if (!world.level || world.over) return;
     if (document.getElementById('screen-card').style.display !== 'none') return;
     const tercera = use3D && Render3D.modo === 'tercera';
+    const autoRepeatTime2DMove = 150; // tiempo en ms mínimo entre pasos al mantener pulsada una tecla de movimiento en modo 2D
+    const autoRepeatTime3DYMove = 150; // tiempo en ms mínimo entre pasos al mantener pulsada una tecla de movimiento vertical en modo 3D
+    const autoRepeatTime3DXMove = 600; // tiempo en ms mínimo entre pasos al mantener pulsada una tecla de movimiento horizontal en modo 3D
     if (KEYS[ev.code]) {
       ev.preventDefault();
-      // el auto-repeat del teclado dispara ráfagas: se limita a un paso cada 150 ms
-      if (ev.repeat && performance.now() - lastStepT < 150) return;
-      lastStepT = performance.now();
       const [sdx, sdy] = KEYS[ev.code]; // dirección de PANTALLA pulsada
+      // el auto-repeat del teclado dispara ráfagas: 
+      if (tercera) {
+        if (
+          ev.repeat &&
+          (
+            (performance.now() - lastStepT < autoRepeatTime3DXMove && sdx !== 0) ||
+            (performance.now() - lastStepT < autoRepeatTime3DYMove && sdy !== 0)
+          )
+        ) {
+          return;
+        }
+      } else {
+        if (ev.repeat && performance.now() - lastStepT < autoRepeatTime2DMove) {
+          return;
+        }
+      }
+      lastStepT = performance.now();
       if (tercera) {
         // 3ª persona: W avanza, S retrocede, A/D giran al personaje (gratis)
         if (sdy === -1) Game.avanzar(1);
