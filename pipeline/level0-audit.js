@@ -25,6 +25,7 @@ const apariciones = Object.fromEntries(
 const objetivos = [];
 const distancias = [];
 const [minObjetivo, maxObjetivo] = level.pasosCaminata || [800, 1200];
+assert.equal(level.mapaDiarioUtc, true, 'Level 0 debe generarse una sola vez por día UTC');
 
 function signature(map) {
   return JSON.stringify({
@@ -43,8 +44,8 @@ for (let i = 0; i < N; i++) {
   // La partida pasa runSeed a walkingGoal, no levelSeed: la auditoría debe hacer lo mismo.
   const objetivo = MapGen.walkingGoal(level, seed, 1, 0);
 
-  assert.equal(map.grid.w, 150, 'la ventana debe medir 150 de ancho');
-  assert.equal(map.grid.h, 150, 'la ventana debe medir 150 de alto');
+  assert.equal(map.grid.w, 150, 'el mapa diario debe medir 150 de ancho');
+  assert.equal(map.grid.h, 150, 'el mapa diario debe medir 150 de alto');
   assert.equal(map.entitySpawns.length, 0, 'Level 0 no debe generar entidades');
   assert.equal(map.caminatas.length, 1, 'la salida caminando debe existir siempre');
   assert.ok(objetivo >= minObjetivo && objetivo <= maxObjetivo, 'objetivo fuera del rango configurado');
@@ -81,7 +82,7 @@ console.log(`Level 0: ${N} semillas ${randomMode || explicitSeed ? 'muestreadas'
 console.log(`Muestra: ${sampleSeed}`);
 if (randomMode && !explicitSeed)
   console.log(`Repetir: node ${path.basename(process.cwd()).toLowerCase() === 'pipeline' ? '' : 'pipeline/'}level0-audit.js ${N} --seed=${sampleSeed}`);
-console.log('Ventana: 150×150 · entidades: 0');
+console.log('Mapa diario: 150×150 · entidades: 0');
 console.log(`Objetivo de caminata: ${Math.min(...objetivos)}–${Math.max(...objetivos)} (media ${media(objetivos).toFixed(1)})`);
 console.log(`Distancia de salidas físicas: media ${media(distancias).toFixed(1)} casillas`);
 for (const [destino, n] of Object.entries(apariciones).sort())

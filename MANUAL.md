@@ -17,11 +17,11 @@ fluorescentes**, bloom cinematográfico y polvo en suspensión. Alternativas por
 
 | Tecla | Acción |
 |---|---|
-| W / ↑ | Avanzar un paso hacia donde miras (1 paso = 1 turno) |
+| W / ↑ | Avanzar un paso hacia donde miras; la simulación continúa en tiempo real |
 | S / ↓ | Retroceder un paso (sin girarte) |
-| A / D | Girarte 90° a izquierda/derecha — girar es GRATIS, no gasta turno |
+| A / D | Girarte 90° a izquierda/derecha |
 | ESPACIO | Interactuar: salidas, muebles registrables, **beber agua**… |
-| X | Esperar un turno |
+| X | Detenerte y escuchar el entorno |
 | F | Linterna (debe estar EN UNA MANO): cono de luz real (¡atrae a las Deathmoths!) |
 | B | Abrir/cerrar la **mochila** |
 | M (o N) | Ver el mapa de lo explorado |
@@ -51,10 +51,12 @@ fluorescentes**, bloom cinematográfico y polvo en suspensión. Alternativas por
   wiki dicen «romper una pared» aparecen como una **pared agrietada** (suena hueca al
   pisarla): ESPACIO para intentar romperla — a puñetazos cuesta y duele; con la tubería EN
   MANO es mucho más fácil. Al ceder, se abre un boquete de luz blanca y puedes cruzar. Las
-  que dicen «caminar sin rumbo hasta…» no tienen casilla: tras MUCHOS turnos andando por el
-  nivel, el paisaje «cede» y te ofrece cruzar. Los mapas son ahora más grandes (el Level 0 es
-  ENORME y ya no "petardea": se genera entero de una vez con tu semilla) y las salidas están
-  repartidas por rincones opuestos — piérdete de verdad.
+  que dicen «caminar sin rumbo hasta…» no tienen casilla: tras MUCHOS pasos reales, el paisaje
+  «cede» y la transición se resuelve con un d20. El Level 0 diario mide 150×150 y se genera
+  entero una sola vez: no sustituye trozos del mapa mientras juegas ni provoca saltos de
+  reconstrucción. La primera transición deja una costura persistente entre Level 0 y Level 1:
+  puedes volver por el mismo lugar y cruzarlo otra vez sin repetir el d20. Las demás salidas
+  están repartidas por rincones opuestos — piérdete de verdad.
 - **Manos y mochila**: dos ranuras de mano (abajo a la derecha) + mochila de 6 huecos (`B`).
   La linterna y las armas solo funcionan **empuñadas**: arrastra el objeto a una mano — en el
   propio panel de la mochila o en el HUD — (o botón EMPUÑAR en su ficha). Clic en una mano la
@@ -97,21 +99,21 @@ No hay experiencia ni niveles de personaje: hay un **pacto silencioso con el lug
 
 ## 2c. Combate y escape
 
-- **Telegraph**: toda entidad ANUNCIA su golpe un turno antes (⚠ y parpadeo ámbar).
-  Si te mueves ese turno, el golpe falla. El Cazador solo avisa la primera vez.
+- **Telegraph**: toda entidad ANUNCIA su golpe un pulso antes (⚠ y parpadeo ámbar).
+  Tienes aproximadamente 0,9 segundos para moverte; el Cazador solo avisa la primera vez.
 - **Ruido**: registrar muebles, golpear (y fallar) hace ruido; las entidades que no te
   cazan van a investigar el sonido.
 - **Arrojar** (botón en la ficha del objeto): lanzas el objeto lejos y el golpe DISTRAE de
-  verdad — las entidades cercanas van hacia el ruido 3 turnos (aunque te estén cazando), y
-  hasta el Cazador se detiene 2 turnos a escuchar. El objeto queda en el suelo.
-- **Despistar**: si una entidad pasa 3 turnos sin detectarte, abandona la caza.
+  verdad — las entidades cercanas van hacia el ruido durante varios pulsos (aunque te estén
+  cazando), y hasta el Cazador se detiene a escuchar. El objeto queda en el suelo.
+- **Despistar**: si una entidad pasa varios pulsos sin detectarte, abandona la caza.
 - **Esconderse**: sobre una taquilla/nevera/archivador YA REGISTRADO, pulsa ESPACIO para
   meterte dentro (y ESPACIO para salir). Si no te vieron entrar, pierden tu rastro; si te
   encuentran dentro, el zarpazo duele un 50 % más.
 - **Interacciones libres**: si hay agua, PUEDES bebértela (ESPACIO)… la wiki decide si era
   buena idea. Este patrón irá creciendo: el juego te deja hacer, el lore responde.
-- El **mapa** (`M`) dibuja solo lo explorado y lo conserva; si el nivel se reorganiza
-  (Level 0, 27…) lo oirás como un derrumbe y esa zona vuelve a quedar sin cartografiar.
+- El **mapa** (`M`) dibuja solo lo explorado y lo conserva. El mapa diario de Level 0 no
+  cambia durante la partida; otros niveles no euclidianos todavía pueden reorganizarse.
 - **Salidas rituales**: algunas salidas no son puertas — son el objeto exacto que dice la wiki
   (la nave de juguete de Level 483, el reloj digital de Level 80…). Todas las salidas
   documentadas de cada nivel están en el juego (las de fuera del piloto, grises/selladas).
@@ -121,15 +123,16 @@ No hay experiencia ni niveles de personaje: hay un **pacto silencioso con el lug
 - **Tubería oxidada** 🔧: mientras la lleves, **muévete HACIA una entidad adyacente para
   golpearla** (daño + retroceso). Ojo: golpear al Silver Slime te salpica ácido.
 - **Fuego griego** 🔥 (Object 5): úsalo (tecla de su ranura) → quema y ahuyenta todo en radio 3. Un uso.
-- **Guante de parálisis** 🧤 (Object 69): úsalo → inmoviliza 6 turnos a lo adyacente. Un uso.
+- **Guante de parálisis** 🧤 (Object 69): úsalo → inmoviliza unos 5 segundos a lo adyacente. Un uso.
 - **Detector de entidades** 📡 (Object 30): pasivo → entidades cercanas en el minimapa.
 - **Trébol de la suerte** 🍀 (Object 13): pasivo → +2 a todas tus tiradas de dado.
 - Matar entidades cuesta un poco de cordura: en las Backrooms nada sale gratis.
 
 ## 2. Semillas (partidas compartibles)
 
-En la pantalla de título puedes escribir una **semilla** (ej. `moqueta-777`). La misma semilla
-genera exactamente los mismos mapas. Ideal para que tu chat juegue tu misma partida.
+Si dejas el campo vacío, la fecha UTC produce una semilla `utc-AAAA-MM-DD`: todos reciben el
+mismo mapa durante esas 24 horas y las partidas iniciadas no cambian al llegar medianoche.
+También puedes escribir una **semilla** propia (ej. `moqueta-777`) para repetir otro mundo.
 
 ## 3. Perfiles y Códice
 

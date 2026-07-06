@@ -1,4 +1,4 @@
-// Núcleo del juego: estado del mundo, sistema por turnos, transiciones,
+// Núcleo del juego: estado del mundo, simulación en tiempo real, transiciones,
 // estadísticas, muerte permanente y victoria.
 (function () {
   const { T, walkable } = MapGen;
@@ -29,6 +29,10 @@
     luzBloqueada: false,
     extraWorldStep: false,
     moving: false,
+    realTime: true,
+    tickMs: 900,
+    _realtimeAt: 0,
+    dailySeed: false,
     tutorial: {},
     ui: null, // inyectado por ui.js
   };
@@ -214,7 +218,7 @@
     piel_fluorescente: { nombre: 'Piel de fluorescente', icono: 'linterna',
       desc: '+1 de visión permanente… y las Deathmoths te confunden con una luz más.' },
     sangre_amarilla: { nombre: 'Sangre amarilla', icono: 'gota',
-      desc: 'Regeneras 1 de salud cada 12 turnos, pero el agua de almendras te repone la MITAD.' },
+      desc: 'Regeneras 1 de salud aproximadamente cada 11 segundos, pero el agua de almendras te repone la MITAD.' },
     noclip: { nombre: 'No-clip', icono: 'diametro', min: 80,
       desc: 'Tecla G: atraviesas la pared que encaras. Cuesta 10 de cordura y arriesga caer al Vacío.' },
   };
@@ -349,8 +353,16 @@
   };
 
   // ---------- inicio de partida ----------
+  // Todos los jugadores sin semilla manual reciben el mismo Level 0 durante
+  // el día UTC. Una partida ya iniciada conserva su mundo al cruzar medianoche.
+  function dailySeedUTC(now = new Date()) {
+    return `utc-${now.toISOString().slice(0, 10)}`;
+  }
+
   function startRun(seed) {
-    world.runSeed = seed || RNG.randomSeed();
+    world.dailySeed = !seed;
+    world.runSeed = seed || dailySeedUTC();
+    world._realtimeAt = 0;
     world.player = {
       x: 0, y: 0, rx: 0, ry: 0, dir: 'down', flip: false, rot: 2,
       salud: 100, cordura: 100, sed: 100, hambre: 100,
@@ -432,10 +444,22 @@
       // apareces en la salida que conecta con el nivel del que vienes
       let pos = null;
       if (desdeId) {
-        const exVuelta = world.map.exits.find(
+        // Si ambos lados comparten una conexión, vuelve a ESA puerta exacta.
+        // El destino por sí solo no basta: un nivel puede tener varias salidas
+        // hacia el mismo lugar (Level 1 tiene su salida normal y esta costura).
+        const exVuelta = (entrada?.conexion && world.map.exits.find(
+          (e) => e.def._conexion === entrada.conexion
+        )) || world.map.exits.find(
           (e) => e.def.destino === desdeId || e.def._destinoResuelto === desdeId
         );
-        if (exVuelta) pos = [exVuelta.x, exVuelta.y];
+        if (exVuelta) {
+          pos = exVuelta.def._spawnRetorno || [exVuelta.x, exVuelta.y];
+          if (exVuelta.def._rotRetorno !== undefined) {
+            world.player.rot = exVuelta.def._rotRetorno;
+            world.player.dir = ROT_DIR[world.player.rot].dir;
+            world.player.flip = ROT_DIR[world.player.rot].flip;
+          }
+        }
       }
       if (!pos) pos = world.map.spawn;
       world.player.x = pos[0];
@@ -460,11 +484,34 @@
       // salida de RETORNO donde apareces: la única manera de volver atrás es la
       // puerta que ya usaste — salvo que hayas CAÍDO (físicamente imposible)
       if (desdeId && (!entrada || !entrada.sinRetorno)) {
-        world.map.exits.push({
-          x: world.player.x, y: world.player.y,
+        let retornoX = world.player.x, retornoY = world.player.y;
+        // Una transición caminando debe poder deshacerse con S: intenta colocar
+        // la costura justo detrás y orienta al personaje de espaldas a ella.
+        if (entrada?.retornoAtras) {
+          const rot0 = world.player.rot ?? 2;
+          const orden = [rot0, (rot0 + 1) % 4, (rot0 + 3) % 4, (rot0 + 2) % 4];
+          for (const rot of orden) {
+            const [fx, fy] = ROT_VEC[rot];
+            const bx = world.player.x - fx, by = world.player.y - fy;
+            if (!walkable(MapGen.at(world.map.grid, bx, by))) continue;
+            if (world.map.exits.some((e) => e.x === bx && e.y === by)) continue;
+            if ((world.map.props || []).some((p) => p.x === bx && p.y === by)) continue;
+            if (world.entities.some((e) => e.viva && e.x === bx && e.y === by)) continue;
+            retornoX = bx; retornoY = by;
+            world.player.rot = rot;
+            world.player.dir = ROT_DIR[rot].dir;
+            world.player.flip = ROT_DIR[rot].flip;
+            break;
+          }
+        }
+        world.map.exits.unshift({
+          x: retornoX, y: retornoY,
           def: {
             texto: 'El camino por el que llegaste sigue abierto.',
             destino: desdeId, tipo: 'retorno',
+            _conexion: entrada?.conexion,
+            _spawnRetorno: [world.player.x, world.player.y],
+            _rotRetorno: world.player.rot,
           },
         });
       }
@@ -490,13 +537,20 @@
       world.log(`— ${def.nombre} —`, 'event');
       if (via) world.log(via, 'event');
       if (def.id === 'level-0' && world.turnTotal === 0)
-        tutorialHint('inicio', 'W/S para caminar. A/D para girar. Cada paso hace avanzar al mundo.', true);
+        tutorialHint('inicio', 'W/S para caminar. A/D para girar. El mundo avanza aunque te detengas.', true);
       if (window.Sfx) Sfx.ambient(def); // arranca con el clic de ENTRAR (gesto válido)
     };
     // Las salidas por caminata funden un nivel con el siguiente: no interrumpen
     // la marcha con tarjeta ni decisión. Las demás conservan su presentación.
     if (entrada?.sinTarjeta) nivelListo();
-    else world.ui.showLevelCard(def, nivelListo);
+    else {
+      world.busy = true;
+      world.ui.showLevelCard(def, () => {
+        world.busy = false;
+        world._realtimeAt = 0;
+        nivelListo();
+      });
+    }
   }
 
   // ---------- niveles infinitos: ventana deslizante ----------
@@ -624,14 +678,12 @@
     world.dmap = MapGen.bfsDist(world.map.grid, world.player.x, world.player.y);
   }
 
-  // ---------- turno del mundo ----------
-  function worldStep() {
-    world.turn++;
-    world.turnTotal++;
-
-    // niveles infinitos: desplazar la ventana al acercarse a un borde
-    // (M debe cumplir M <= W/4 para que tras el salto de W/2 no rebote)
-    if (world.level.infinito) {
+  // Sincroniza todo lo que depende de la casilla del jugador. En tiempo real
+  // se ejecuta al moverse/interactuar, pero no adelanta enemigos ni necesidades.
+  function syncPlayerState(refreshView = true) {
+    // Los mundos diarios se generan una sola vez: no hay reconstrucciones que
+    // congelen un fotograma. Otros niveles infinitos conservan la ventana móvil.
+    if (world.level.infinito && !world.level.mapaDiarioUtc) {
       const M = 22, g2 = world.map.grid;
       let sx = 0, sy = 0;
       if (world.player.x < M) sx = -1; else if (world.player.x >= g2.w - M) sx = 1;
@@ -703,9 +755,27 @@
       const defC = world.map.caminatas[0];
       const i = world.map.caminatas.indexOf(defC);
       if (i >= 0) world.map.caminatas.splice(i, 1);
-      world.log(`Tras ${world.pasosNivel} pasos, los pasillos terminan de transformarse.`, 'event');
+      // La transición deja una costura física y persistente. Al regresar desde
+      // Level 1 reapareces aquí, y esta salida permite cruzarla de nuevo sin
+      // repetir la tirada que solo representa el primer colapso del Level 0.
+      const conexion = `caminata:${world.level.id}:${defC.destino}:${world.entryCount[world.level.id] || 1}`;
+      defC._conexion = conexion;
+      if (!world.map.exits.some((e) => e.def._conexion === conexion)) {
+        world.map.exits.push({
+          x: world.player.x,
+          y: world.player.y,
+          def: {
+            texto: 'La costura entre la moqueta amarilla y el hormigón sigue abierta.',
+            destino: defC.destino,
+            tipo: 'retorno',
+            _mec: 'retorno',
+            _conexion: conexion,
+          },
+        });
+      }
+      world.log('El zumbido se corta. El amarillo ya es hormigón. Los pasillos ceden…', 'event');
       crossExit(defC);
-      return; // enterLevel ya recalcula, guarda y presenta el nuevo estado
+      return true; // la tirada/transición controla el estado a partir de aquí
     }
 
     // aviso al pisar un contenedor sin registrar
@@ -716,6 +786,27 @@
       contAqui.avisado = true;
       world.log(`Hay ${NOMBRES_CONT[contAqui.id] ?? 'un contenedor'} aquí. Pulsa ESPACIO para registrarlo.`, 'good');
     }
+
+    if (refreshView) {
+      recomputeDmap();
+      recomputeFov();
+      world.ui.updateHUD();
+    }
+    return false;
+  }
+
+  // ---------- pulso del mundo ----------
+  function worldStep(forceTime = false) {
+    // Las llamadas históricas desde acciones ahora solo sincronizan posición.
+    // El reloj de render invoca worldStep(true) cada tick real.
+    if (world.realTime && !forceTime) {
+      syncPlayerState();
+      return;
+    }
+
+    world.turn++;
+    world.turnTotal++;
+    if (syncPlayerState(false) || world.busy || world.over) return;
 
     // reglas del nivel + necesidades
     Rules.aplicarTurno(world, world.rng);
@@ -780,6 +871,21 @@
     }
 
     world.ui.updateHUD();
+  }
+
+  function tickRealTime(now) {
+    if (!world.realTime || !world.level || !world.player || world.over || world.busy || document.hidden) {
+      world._realtimeAt = now;
+      return;
+    }
+    if (!world._realtimeAt) {
+      world._realtimeAt = now;
+      return;
+    }
+    if (now - world._realtimeAt < world.tickMs) return;
+    // Nunca se recuperan ticks acumulados al volver de otra pestaña o un modal.
+    world._realtimeAt = now;
+    worldStep(true);
   }
 
   // ---------- acciones del jugador ----------
@@ -865,7 +971,7 @@
     }
     if (world.player.x !== x0 || world.player.y !== y0) {
       world.pasosNivel++;
-      tutorialHint('interaccion', 'ESPACIO interactúa con grietas, salidas y contenedores. X espera un turno.', true);
+      tutorialHint('interaccion', 'ESPACIO interactúa con grietas, salidas y contenedores. X te deja escuchar.', true);
       if ((world.map.caminatas || []).length) {
         const f = world.pasosNivel / Math.max(1, world._caminataObjetivo);
         const A = world._caminataAvisos || (world._caminataAvisos = {});
@@ -1127,7 +1233,7 @@
       if (window.Effects) Effects.number(e.x, e.y, '⚡ paralizada', '#60c8e8');
     }
     world.log(alcanzadas
-      ? `El guante descarga: ${alcanzadas} entidad(es) inmovilizada(s) durante 6 turnos.`
+      ? `El guante descarga: ${alcanzadas} entidad(es) inmovilizada(s) durante unos 5 segundos.`
       : 'El guante chisporrotea… pero no hay nada adyacente que tocar. Se ha gastado.', alcanzadas ? 'good' : 'event');
     if (window.Sfx) Sfx.play('registrar');
   }
@@ -1469,6 +1575,7 @@
       return;
     }
 
+    let textoEntrada = def.texto;
     const go = () => {
       const caminata = def._mec === 'caminata';
       const continua = caminata && world.level.id === 'level-0';
@@ -1484,11 +1591,51 @@
       // cruzar por donde nadie debería te sintoniza con el lugar
       if (tipo === 'void' || tipo === 'arriesgada') world.tune(5);
       world.prevStack.push(world.level.id);
-      enterLevel(destino, def.texto, {
-        sinRetorno: caminata || esSinRetorno(def),
+      enterLevel(destino, textoEntrada, {
+        sinRetorno: esSinRetorno(def),
         sinTarjeta: continua,
+        conexion: def._conexion,
+        retornoAtras: caminata,
       });
     };
+
+    // La salida canónica de Level 0 siempre ocurre: el dado no contradice la
+    // transición gradual, decide qué se pierde o aparece en la costura.
+    if (def._mec === 'caminata' && world.level.id === 'level-0') {
+      world.rollDice('El zumbido muere. Algo tira de ti entre el amarillo y el hormigón…', (d) => {
+        const p = world.player;
+        if (d <= 4) {
+          const perdida = Math.min(10, Math.max(0, p.cordura - 1));
+          if (perdida) world.sanity(-perdida);
+          textoEntrada = `Dado: ${d}. La costura te arranca un recuerdo antes de arrojarte al Level 1.`;
+          world.log(textoEntrada, 'danger');
+        } else if (d <= 9) {
+          const perdida = Math.min(5, Math.max(0, p.cordura - 1));
+          if (perdida) world.sanity(-perdida);
+          textoEntrada = `Dado: ${d}. Cruzas de rodillas. Durante un instante, ambos niveles existen a la vez.`;
+          world.log(textoEntrada, 'danger');
+        } else if (d <= 15) {
+          textoEntrada = `Dado: ${d}. Parpadeas. La moqueta termina exactamente donde empieza el hormigón.`;
+          world.log(textoEntrada, 'event');
+        } else if (d < 20) {
+          world.sanity(6);
+          textoEntrada = `Dado: ${d}. Ves venir el pliegue y conservas la mente mientras el Level 0 queda atrás.`;
+          world.log(textoEntrada, 'good');
+        } else {
+          if (p.inv.length < 6) {
+            p.inv.push('agua_almendras');
+            Profiles.registrarDescubierto('objetos', 'agua_almendras');
+            textoEntrada = 'Dado: 20. Una botella cae de la costura contigo. No estaba allí un segundo antes.';
+          } else {
+            world.sanity(12);
+            textoEntrada = 'Dado: 20. La costura no puede darte nada más; al menos te devuelve un recuerdo intacto.';
+          }
+          world.log(textoEntrada, 'good');
+        }
+        if (!world.over) go();
+      });
+      return;
+    }
 
     if (tipo === 'arriesgada' && def.riesgoVoid > 0) {
       world.rollDice('El camino es inestable. Tira el dado…', (d) => {
@@ -1570,6 +1717,8 @@
 
   function continueRun(s) {
     world.runSeed = s.runSeed;
+    world.dailySeed = /^utc-\d{4}-\d{2}-\d{2}$/.test(s.runSeed || '');
+    world._realtimeAt = 0;
     world.player = {
       x: 0, y: 0, rx: 0, ry: 0, dir: 'down', flip: false, rot: 2,
       salud: s.player.salud, cordura: s.player.cordura,
@@ -1604,7 +1753,7 @@
   }
 
   window.Game = {
-    world, startRun, continueRun, loadSave, Profiles, INSTINTOS,
+    world, startRun, continueRun, loadSave, tickRealTime, dailySeedUTC, Profiles, INSTINTOS,
     tryMove, wait, interact, toggleLuz, useItem, crossExit,
     girar, avanzar, equipar, desequipar, usarMano, tirarItem, arrojarItem, noclip,
     ponerEquipo, quitarEquipo, debugTeleport,

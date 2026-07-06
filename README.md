@@ -7,23 +7,25 @@ fiel al lore: niveles, entidades, salidas y mecánicas salen de las páginas rea
 
 **Doble clic en `game/index.html`.** No hace falta servidor, ni internet, ni instalar nada.
 
-- **W / S**: avanzar y retroceder · **A / D**: girar (cada paso = 1 turno)
+- **W / S**: avanzar y retroceder · **A / D**: girar; el mundo avanza en tiempo real
 - **Espacio**: interactuar — cruzar salidas y **registrar muebles** (taquillas, archivadores… con tirada de dado)
-- **X**: esperar · **Q / E**: usar la mano izquierda/derecha · **F**: linterna
+- **X**: detenerte y escuchar · **Q / E**: usar la mano izquierda/derecha · **F**: linterna
 - **B**: mochila · **M / N**: mapa · **L**: registro · **J**: diario · **C**: Códice
 - **1-6**: usar un objeto de la mochila · **ESC**: ajustes · **G**: no-clip (si desbloqueas el Instinto)
 - Los niveles visitados persisten durante la expedición; las puertas de retorno sustituyen al antiguo atajo **R**.
 - **Perfiles**: crea tu usuario en el título; el Códice registra para siempre los niveles
   que transitas (con su descripción), veces visitados, mejores marcas y escapes.
   Exportable/importable como JSON.
-- Escribe una **semilla** en el título para partidas reproducibles (compártela con el chat).
+- Sin semilla manual, todos juegan el mismo **mapa diario UTC**, renovado cada 24 horas.
+  También puedes escribir una semilla propia para una partida reproducible.
 - **Sprites personalizados**: cualquier PNG en `game/assets/sprites/` sustituye al pixel-art
   integrado (ver `LEEME.txt` en esa carpeta).
 
 Objetivo: encontrar una de las rarísimas rutas de escape de vuelta a la realidad.
 La muerte es permanente: despiertas otra vez en Level 0.
 
-Parámetros de URL útiles: `?seed=misemilla&autostart=1`, `?render=2d` y `?nofx=1`.
+Parámetros de URL útiles: `?seed=misemilla&autostart=1`, `?render=2d`, `?nofx=1`
+y `?turnos=1` para recuperar el modo clásico durante pruebas.
 
 ## Estructura
 

@@ -103,7 +103,7 @@
  "guante_paralisis": {
   "id": "guante_paralisis",
   "nombre": "Guante de parálisis (Object 69)",
-  "descripcion": "Un guante que paraliza lo que toca. Se empuña en una mano y se descarga con su tecla (Q/E) o con un clic en ella. Un solo uso: inmoviliza durante 6 turnos a las entidades adyacentes.",
+  "descripcion": "Un guante que paraliza lo que toca. Se empuña en una mano y se descarga con su tecla (Q/E) o con un clic en ella. Un solo uso: inmoviliza unos 5 segundos a las entidades adyacentes.",
   "manos": 1,
   "efecto": {
    "activo": "paralisis"

@@ -13,11 +13,19 @@
     no_euclidiano: {
       nombre: 'Espacio no euclidiano',
       icono: '♾',
-      desc: 'De vez en cuando, una zona lejana del nivel se reorganiza de verdad. Lo oirás.',
+      desc: 'El espacio no obedece a una geometría fiable. A veces jurarás que un pasillo ha cambiado.',
       turno(world, rng) {
         const level0 = world.level.id === 'level-0';
         const intervalo = level0 ? 70 : 90;
         if (world.turn > 0 && world.turn % intervalo === 0 && rng.chance(level0 ? 0.65 : 0.5)) {
+          // El Level 0 diario no muta durante la partida: así todos recorren el
+          // mismo mundo UTC y no se reconstruye toda la escena 3D en pleno juego.
+          if (level0 && world.level.mapaDiarioUtc) {
+            world.log('El zumbido cambia de tono. Estás seguro de que ese pasillo no estaba ahí antes.', 'danger');
+            world.sanity(-1);
+            if (window.Sfx) Sfx.play('crujido');
+            return;
+          }
           if (world.remodelarZona()) {
             world.log(level0
               ? 'El zumbido cambia de tono. En algún lugar, un pasillo ya no conduce al mismo sitio.'
@@ -100,7 +108,7 @@
     tiempo_raro: {
       nombre: 'Tiempo fracturado',
       icono: '🕰',
-      desc: 'Los segundos avanzan y retroceden: a veces el mundo juega dos turnos.',
+      desc: 'Los segundos avanzan y retroceden: a veces el mundo ejecuta dos pulsos seguidos.',
       turno(world, rng) {
         if (rng.chance(0.12)) {
           world.extraWorldStep = true;

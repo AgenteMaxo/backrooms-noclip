@@ -3,6 +3,13 @@
   const $ = (id) => document.getElementById(id);
   const world = Game.world;
 
+  function formatTime(ticks) {
+    if (!world.realTime) return `${ticks} turnos`;
+    const total = Math.max(0, Math.round((ticks || 0) * world.tickMs / 1000));
+    if (total < 60) return `${total} s`;
+    return `${Math.floor(total / 60)} min ${String(total % 60).padStart(2, '0')} s`;
+  }
+
   const screens = {
     title: $('screen-title'),
     card: $('screen-card'),
@@ -330,7 +337,7 @@
     if (e.sed) partes.push(`Sacia ${e.sed} 💧 de sed`);
     if (e.toggle === 'luz') partes.push('Alterna la luz (+4 de visión; atrae Deathmoths)');
     if (e.activo === 'fuego') partes.push('USO ÚNICO: quema (−30) y ahuyenta todo en radio 3');
-    if (e.activo === 'paralisis') partes.push('USO ÚNICO: paraliza 6 turnos a lo adyacente');
+    if (e.activo === 'paralisis') partes.push('USO ÚNICO: paraliza unos 5 segundos a lo adyacente');
     if (e.pasivo === 'arma') partes.push('PASIVO: muévete HACIA una entidad adyacente para golpearla');
     if (e.pasivo === 'abrigo') partes.push('PUESTA (cuerpo): anula el daño por frío');
     if (e.pasivo === 'aire') partes.push('PUESTA (cara): reduce a la mitad el desgaste mental ambiental');
@@ -565,12 +572,12 @@
     listEl.innerHTML = '';
     for (const j of world.journal) {
       const li = document.createElement('li');
-      li.textContent = `${j.nombre} (${j.turnos} turnos) — ${j.salida}`;
+      li.textContent = `${j.nombre} (${formatTime(j.turnos)}) — ${j.salida}`;
       listEl.appendChild(li);
     }
     if (world.level && !world.over) {
       const li = document.createElement('li');
-      li.textContent = `${world.level.wikiTitle} (${world.turn} turnos) — estás aquí`;
+      li.textContent = `${world.level.wikiTitle} (${formatTime(world.turn)}) — estás aquí`;
       li.style.color = '#d9c66e';
       listEl.appendChild(li);
     }
@@ -591,7 +598,7 @@
     lvEl.innerHTML = ''; hiEl.innerHTML = '';
     if (!perfil) { recEl.textContent = 'Crea un perfil para empezar tu expediente.'; return; }
     const r = perfil.records;
-    recEl.textContent = `Expediciones: ${r.runs} · Récord de niveles en una expedición: ${r.maxNiveles} · Récord de turnos sobrevividos: ${r.maxTurnos} · Escapes logrados: ${r.escapes}`;
+    recEl.textContent = `Expediciones: ${r.runs} · Récord de niveles en una expedición: ${r.maxNiveles} · Mayor supervivencia: ${formatTime(r.maxTurnos)} · Escapes logrados: ${r.escapes}`;
     const colores = ['#3fae6a', '#8bb944', '#d9a531', '#e0742c', '#d94a35', '#a12744'];
     const entries = Object.entries(perfil.codice).sort((a, b) => b[1].veces - a[1].veces);
     $('cdx-n-niveles').textContent = `${entries.length}/${Object.keys(world.data.levels).length}`;
@@ -603,7 +610,7 @@
       det.className = 'cdx-nivel';
       det.style.borderLeftColor = colores[lv.peligro] || '#888';
       const mejor = c.mejorTurnos !== null
-        ? ` · mejor travesía: ${c.mejorTurnos} turnos` : ' · nunca lograste salir de él';
+        ? ` · mejor travesía: ${formatTime(c.mejorTurnos)}` : ' · nunca lograste salir de él';
       det.innerHTML = `<summary><b>${lv.nombre}</b>${c.escapado ? ' ⭐' : ''}
           <span class="meta-min">peligro ${lv.peligro}/5 · ${c.veces}×</span></summary>
         <div class="cuerpo">
@@ -618,7 +625,7 @@
     $('cdx-n-hist').textContent = hist.length || '—';
     for (const h of hist) {
       const li = document.createElement('li');
-      li.textContent = `${h.fecha} · semilla «${h.semilla}» · ${h.niveles} niveles, ${h.turnos} turnos · ${h.resultado}`;
+      li.textContent = `${h.fecha} · semilla «${h.semilla}» · ${h.niveles} niveles, ${formatTime(h.turnos)} · ${h.resultado}`;
       hiEl.appendChild(li);
     }
     renderColeccion(perfil);
@@ -752,7 +759,7 @@
     $('end-cause').textContent = causa;
     $('end-stats').innerHTML = `
       <div><b>${world.journal.length}</b>niveles</div>
-      <div><b>${world.turnTotal}</b>turnos</div>
+      <div><b>${formatTime(world.turnTotal)}</b>tiempo</div>
       <div><b>${world.runSeed}</b>semilla</div>`;
     renderJournal($('end-journal'));
   }

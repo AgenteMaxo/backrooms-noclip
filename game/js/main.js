@@ -8,6 +8,8 @@
 
   // ---------- selección de renderizador: 3D (Three.js) por defecto, ?render=2d de respaldo ----------
   const paramsPre = new URLSearchParams(location.search);
+  // ?turnos=1 conserva el modo clásico para depuración y comparativas.
+  world.realTime = paramsPre.get('turnos') !== '1';
   let use3D = paramsPre.get('render') !== '2d' && window.Render3D;
   const glCanvas = document.getElementById('gl-canvas');
   if (use3D) {
@@ -215,12 +217,13 @@
     } else if (/^Digit[1-6]$/.test(ev.code)) Game.useItem(parseInt(ev.code.slice(5), 10) - 1);
   });
 
-  // ---------- bucle de animación (solo visual; la lógica es por turnos) ----------
+  // ---------- bucle de animación + reloj de simulación ----------
   function lerp(a, b, f) { return a + (b - a) * f; }
 
   function loop(t) {
     requestAnimationFrame(loop);
     if (!world.level || !world.player) return;
+    Game.tickRealTime(t);
     const p = world.player;
     // desliza la posición visual hacia la lógica
     p.rx = lerp(p.rx, p.x, 0.28);
@@ -375,9 +378,8 @@
           return;
         }
         if (world.busy) return; // dado en marcha
-        // Prueba dirigida de una expansión: coloca al jugador en la banda este
-        // y avanza un turno. Solo se activa explícitamente con ?shift=1.
-        if (params.get('shift') && !window.__shiftForzado) {
+        // Prueba heredada de ventana móvil (los mapas diarios no se desplazan).
+        if (params.get('shift') && !world.level.mapaDiarioUtc && !window.__shiftForzado) {
           const g = world.map.grid;
           let pos = null;
           for (let x = g.w - 2; x >= g.w - 20 && !pos; x--)
@@ -392,31 +394,33 @@
             return;
           }
         }
-        // Marcha dirigida hacia el extremo este: fuerza cambios de ventana en
-        // niveles infinitos sin desperdiciar cientos de intentos contra muros.
+        // Marcha dirigida entre puntos lejanos: acumula pasos reales sin quedar
+        // bloqueada al alcanzar el borde de un mapa diario estático.
         if (params.get('marcha')) {
           const g = world.map.grid;
           const version = `${world.ventanaN || 0}:${world.mapaVersion || 0}`;
           if (!marchaCache || marchaCache.version !== version) {
-            marchaCache = null;
-            buscar: for (let tx = g.w - 2; tx >= 1; tx--)
-              for (let ty = 1; ty < g.h - 1; ty++) {
-                if (!MapGen.walkable(MapGen.at(g, tx, ty))) continue;
-                const dist = MapGen.bfsDist(g, tx, ty);
-                if (dist[world.player.y * g.w + world.player.x] >= 0) {
-                  marchaCache = { version, dist };
-                  break buscar;
-                }
-              }
+            const desde = MapGen.bfsDist(g, world.player.x, world.player.y);
+            let objetivo = -1, mayor = -1;
+            for (let i = 0; i < desde.length; i++) {
+              if (desde[i] > mayor) { mayor = desde[i]; objetivo = i; }
+            }
+            if (objetivo >= 0) {
+              const tx = objetivo % g.w, ty = Math.floor(objetivo / g.w);
+              marchaCache = { version, dist: MapGen.bfsDist(g, tx, ty) };
+            } else marchaCache = null;
           }
           let paso = null;
           if (marchaCache) {
             const actual = marchaCache.dist[world.player.y * g.w + world.player.x];
-            for (const [dx, dy] of dirs) {
-              const nx = world.player.x + dx, ny = world.player.y + dy;
-              if (nx < 0 || ny < 0 || nx >= g.w || ny >= g.h) continue;
-              const v = marchaCache.dist[ny * g.w + nx];
-              if (v >= 0 && v < actual) { paso = [dx, dy]; break; }
+            if (actual === 0) marchaCache = null;
+            else {
+              for (const [dx, dy] of dirs) {
+                const nx = world.player.x + dx, ny = world.player.y + dy;
+                if (nx < 0 || ny < 0 || nx >= g.w || ny >= g.h) continue;
+                const v = marchaCache.dist[ny * g.w + nx];
+                if (v >= 0 && v < actual) { paso = [dx, dy]; break; }
+              }
             }
           }
           if (paso) Game.tryMove(paso[0], paso[1]);
