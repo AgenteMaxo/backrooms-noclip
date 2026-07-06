@@ -179,18 +179,41 @@
     } catch (e) {}
   }
 
+  // El mismo evento que apaga visualmente los fluorescentes produce el golpe
+  // seco del balasto. Se mantiene corto y sin frecuencias de alarma/estrobo.
+  function level0Flicker() {
+    try {
+      if (!ctx || muted) return;
+      ruido(0.055, 2800, 0.055, 'bandpass', 900);
+      setTimeout(() => ctx && !muted && tono(92, 0.08, 0.035, 'square', 76), 65);
+    } catch (e) {}
+  }
+
+  function level0Distant() {
+    try {
+      if (!ctx || muted) return;
+      tono(43 + Math.random() * 8, 0.65, 0.045, 'sine', 34);
+      setTimeout(() => ctx && !muted && ruido(0.18, 240, 0.035, 'lowpass', 75), 210 + Math.random() * 180);
+    } catch (e) {}
+  }
+
   // ---------- recetas de ambiente por nivel ----------
   // cada receta devuelve nodos; el gain común hace fade in/out
   const RECETAS = {
     // EL zumbido clásico de las Backrooms: senos suaves 120/240/100 Hz con
     // batido lento, respiración de amplitud y soplo agudo mínimo. Sin asperezas.
     hum_clasico(g, nodes) {
+      const hum = ctx.createGain();
+      hum.gain.value = 1;
+      hum.connect(g);
+      const osciladores = [];
       for (const [f, v] of [[120, 0.42], [240, 0.14], [100, 0.16], [360, 0.04]]) {
         const o = ctx.createOscillator();
         o.type = 'sine'; o.frequency.value = f + (Math.random() - 0.5) * 0.6; // batido
         const og = ctx.createGain(); og.gain.value = v;
-        o.connect(og).connect(g); o.start();
+        o.connect(og).connect(hum); o.start();
         nodes.push(o);
+        osciladores.push([o, f]);
       }
       const lfo = ctx.createOscillator(); lfo.frequency.value = 0.16;       // respiración
       const lg = ctx.createGain(); lg.gain.value = 0.055;
@@ -200,15 +223,29 @@
       n.buffer = noiseBuffer(2); n.loop = true;
       const nf = ctx.createBiquadFilter(); nf.type = 'highpass'; nf.frequency.value = 7500;
       const ng = ctx.createGain(); ng.gain.value = 0.012;
-      n.connect(nf).connect(ng).connect(g); n.start();
+      n.connect(nf).connect(ng).connect(hum); n.start();
       nodes.push(n);
-      // micro-corte de flicker ocasional
+      // El zumbido se deteriora con el viaje: se desafina, respira peor y a
+      // veces desaparece. El silencio crea contraste; no se limita a subir volumen.
       const flick = setInterval(() => {
         if (!ctx || muted) return;
-        if (Math.random() < 0.25) {
-          g.gain.setValueAtTime(g.gain.value * 0.4, ctx.currentTime);
-          g.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + 0.25);
+        const w = window.Game?.world;
+        const progreso = w?.level?.id === 'level-0' && w._caminataObjetivo
+          ? Math.max(0, Math.min(1, w.pasosNivel / w._caminataObjetivo)) : 0;
+        osciladores.forEach(([o, base], i) => {
+          const desvio = (i % 2 ? -1 : 1) * progreso * (0.004 + i * 0.0015);
+          o.frequency.setTargetAtTime(base * (1 + desvio), ctx.currentTime, 1.2);
+        });
+        if (Math.random() < 0.18 + progreso * 0.42) {
+          const ahora = ctx.currentTime;
+          const silencio = progreso > 0.72 && Math.random() < 0.45;
+          hum.gain.cancelScheduledValues(ahora);
+          hum.gain.setValueAtTime(Math.max(0.001, hum.gain.value), ahora);
+          hum.gain.exponentialRampToValueAtTime(silencio ? 0.015 : 0.28, ahora + 0.035);
+          hum.gain.exponentialRampToValueAtTime(1, ahora + (silencio ? 0.9 : 0.28));
+          level0Flicker();
         }
+        if (progreso > 0.25 && Math.random() < 0.12 + progreso * 0.16) level0Distant();
       }, 4000);
       nodes.push({ stop: () => clearInterval(flick) });
     },
@@ -415,7 +452,8 @@
     g.connect(ambBus);
     const receta = RECETAS[levelDef.sonido] ?? RECETAS[RECETA_BIOMA[levelDef.bioma]] ?? RECETAS.hum_suave;
     receta(g, nodes);
-    padGenerativo(nodes, levelDef); // música propia de cada nivel
+    // En Level 0 la música anticipa demasiado; solo quedan arquitectura y hum.
+    if (levelDef.id !== 'level-0') padGenerativo(nodes, levelDef);
     ambientStop = () => {
       try { g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6); } catch (e) {}
       setTimeout(() => nodes.forEach((x) => { try { x.stop(); } catch (e) {} }), 700);
@@ -537,6 +575,7 @@
 
   window.Sfx = {
     unlock, play, cue, ambient, stopAmbient, toggleMute, setVolume, idle,
+    level0Flicker,
     get muted() { return muted; },
     get volumen() { return vol; },
     get volumenFx() { return volFx; },

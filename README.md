@@ -41,7 +41,9 @@ game/           El juego (HTML/JS/Canvas puro, cero dependencias)
 node pipeline/download.js    # re-descargar la wiki (incremental)
 node pipeline/parse.js       # wikitext -> data/parsed/*.json
 node pipeline/parse.test.js  # pruebas del parser (sin dependencias)
-node pipeline/select-pilot.js# elegir niveles del piloto (BFS desde Level 0)
+node pipeline/level0-audit.js            # 100 semillas fijas (regresión reproducible)
+node pipeline/level0-audit.js --random   # muestra nueva; imprime cómo reproducirla
+node pipeline/select-pilot.js # elegir niveles del piloto (BFS desde Level 0)
 node pipeline/make-map.js    # regenerar data/game/mapa-piloto.html
 node pipeline/build-data.js  # OBLIGATORIO tras editar data/game/*.json -> game/js/data.js
 ```

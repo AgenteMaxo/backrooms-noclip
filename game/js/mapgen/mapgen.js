@@ -46,11 +46,39 @@
         g.t[y * w + x] = small.t[((y / 3) | 0) * hw + ((x / 3) | 0)];
     // abre salas y atajos para que respire
     const salas = opts.salas ?? 8;
-    for (let i = 0; i < salas; i++) {
-      const rw = rng.int(3, 6), rh = rng.int(3, 5);
+    const minW = opts.salaMinW ?? 3, maxW = opts.salaMaxW ?? 6;
+    const minH = opts.salaMinH ?? 3, maxH = opts.salaMaxH ?? 5;
+    const separacion = opts.separacionSalas ?? 0;
+    const rects = [];
+    for (let creadas = 0, intentos = 0; creadas < salas && intentos < salas * 16; intentos++) {
+      const rw = rng.int(minW, maxW), rh = rng.int(minH, maxH);
       const rx = rng.int(1, w - rw - 2), ry = rng.int(1, h - rh - 2);
-      for (let y = ry; y < ry + rh; y++)
-        for (let x = rx; x < rx + rw; x++) set(g, x, y, T.SUELO);
+      const piezas = [{ x: rx, y: ry, w: rw, h: rh }];
+      // Level 0: algunas salas reciben un anexo desplazado. Solo se ABRE suelo,
+      // nunca se cierran corredores existentes, por lo que no rompe conectividad.
+      if (opts.irregulares && rng.chance(0.55)) {
+        const aw = rng.int(2, Math.max(2, Math.floor(rw * 0.7)));
+        const ah = rng.int(2, Math.max(2, Math.floor(rh * 0.7)));
+        const ax = Math.max(1, Math.min(w - aw - 2,
+          rx + rng.pick([-Math.floor(aw * 0.6), rw - Math.floor(aw * 0.4)])));
+        const ay = Math.max(1, Math.min(h - ah - 2,
+          ry + rng.int(0, Math.max(0, rh - ah))));
+        piezas.push({ x: ax, y: ay, w: aw, h: ah });
+      }
+      const x0 = Math.min(...piezas.map((r) => r.x));
+      const y0 = Math.min(...piezas.map((r) => r.y));
+      const x1 = Math.max(...piezas.map((r) => r.x + r.w));
+      const y1 = Math.max(...piezas.map((r) => r.y + r.h));
+      const union = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+      const solapa = rects.some((r) =>
+        union.x < r.x + r.w + separacion && union.x + union.w + separacion > r.x &&
+        union.y < r.y + r.h + separacion && union.y + union.h + separacion > r.y);
+      if (solapa) continue;
+      for (const p of piezas)
+        for (let y = p.y; y < p.y + p.h; y++)
+          for (let x = p.x; x < p.x + p.w; x++) set(g, x, y, T.SUELO);
+      rects.push(union);
+      creadas++;
     }
     for (let i = 0; i < (opts.atajos ?? w); i++) {
       const x = rng.int(2, w - 3), y = rng.int(2, h - 3);
@@ -350,7 +378,14 @@
   }
 
   const GENS = {
-    pasillos: (w, h, rng) => genPasillos(w, h, rng),
+    pasillos: (w, h, rng, lv) => lv.id === 'level-0'
+      ? genPasillos(w, h, rng, {
+          salas: 16, salaMinW: 4, salaMaxW: 14,
+          salaMinH: 3, salaMaxH: 10, irregulares: true,
+          separacionSalas: 3,
+          atajos: Math.floor(w * 1.35),
+        })
+      : genPasillos(w, h, rng),
     garaje: (w, h, rng) => genGaraje(w, h, rng),
     tuneles: (w, h, rng) => genTuneles(w, h, rng, { ancho: true }),
     hospital: (w, h, rng) => genOficinas(w, h, rng),
@@ -367,9 +402,19 @@
   function mecanicaDe(s) {
     if (s.mecanica) return s.mecanica;
     const t = (s.texto || '').toLowerCase();
+    if (/(romp|quebr|abre)[^.]*(suelo|piso)|suelo (falso|débil|agrietado)/.test(t)) return 'romper_suelo';
     if (/(romp|derrib|golpea|atraviesa|agriet)[^.]*(pared|muro)|pared (falsa|débil|agrietada)/.test(t)) return 'romper';
     if (/caminar sin rumbo|camina[r]? (durante|hasta|lejos)|andar (durante|hasta|sin)|deambul|vagar? (por|durante|hasta)|durante horas|durante días|kilómetros/.test(t)) return 'caminata';
     return null;
+  }
+
+  // Las caminatas largas son reproducibles por semilla, pero no idénticas en
+  // cada partida. Solo cuentan desplazamientos reales, nunca turnos en espera.
+  function walkingGoal(levelDef, runSeed, entry = 1, attempt = 0) {
+    const range = levelDef.pasosCaminata || [800, 1200];
+    const a = Math.max(1, Math.floor(range[0]));
+    const b = Math.max(a, Math.floor(range[1]));
+    return RNG.create(`${runSeed}::${levelDef.id}::caminata::${entry}::${attempt}`).int(a, b);
   }
 
   // ---------- generación completa de un nivel ----------
@@ -378,7 +423,9 @@
     // v20: los niveles con varias salidas CRECEN — que te sientas perdido de
     // verdad y cada salida quede en su propio rincón del nivel
     const nSal = (levelDef.salidas || []).length;
-    const esc = nSal >= 5 ? 1.45 : nSal >= 3 ? 1.25 : 1;
+    // Un nivel infinito conserva el tamaño declarado: es una VENTANA móvil,
+    // no un único mapa gigante. Level 0 permanece en 150×150.
+    const esc = levelDef.infinito ? 1 : nSal >= 5 ? 1.45 : nSal >= 3 ? 1.25 : 1;
     if (esc > 1) {
       w = Math.min(190, Math.round(w * esc));
       h = Math.min(190, Math.round(h * esc));
@@ -404,9 +451,12 @@
     const exits = [];
     const caminatas = []; // salidas SIN casilla: se cruzan caminando mucho
     const usable = [];
-    for (const s of levelDef.salidas || []) {
-      if (s.tipo === 'void') continue;
-      s._mec = mecanicaDe(s);
+    for (const source of levelDef.salidas || []) {
+      if (source.tipo === 'void') continue;
+      // Cada aparición tiene estado propio: romper una grieta no abre todas
+      // las copias de esa salida en un nivel infinito.
+      const s = { ...source, _mec: mecanicaDe(source), _abierta: false };
+      if (s.prob !== undefined && !rng.chance(s.prob)) continue;
       if (s._mec === 'caminata') { caminatas.push(s); continue; }
       usable.push(s);
     }
@@ -513,5 +563,5 @@
     return { w, h, grid: g, spawn, exits, items, entitySpawns, props, dist, caminatas };
   }
 
-  window.MapGen = { T, generate, walkable, at, bfsDist };
+  window.MapGen = { T, generate, walkable, at, bfsDist, mecanicaDe, walkingGoal };
 })();

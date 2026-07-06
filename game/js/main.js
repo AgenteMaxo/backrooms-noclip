@@ -294,6 +294,7 @@
     }
     setTimeout(() => document.getElementById('btn-enter')?.click(), 30);
     let acciones = 0;
+    let marchaCache = null;
     const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
     const iv = setInterval(() => {
       try {
@@ -311,6 +312,10 @@
             nivel: world.level?.id,
             visitados: world.visited,
             turnoTotal: world.turnTotal,
+            pasosNivel: world.pasosNivel,
+            objetivoCaminata: world._caminataObjetivo,
+            posicion: [world.player?.x, world.player?.y],
+            mapa: world.map ? [world.map.grid.w, world.map.grid.h] : null,
             salud: world.player?.salud,
             cordura: world.player?.cordura,
             inv: world.player?.inv,
@@ -354,10 +359,52 @@
           return;
         }
         if (world.busy) return; // dado en marcha
-        // marcha forzada hacia el este serpenteando (prueba de niveles infinitos)
+        // Prueba dirigida de una expansión: coloca al jugador en la banda este
+        // y avanza un turno. Solo se activa explícitamente con ?shift=1.
+        if (params.get('shift') && !window.__shiftForzado) {
+          const g = world.map.grid;
+          let pos = null;
+          for (let x = g.w - 2; x >= g.w - 20 && !pos; x--)
+            for (let y = 1; y < g.h - 1; y++)
+              if (MapGen.walkable(MapGen.at(g, x, y))) { pos = [x, y]; break; }
+          if (pos) {
+            world.player.x = world.player.rx = pos[0];
+            world.player.y = world.player.ry = pos[1];
+            window.__shiftForzado = true;
+            Game.wait();
+            acciones++;
+            return;
+          }
+        }
+        // Marcha dirigida hacia el extremo este: fuerza cambios de ventana en
+        // niveles infinitos sin desperdiciar cientos de intentos contra muros.
         if (params.get('marcha')) {
-          const r = Math.random();
-          Game.tryMove(r < 0.5 ? 1 : 0, r < 0.5 ? 0 : (r < 0.75 ? -1 : 1));
+          const g = world.map.grid;
+          const version = `${world.ventanaN || 0}:${world.mapaVersion || 0}`;
+          if (!marchaCache || marchaCache.version !== version) {
+            marchaCache = null;
+            buscar: for (let tx = g.w - 2; tx >= 1; tx--)
+              for (let ty = 1; ty < g.h - 1; ty++) {
+                if (!MapGen.walkable(MapGen.at(g, tx, ty))) continue;
+                const dist = MapGen.bfsDist(g, tx, ty);
+                if (dist[world.player.y * g.w + world.player.x] >= 0) {
+                  marchaCache = { version, dist };
+                  break buscar;
+                }
+              }
+          }
+          let paso = null;
+          if (marchaCache) {
+            const actual = marchaCache.dist[world.player.y * g.w + world.player.x];
+            for (const [dx, dy] of dirs) {
+              const nx = world.player.x + dx, ny = world.player.y + dy;
+              if (nx < 0 || ny < 0 || nx >= g.w || ny >= g.h) continue;
+              const v = marchaCache.dist[ny * g.w + nx];
+              if (v >= 0 && v < actual) { paso = [dx, dy]; break; }
+            }
+          }
+          if (paso) Game.tryMove(paso[0], paso[1]);
+          else { marchaCache = null; Game.tryMove(1, 0); }
           acciones++;
           return;
         }

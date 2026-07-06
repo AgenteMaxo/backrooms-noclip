@@ -254,6 +254,24 @@
     const col = ex.def.tipo === 'escape' ? '#6ae86a' : ex.def.tipo === 'sellada' ? '#666666' : '#e8c95a';
     if (ex.def.ritual) { drawRitual(ex, x, y, t, col, pulse); return; }
 
+    // Suelo falso todavía cerrado: grietas sobre la moqueta, no un agujero ya abierto.
+    if (ex.def._mec === 'romper_suelo' && !ex.def._abierta) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(28,20,10,0.9)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x + 7, y + 25); ctx.lineTo(x + 18, y + 20); ctx.lineTo(x + 24, y + 27);
+      ctx.lineTo(x + 33, y + 15); ctx.lineTo(x + 41, y + 20);
+      ctx.moveTo(x + 24, y + 27); ctx.lineTo(x + 29, y + 37);
+      ctx.moveTo(x + 18, y + 20); ctx.lineTo(x + 15, y + 11);
+      ctx.stroke();
+      ctx.globalAlpha = 0.18 + pulse * 0.12;
+      ctx.fillStyle = '#fff1b0';
+      ctx.beginPath(); ctx.arc(cx, y + 25, 13, 0, 7); ctx.fill();
+      ctx.restore();
+      return;
+    }
+
     // pared AGRIETADA (v20): la salida hay que romperla; abierta = hueco de luz
     if (ex.def._mec === 'romper') {
       ctx.save();

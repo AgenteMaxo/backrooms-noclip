@@ -14,6 +14,7 @@
     player: null,
     turn: 0,
     turnTotal: 0,
+    pasosNivel: 0,
     explored: null,
     light: null,
     dmap: null,
@@ -28,6 +29,7 @@
     luzBloqueada: false,
     extraWorldStep: false,
     moving: false,
+    tutorial: {},
     ui: null, // inyectado por ui.js
   };
 
@@ -156,6 +158,13 @@
 
   // ---------- utilidades de estado ----------
   world.log = (msg, cls) => world.ui.log(msg, cls);
+
+  function tutorialHint(clave, texto, registrar = false) {
+    if (world.level?.id !== 'level-0' || (world.tutorial || (world.tutorial = {}))[clave]) return;
+    world.tutorial[clave] = true;
+    if (window.Effects) Effects.bubble(world.player.x, world.player.y, texto, world.player);
+    if (registrar) world.log(texto, 'good');
+  }
 
   world.visionActual = function () {
     let v = world.level.vision + 2 + world.visionMod;
@@ -354,6 +363,7 @@
     world.prevStack = [];
     world.entryCount = {};
     world.savedLevels = {};   // niveles visitados, conservados TAL CUAL (v15)
+    world.tutorial = {};
     world.turnTotal = 0;
     world.over = false;
     // run NUEVA de verdad: si venías de morir, el nivel anterior sigue en
@@ -393,6 +403,8 @@
         explored: world.explored, light: world.light,
         ventanaN: world.ventanaN || 0, mapaVersion: world.mapaVersion || 0,
         entryN: world.entryCount[world.level.id] || 1,
+        pasosNivel: world.pasosNivel || 0,
+        caminataObjetivo: world._caminataObjetivo,
       };
     }
     world._preVentana = null;
@@ -403,7 +415,6 @@
     world.luzBloqueada = false;
     world.escondido = null;
     world.ruido = null;
-    world._caminataT = 1200; // turnos de caminata antes de que el nivel "ceda"
     if (!world.visited.includes(id)) world.visited.push(id);
     Profiles.registrarEntrada(id);
 
@@ -460,6 +471,11 @@
     }
     world.player.rx = world.player.x;
     world.player.ry = world.player.y;
+    world.pasosNivel = snap?.pasosNivel || 0;
+    world._caminataObjetivo = snap?.caminataObjetivo || MapGen.walkingGoal(
+      def, world.runSeed, world.entryCount[id] || 1, 0
+    );
+    world._caminataAvisos = {};
     // no abras el modal por APARECER encima de la salida (solo al volver a pisarla)
     const exAqui = world.map.exits.find((e) => e.x === world.player.x && e.y === world.player.y);
     world._ignoraExit = exAqui ? { x: exAqui.x, y: exAqui.y } : null;
@@ -469,12 +485,18 @@
     recomputeDmap();
     save();
 
-    world.ui.showLevelCard(def, () => {
+    const nivelListo = () => {
       world.ui.updateHUD();
       world.log(`— ${def.nombre} —`, 'event');
       if (via) world.log(via, 'event');
+      if (def.id === 'level-0' && world.turnTotal === 0)
+        tutorialHint('inicio', 'W/S para caminar. A/D para girar. Cada paso hace avanzar al mundo.', true);
       if (window.Sfx) Sfx.ambient(def); // arranca con el clic de ENTRAR (gesto válido)
-    });
+    };
+    // Las salidas por caminata funden un nivel con el siguiente: no interrumpen
+    // la marcha con tarjeta ni decisión. Las demás conservan su presentación.
+    if (entrada?.sinTarjeta) nivelListo();
+    else world.ui.showLevelCard(def, nivelListo);
   }
 
   // ---------- niveles infinitos: ventana deslizante ----------
@@ -527,6 +549,10 @@
     const p = world.player;
     p.x -= shiftX; p.y -= shiftY; p.rx = p.x; p.ry = p.y;
     const dentro = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+    const esNueva = (x, y) => {
+      const ox = x + shiftX, oy = y + shiftY;
+      return ox < 0 || oy < 0 || ox >= W || oy >= H;
+    };
     for (const e of world.entities) {
       e.x -= shiftX; e.y -= shiftY;
       e.rx = e.x; e.ry = e.y;
@@ -536,11 +562,21 @@
       it.x -= shiftX; it.y -= shiftY;
       return dentro(it.x, it.y) && !it.taken;
     });
+    let itemsNuevos = 0;
+    for (const it of nuevo.items || []) {
+      if (!esNueva(it.x, it.y)) continue;
+      world.map.items.push({ ...it });
+      itemsNuevos++;
+    }
     world.map.props = (world.map.props || []).filter((pr) => {
       pr.x -= shiftX; pr.y -= shiftY;
       return dentro(pr.x, pr.y);
     });
-    // salidas: se desplazan; las que caen fuera se recolocan LEJOS en la zona nueva
+    for (const pr of nuevo.props || [])
+      if (esNueva(pr.x, pr.y)) world.map.props.push({ ...pr });
+
+    // Las salidas del solape permanecen en su sitio. Las que quedaron atrás se
+    // descartan y la franja fresca aporta nuevas apariciones (incluidas raras).
     const dist = MapGen.bfsDist(ng, p.x, p.y);
     const lejanos = [];
     for (let y = 2; y < H - 2; y++)
@@ -549,17 +585,20 @@
         if (d > 25) lejanos.push([x, y, d]);
       }
     lejanos.sort((a, b) => b[2] - a[2]);
-    let li = 0;
-    for (const ex of world.map.exits) {
+    world.map.exits = world.map.exits.filter((ex) => {
       ex.x -= shiftX; ex.y -= shiftY;
-      if (!dentro(ex.x, ex.y) || dist[ex.y * W + ex.x] < 0) {
-        const spot = lejanos[(li++ * 37) % Math.max(1, lejanos.length)];
-        if (spot) { ex.x = spot[0]; ex.y = spot[1]; }
-      }
+      return dentro(ex.x, ex.y) && dist[ex.y * W + ex.x] >= 0;
+    });
+    const ocupadas = new Set(world.map.exits.map((ex) => ex.y * W + ex.x));
+    for (const ex of nuevo.exits || []) {
+      const key = ex.y * W + ex.x;
+      if (!esNueva(ex.x, ex.y) || dist[key] < 0 || ocupadas.has(key)) continue;
+      world.map.exits.push({ x: ex.x, y: ex.y, def: { ...ex.def } });
+      ocupadas.add(key);
     }
-    // la zona nueva trae algo de agua de almendras
-    if (lejanos.length) {
-      const spot = lejanos[(li * 53) % lejanos.length];
+    // Garantía de supervivencia: si la franja no trajo objetos, deja una botella.
+    if (!itemsNuevos && lejanos.length) {
+      const spot = lejanos[(world.ventanaN * 53) % lejanos.length];
       world.map.items.push({ x: spot[0], y: spot[1], id: 'agua_almendras' });
     }
 
@@ -629,6 +668,7 @@
           world.player.inv.push(it.id);
           Profiles.registrarDescubierto('objetos', it.id);
           world.log(`Recoges: ${world.data.objects[it.id].nombre}.`, 'good');
+          tutorialHint('mochila', 'B abre la mochila. Arrastra objetos a las manos y usa Q/E.', true);
           if (window.Effects) {
             Effects.flash(it.x, it.y, world.data.objects[it.id].color);
             Effects.number(it.x, it.y, world.data.objects[it.id].nombre, '#a8d8a0');
@@ -646,34 +686,26 @@
     const ex = world.map.exits.find((e) => e.x === world.player.x && e.y === world.player.y);
     if (ex && !world._ignoraExit) {
       // pared agrietada (v20): primero hay que ABRIRLA (ESPACIO)
-      if (ex.def._mec === 'romper' && !ex.def._abierta) {
+      if ((ex.def._mec === 'romper' || ex.def._mec === 'romper_suelo') && !ex.def._abierta) {
         if (!ex._avisado) {
           ex._avisado = true;
-          world.log('La pared de aquí está AGRIETADA: suena hueca. Pulsa ESPACIO para intentar abrirla.', 'good');
+          world.log(ex.def._mec === 'romper_suelo'
+            ? 'La moqueta está hundida y el suelo CRUJE. Pulsa ESPACIO para intentar romperlo.'
+            : 'La pared de aquí está AGRIETADA: suena hueca. Pulsa ESPACIO para intentar abrirla.', 'good');
         }
       } else world.ui.showExitModal(ex.def);
     }
 
-    // salidas por CAMINATA (v20): algunos caminos de la wiki se cruzan ANDANDO
-    // («caminar sin rumbo hasta que…») — tras muchos turnos, el nivel cede
-    if ((world.map.caminatas || []).length && world.turn >= (world._caminataT || 1200) && !world.busy) {
+    // Salidas por CAMINATA: solo cuentan movimientos WASD que cambiaron de
+    // casilla. Esperar, combatir o chocar contra una pared no acercan la salida.
+    if ((world.map.caminatas || []).length &&
+        world.pasosNivel >= world._caminataObjetivo && !world.busy) {
       const defC = world.map.caminatas[0];
-      world._caminataT = world.turn + 200; // si lo rechazas, volverá a asomar
-      world.ui.showChoice(
-        'Tus pasos te llevan',
-        `Llevas una eternidad caminando y el paisaje empieza a CEDER. ${defC.texto}. Un paso más y no habrá vuelta al aquí-ahora.`,
-        [
-          {
-            label: 'SEGUIR ADELANTE',
-            cb: () => {
-              const i = world.map.caminatas.indexOf(defC);
-              if (i >= 0) world.map.caminatas.splice(i, 1);
-              crossExit(defC);
-            },
-          },
-          { label: 'Aún no', cb: () => {} },
-        ]
-      );
+      const i = world.map.caminatas.indexOf(defC);
+      if (i >= 0) world.map.caminatas.splice(i, 1);
+      world.log(`Tras ${world.pasosNivel} pasos, los pasillos terminan de transformarse.`, 'event');
+      crossExit(defC);
+      return; // enterLevel ya recalcula, guarda y presenta el nuevo estado
     }
 
     // aviso al pisar un contenedor sin registrar
@@ -782,11 +814,13 @@
     if (reglas.includes('controles_invertidos')) { dx = -dx; dy = -dy; }
     // orientación del sprite (en 3ª persona, retroceder no gira al personaje)
     if (!opts || !opts.keepDir) {
-      if (dy > 0) world.player.dir = 'down';
-      else if (dy < 0) world.player.dir = 'up';
-      else if (dx !== 0) { world.player.dir = 'side'; world.player.flip = dx < 0; }
+      if (dy > 0) { world.player.dir = 'down'; world.player.rot = 2; }
+      else if (dy < 0) { world.player.dir = 'up'; world.player.rot = 0; }
+      else if (dx > 0) { world.player.dir = 'side'; world.player.flip = false; world.player.rot = 1; }
+      else if (dx < 0) { world.player.dir = 'side'; world.player.flip = true; world.player.rot = 3; }
     }
     const pasos = reglas.includes('gravedad_baja') ? 2 : 1;
+    const x0 = world.player.x, y0 = world.player.y;
 
     for (let i = 0; i < pasos; i++) {
       const nx = world.player.x + dx, ny = world.player.y + dy;
@@ -828,6 +862,21 @@
       world.player.x = nx;
       world.player.y = ny;
       if (window.Sfx) Sfx.play('paso', world.level.estilo?.suelo);
+    }
+    if (world.player.x !== x0 || world.player.y !== y0) {
+      world.pasosNivel++;
+      tutorialHint('interaccion', 'ESPACIO interactúa con grietas, salidas y contenedores. X espera un turno.', true);
+      if ((world.map.caminatas || []).length) {
+        const f = world.pasosNivel / Math.max(1, world._caminataObjetivo);
+        const A = world._caminataAvisos || (world._caminataAvisos = {});
+        const avisa = (key, limite, texto) => {
+          if (f >= limite && !A[key]) { A[key] = true; if (window.Effects) Effects.bubble(world.player.x, world.player.y, texto, world.player); }
+        };
+        avisa('lejos1', 0.3, 'He perdido por completo el punto de partida.');
+        avisa('lejos2', 0.65, 'El zumbido ya no suena igual… llevo demasiado caminando.');
+        avisa('lejos3', 0.82, 'El amarillo se apaga. Bajo la moqueta asoma hormigón.');
+        avisa('lejos4', 0.94, 'Hay columnas al final del pasillo. Ya no puedo distinguir dónde cambia el nivel.');
+      }
     }
     worldStep();
   }
@@ -892,6 +941,7 @@
     const ex = world.map.exits.find((e) => e.x === world.player.x && e.y === world.player.y);
     if (ex) {
       if (ex.def._mec === 'romper' && !ex.def._abierta) { intentarRomper(ex); return; }
+      if (ex.def._mec === 'romper_suelo' && !ex.def._abierta) { intentarRomperSuelo(ex); return; }
       world.ui.showExitModal(ex.def);
       return;
     }
@@ -1299,6 +1349,38 @@
     );
   }
 
+  // Suelo falso/agrietado: hay que abrir físicamente el hueco antes de caer.
+  function intentarRomperSuelo(ex) {
+    const herramienta = world.enMano('tuberia');
+    world.ui.showChoice(
+      'El suelo suena hueco',
+      `«${ex.def.texto}». Bajo la moqueta hay tablas vencidas y una corriente de aire imposible.`,
+      [
+        {
+          label: herramienta ? 'GOLPEAR con la tubería' : 'PISOTEAR el suelo',
+          cb: () => {
+            world.hacerRuido(world.player.x, world.player.y, 12);
+            world.rollDice(herramienta ? 'Golpeas las tablas con la tubería…' : 'Descargas todo tu peso sobre las tablas…', (d) => {
+              const umbral = herramienta ? 7 : 11;
+              if (d >= umbral) {
+                ex.def._abierta = true;
+                world.mapaVersion = (world.mapaVersion || 0) + 1;
+                world.log(`Dado: ${d}. El suelo se PARTE. Debajo solo hay oscuridad.`, 'good');
+                if (window.Sfx) Sfx.play('derrumbe');
+                if (window.Effects) { Effects.doShake(6, 260); Effects.flash(ex.x, ex.y, '#d9c66e'); }
+              } else {
+                if (!herramienta) world.hurt(1, 'el golpe contra el suelo', true);
+                world.log(`Dado: ${d}. Las tablas crujen, pero todavía aguantan.`, 'event');
+              }
+              worldStep();
+            });
+          },
+        },
+        { label: 'Apartarse', cb: () => {} },
+      ]
+    );
+  }
+
   // ---------- equipamiento vestible (v20): cara / cuerpo / pies ----------
   function ponerEquipo(slot) {
     const id = world.player.inv[slot];
@@ -1388,7 +1470,9 @@
     }
 
     const go = () => {
-      if (window.Sfx) Sfx.play('puerta');
+      const caminata = def._mec === 'caminata';
+      const continua = caminata && world.level.id === 'level-0';
+      if (window.Sfx && !caminata) Sfx.play('puerta');
       let destino = def.destino;
       if (destino === '*aleatoria') {
         const ids = Object.keys(world.data.levels).filter((i) => i !== world.level.id);
@@ -1400,7 +1484,10 @@
       // cruzar por donde nadie debería te sintoniza con el lugar
       if (tipo === 'void' || tipo === 'arriesgada') world.tune(5);
       world.prevStack.push(world.level.id);
-      enterLevel(destino, def.texto, { sinRetorno: esSinRetorno(def) });
+      enterLevel(destino, def.texto, {
+        sinRetorno: caminata || esSinRetorno(def),
+        sinTarjeta: continua,
+      });
     };
 
     if (tipo === 'arriesgada' && def.riesgoVoid > 0) {
@@ -1469,6 +1556,9 @@
         prevStack: world.prevStack,
         entryCount: world.entryCount,
         turnTotal: world.turnTotal,
+        pasosNivel: world.pasosNivel,
+        caminataObjetivo: world._caminataObjetivo,
+        tutorial: world.tutorial,
       }));
     } catch (e) { /* almacenamiento no disponible */ }
   }
@@ -1499,9 +1589,19 @@
     // repite la entrada al nivel guardado sin duplicar el diario
     world.entryCount[s.levelId] = Math.max(0, (world.entryCount[s.levelId] || 1) - 1);
     world.turnTotal = s.turnTotal;
+    world.tutorial = s.tutorial || (s.turnTotal > 0
+      ? { inicio: true, interaccion: true, mochila: true }
+      : {});
     world.over = false;
     world.level = null;
     enterLevel(s.levelId, 'Retomas la marcha donde lo dejaste.');
+    world.pasosNivel = Math.max(0, s.pasosNivel || 0);
+    if (s.caminataObjetivo) world._caminataObjetivo = s.caminataObjetivo;
+    const f = world.pasosNivel / Math.max(1, world._caminataObjetivo);
+    world._caminataAvisos = {
+      lejos1: f >= 0.3, lejos2: f >= 0.65, lejos3: f >= 0.82, lejos4: f >= 0.94,
+    };
+    save();
   }
 
   window.Game = {

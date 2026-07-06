@@ -22,6 +22,7 @@
   const ROT_VEC = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // norte, este, sur, oeste
 
   let renderer, scene, camera, amb, plight, spot, dlight;
+  let ceilingLights = [];
   let composer = null;           // postprocesado (bloom + gamma); null => render directo
   let fogBase = 0.08;
   let glCanvas, overlay, octx, W, H;
@@ -36,8 +37,28 @@
   let texCache = new Map();      // clave -> THREE.Texture
   let grain = null;
   let camBobT = 0;
-  let panelMat = null;           // material de los paneles fluorescentes del techo
-  let flkHasta = 0, flkNext = 0, flkOn = true; // parpadeo raro y ocasional (v16)
+  let panelMats = [];            // grupos independientes de fluorescentes
+  let panelPositions = [];       // posición y grupo de cada fluorescente
+  let transitionMats = null;     // materiales que mutan al acercarse Level 1
+  let flkHasta = 0, flkNext = 0, flkOn = true, flkGrupo = -1;
+  const REDUCE_FLICKER = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
+  function level0Phase(world) {
+    if (world.level?.id !== 'level-0' || !world._caminataObjetivo) return 0;
+    // El cambio empieza despacio al 72 % y ocupa el tramo final de la marcha.
+    return clamp01((world.pasosNivel / world._caminataObjetivo - 0.72) / 0.28);
+  }
+
+  function seededUnit(seed) {
+    let h = 2166136261;
+    for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return (h >>> 0) / 4294967296;
+  }
+
+  function panelGroup(seed, x, y, total) {
+    return Math.floor(seededUnit(`${seed}:${x.toFixed(2)}:${y.toFixed(2)}`) * total);
+  }
 
   function tex(canvas, key) {
     if (key && texCache.has(key)) return texCache.get(key);
@@ -90,6 +111,16 @@
     dlight = new THREE.DirectionalLight(0xfff2dc, 0.35);
     dlight.position.set(0.25, 1, 0.15);
     scene.add(dlight);
+    // Un pequeño pool sigue a los fluorescentes más cercanos. Evita crear una
+    // PointLight por panel en un mapa de 150×150 y conserva luz localizada real.
+    ceilingLights = Array.from({ length: 4 }, (_, i) => {
+      const l = new THREE.PointLight(0xffe7aa, 0, 5.8, 2);
+      l.castShadow = false;
+      l.shadow.mapSize.set(256, 256);
+      l.shadow.bias = -0.012;
+      scene.add(l);
+      return l;
+    });
     // foco de la linterna (cono real; se enciende con F)
     spot = new THREE.SpotLight(0xfff0d0, 0, 11, 0.5, 0.45, 1.2);
     scene.add(spot, spot.target);
@@ -162,6 +193,14 @@
       x.fillStyle = '#2a2e34'; x.font = 'bold 7px monospace'; x.textAlign = 'center';
       x.fillText('ESCAPE', w / 2, h - 6);
     }),
+    enchufe: () => lienzo(16, 20, (x, w, h) => {
+      x.fillStyle = '#b9ae78'; x.fillRect(1, 1, w - 2, h - 2);
+      x.strokeStyle = '#756b45'; x.lineWidth = 1; x.strokeRect(1.5, 1.5, w - 3, h - 3);
+      x.fillStyle = '#393522';
+      x.fillRect(5, 6, 2, 5); x.fillRect(9, 6, 2, 5);
+      x.fillStyle = '#6e6542'; x.fillRect(7, 14, 2, 2);
+      x.fillStyle = '#d7cc92'; x.fillRect(3, 3, w - 6, 1);
+    }),
     edificio: () => lienzo(44, 64, (x, w, h) => {
       x.fillStyle = '#38404c'; x.fillRect(0, 0, w, h);
       x.fillStyle = '#6ae86a'; x.globalAlpha = 0.8;
@@ -178,6 +217,16 @@
       x.globalAlpha = 1;
       x.fillStyle = '#5a5044';                                          // bisagras
       x.fillRect(8, 2, 8, 4); x.fillRect(w - 16, 2, 8, 4);
+    }),
+    sueloGrieta: () => lienzo(48, 48, (x, w, h) => {
+      x.clearRect(0, 0, w, h);
+      x.strokeStyle = 'rgba(24,17,8,0.95)'; x.lineWidth = 3;
+      x.beginPath();
+      x.moveTo(3, 26); x.lineTo(16, 20); x.lineTo(24, 28);
+      x.lineTo(34, 13); x.lineTo(45, 20);
+      x.moveTo(24, 28); x.lineTo(30, 44);
+      x.moveTo(16, 20); x.lineTo(12, 6);
+      x.stroke();
     }),
     escalera: (col) => lienzo(48, 48, (x, w, h) => {
       x.fillStyle = '#0a0806'; x.fillRect(0, 0, w, h);
@@ -380,7 +429,9 @@
     const grupo = new THREE.Group();
     if (out) out.parcial = grupo; // para poder desechar una construcción abortada
     const solidos = [];
-    let panelMatNuevo = null;
+    let panelMatsNuevo = [];
+    const panelPositionsNuevo = [];
+    const transMats = {};
 
     // --- SUELO CONTINUO: una sola textura seamless repetida con UV de mundo ---
     const floorTex = tex(tiles.sueloSeam || tiles.suelo[0], 'suelo-seam');
@@ -402,6 +453,7 @@
       return m;
     };
     const matSuelo = new THREE.MeshLambertMaterial({ map: floorTex });
+    transMats.floor = matSuelo;
     let floorPos = [], floorUv = [], floorIdx = [], floorNor = [];
     const flushSuelo = () => {
       if (!floorPos.length) return;
@@ -456,7 +508,14 @@
         caraSolo.width = 48; caraSolo.height = 48;
         caraSolo.getContext('2d').drawImage(tiles.caraFull[1], 0, Tiles.RF, 48, Tiles.FH, 0, 0, 48, 48);
       }
-      const matLado = new THREE.MeshLambertMaterial({ map: tex(caraSolo, 'muro-lado') });
+      const matLado = new THREE.MeshLambertMaterial({
+        map: tex(caraSolo, 'muro-lado'),
+        // Una emisión mínima evita la banda negra de autosombreado junto al
+        // techo sin convertir el papel en una superficie luminosa.
+        emissive: world.level.id === 'level-0' ? pal.pared : 0x000000,
+        emissiveIntensity: world.level.id === 'level-0' ? 0.075 : 0,
+      });
+      transMats.wall = matLado;
       const matTecho = new THREE.MeshLambertMaterial({ map: tex(tiles.techo, 'muro-techo') });
       let sidePos = [], sideUv = [], sideIdx = [], sideNor = [];
       let topPos = [], topUv = [], topIdx = [], topNor = [];
@@ -494,22 +553,62 @@
       flushMuros();
       yield;
 
+      // Enchufes dispersos del Level 0. Son detalle ambiental pixel-art, no
+      // botín ni interacción; su distribución es estable para cada semilla.
+      if (world.level.id === 'level-0') {
+        const eTex = pintado('p-enchufe-level0', PINTORES.enchufe);
+        const eMat = new THREE.MeshLambertMaterial({ map: eTex });
+        const eGeo = new THREE.PlaneGeometry(0.18, 0.22);
+        const tieneSalida = (x, y) => world.map.exits.some((e) => e.x === x && e.y === y);
+        const abierto = (x, y) => {
+          const v = MapGen.at(g, x, y);
+          return v !== T.VACIO && v !== T.PARED;
+        };
+        const caras = [
+          { dx: 0, dy: 1, tag: 's', rot: 0,
+            pos: (x, y) => [x + 0.5, 0.34, y + 1.006] },
+          { dx: 0, dy: -1, tag: 'n', rot: Math.PI,
+            pos: (x, y) => [x + 0.5, 0.34, y - 0.006] },
+          { dx: -1, dy: 0, tag: 'o', rot: -Math.PI / 2,
+            pos: (x, y) => [x - 0.006, 0.34, y + 0.5] },
+          { dx: 1, dy: 0, tag: 'e', rot: Math.PI / 2,
+            pos: (x, y) => [x + 1.006, 0.34, y + 0.5] },
+        ];
+        for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
+          if (!esWall(x, y)) continue;
+          for (const cara of caras) {
+            const ox = x + cara.dx, oy = y + cara.dy;
+            if (!abierto(ox, oy) || tieneSalida(ox, oy)) continue;
+            const key = `${world.runSeed}:${world.ventanaN || 0}:${x}:${y}:${cara.tag}`;
+            if (seededUnit(key) >= 0.012) continue;
+            const m = new THREE.Mesh(eGeo, eMat);
+            m.position.set(...cara.pos(x, y));
+            m.rotation.y = cara.rot;
+            grupo.add(m);
+          }
+        }
+        yield;
+      }
+
       // --- TECHO REAL (solo 3ª persona e interiores): la cámara va por debajo,
       // así que el nivel se siente un interior cerrado de verdad. Los paneles
       // fluorescentes son ESTÁTICOS (parte del techo, florecen con el bloom). ---
       if (CAM_MODO === 'tercera' && world.level.bioma !== 'invernadero') {
         const plafonTex = pintado('plafon-' + world.level.id, () => lienzo(48, 48, (ctx2, w2, h2) => {
-          ctx2.fillStyle = SH(pal.pared, 0.42);
+          const lobby = world.level.id === 'level-0';
+          ctx2.fillStyle = SH(pal.pared, lobby ? 0.78 : 0.42);
           ctx2.fillRect(0, 0, w2, h2);
-          ctx2.strokeStyle = SH(pal.pared, 0.3);              // juntas de placas
+          ctx2.strokeStyle = SH(pal.pared, lobby ? 0.62 : 0.3); // juntas de placas
           ctx2.strokeRect(0.5, 0.5, w2 - 1, h2 - 1);
-          ctx2.fillStyle = SH(pal.pared, 0.36);               // manchas de humedad
-          ctx2.fillRect(6, 8, 10, 6); ctx2.fillRect(30, 26, 8, 9);
+          if (!lobby) {
+            ctx2.fillStyle = SH(pal.pared, 0.36);             // manchas de humedad
+            ctx2.fillRect(6, 8, 10, 6); ctx2.fillRect(30, 26, 8, 9);
+          }
         }));
         plafonTex.wrapS = plafonTex.wrapT = THREE.RepeatWrapping;
         const matPlafon = new THREE.MeshLambertMaterial({ map: plafonTex });
+        transMats.ceiling = matPlafon;
         let cPos = [], cUv = [], cIdx = [], cNor = [];
-        const pPos = [], pUv = [], pIdx = [];
         const flushTecho = () => {
           if (!cPos.length) return;
           const m = mkFlat(cPos, cUv, cIdx, cNor, matPlafon);
@@ -527,30 +626,131 @@
             quad(cPos, cUv, cIdx,
               [[x, WALL_H, y], [x + 1, WALL_H, y], [x + 1, WALL_H, y + 1], [x, WALL_H, y + 1]],
               [x, y, x + 1, y + 1], cNor);
-            if (cada && x % cada === Math.floor(cada / 2) && y % cada === Math.floor(cada / 2)) {
-              const ejeX = !esWall(x - 1, y) && !esWall(x + 1, y);
-              const hw = ejeX ? 0.42 : 0.16, hd = ejeX ? 0.16 : 0.42;
-              const cx2 = x + 0.5, cz2 = y + 0.5, yP = WALL_H - 0.02;
-              quad(pPos, pUv, pIdx,
-                [[cx2 - hw, yP, cz2 - hd], [cx2 + hw, yP, cz2 - hd],
-                 [cx2 + hw, yP, cz2 + hd], [cx2 - hw, yP, cz2 + hd]],
-                [0, 0, 1, 1]);
-            }
           }
           if ((y & 15) === 15) { flushTecho(); yield; }
         }
         flushTecho();
-        if (pPos.length) {
-          const pgeo = new THREE.BufferGeometry();
-          pgeo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
-          pgeo.setAttribute('uv', new THREE.Float32BufferAttribute(pUv, 2));
-          pgeo.setIndex(pIdx);
-          panelMatNuevo = new THREE.MeshBasicMaterial({
-            color: 0xfff6dc, toneMapped: false, fog: false,
-          });
-          const pm = new THREE.Mesh(pgeo, panelMatNuevo);
-          grupo.add(pm);
-          bandas.push(pm);
+        if (cada) {
+          const N_GRUPOS = 8;
+          const pg = Array.from({ length: N_GRUPOS }, () => ({ pos: [], uv: [], idx: [] }));
+          const usados = new Set();
+          const abierto = (x, y) => {
+            const v = MapGen.at(g, x, y);
+            return v !== T.VACIO && v !== T.PARED;
+          };
+          // Distancia COMPLETA a las cuatro paredes en O(n). El límite anterior
+          // de 12 tiles partía salas anchas y acababa creando líneas duplicadas.
+          const nCeldas = g.w * g.h;
+          const izq = new Uint16Array(nCeldas), der = new Uint16Array(nCeldas);
+          const arriba = new Uint16Array(nCeldas), abajo = new Uint16Array(nCeldas);
+          for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
+            if (!abierto(x, y)) continue;
+            const i = y * g.w + x;
+            izq[i] = 1 + (x ? izq[i - 1] : 0);
+            arriba[i] = 1 + (y ? arriba[i - g.w] : 0);
+          }
+          for (let y = g.h - 1; y >= 0; y--) for (let x = g.w - 1; x >= 0; x--) {
+            if (!abierto(x, y)) continue;
+            const i = y * g.w + x;
+            der[i] = 1 + (x + 1 < g.w ? der[i + 1] : 0);
+            abajo[i] = 1 + (y + 1 < g.h ? abajo[i + g.w] : 0);
+          }
+          const propuestas = new Map();
+          const agrega = (key, p) => {
+            const anterior = propuestas.get(key);
+            if (!anterior || p.score > anterior.score) propuestas.set(key, p);
+          };
+          // Pasillos verticales: cada fila continua entre dos paredes aporta UN
+          // único centro X. Solo se muestrea a lo largo de Y.
+          for (let y = Math.floor(cada / 2); y < g.h; y += cada) {
+            let x = 0;
+            while (x < g.w) {
+              while (x < g.w && !abierto(x, y)) x++;
+              const inicio = x;
+              while (x < g.w && abierto(x, y)) x++;
+              const fin = x;
+              if (fin <= inicio) continue;
+              const cx2 = (inicio + fin) / 2;
+              const xi = Math.max(inicio, Math.min(fin - 1, Math.floor(cx2)));
+              const i = y * g.w + xi;
+              const ancho = fin - inicio, largo = arriba[i] + abajo[i] - 1;
+              if (largo < ancho * 1.15) continue;
+              agrega(`V:${cx2.toFixed(2)}:${Math.floor(y / cada)}`, {
+                cx2, cz2: y + 0.5, vertical: true, score: largo / ancho,
+              });
+            }
+          }
+          // Pasillos horizontales: equivalente, intercambiando los ejes.
+          for (let x = Math.floor(cada / 2); x < g.w; x += cada) {
+            let y = 0;
+            while (y < g.h) {
+              while (y < g.h && !abierto(x, y)) y++;
+              const inicio = y;
+              while (y < g.h && abierto(x, y)) y++;
+              const fin = y;
+              if (fin <= inicio) continue;
+              const cz2 = (inicio + fin) / 2;
+              const yi = Math.max(inicio, Math.min(fin - 1, Math.floor(cz2)));
+              const i = yi * g.w + x;
+              const alto = fin - inicio, largo = izq[i] + der[i] - 1;
+              if (largo < alto * 1.15) continue;
+              agrega(`H:${cz2.toFixed(2)}:${Math.floor(x / cada)}`, {
+                cx2: x + 0.5, cz2, vertical: false, score: largo / alto,
+              });
+            }
+          }
+          // Las salas casi cuadradas reciben un único panel en su centro, no
+          // una cuadrícula lateral. Todos sus tiles calculan el mismo centro.
+          for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
+            if (!abierto(x, y)) continue;
+            const i = y * g.w + x;
+            const spanX = izq[i] + der[i] - 1, spanY = arriba[i] + abajo[i] - 1;
+            const ratio = spanX / spanY;
+            if (ratio < 0.75 || ratio > 1.33) continue;
+            const cx2 = (x - izq[i] + 1 + x + der[i]) / 2;
+            const cz2 = (y - arriba[i] + 1 + y + abajo[i]) / 2;
+            agrega(`R:${cx2.toFixed(2)}:${cz2.toFixed(2)}`, {
+              cx2, cz2, vertical: spanY >= spanX, score: 1,
+            });
+          }
+          // En cruces puede coincidir una propuesta horizontal con otra vertical.
+          // La supresión espacial impide dos luminarias paralelas cercanas.
+          const elegidos = [];
+          for (const propuesta of [...propuestas.values()].sort((a, b) => b.score - a.score)) {
+            if (elegidos.some((p) => Math.hypot(p.cx2 - propuesta.cx2, p.cz2 - propuesta.cz2) < cada * 0.85)) continue;
+            elegidos.push(propuesta);
+          }
+          for (const mejor of elegidos) {
+            // El centro geométrico de un pasillo par cae sobre una junta del
+            // falso techo. Ajusta al centro de la placa más cercana para que
+            // el fluorescente quede físicamente dentro del cuadrado.
+            const cx2 = Math.floor(mejor.cx2) + 0.5;
+            const cz2 = Math.floor(mejor.cz2) + 0.5;
+            const keyPanel = `${cx2.toFixed(2)}:${cz2.toFixed(2)}`;
+            if (usados.has(keyPanel)) continue;
+            usados.add(keyPanel);
+            const hw = mejor.vertical ? 0.16 : 0.42;
+            const hd = mejor.vertical ? 0.42 : 0.16;
+            const grupoPanel = panelGroup(`${world.runSeed}:${world.ventanaN || 0}`, cx2, cz2, N_GRUPOS);
+            const datos = pg[grupoPanel];
+            panelPositionsNuevo.push({ x: cx2, z: cz2, group: grupoPanel });
+            const yP = WALL_H - 0.02;
+            quad(datos.pos, datos.uv, datos.idx,
+              [[cx2 - hw, yP, cz2 - hd], [cx2 + hw, yP, cz2 - hd],
+               [cx2 + hw, yP, cz2 + hd], [cx2 - hw, yP, cz2 + hd]],
+              [0, 0, 1, 1]);
+          }
+          for (const datos of pg) {
+            if (!datos.pos.length) { panelMatsNuevo.push(null); continue; }
+            const pgeo = new THREE.BufferGeometry();
+            pgeo.setAttribute('position', new THREE.Float32BufferAttribute(datos.pos, 3));
+            pgeo.setAttribute('uv', new THREE.Float32BufferAttribute(datos.uv, 2));
+            pgeo.setIndex(datos.idx);
+            const mat = new THREE.MeshBasicMaterial({ color: 0xfff6dc, toneMapped: false, fog: false });
+            panelMatsNuevo.push(mat);
+            const pm = new THREE.Mesh(pgeo, mat);
+            grupo.add(pm); bandas.push(pm);
+          }
         }
         yield;
       }
@@ -592,6 +792,18 @@
         );
         // plano pegado a la cara sur del muro norte (mirando al jugador)
         m.position.set(ex.x + 0.5, 0.95, paredNorte ? ex.y + 0.03 : ex.y + 0.5);
+        grupo.add(m);
+        return;
+      }
+
+      if (ex.def._mec === 'romper_suelo' && !ex.def._abierta) {
+        const t2 = pintado('p-suelo-grieta', PINTORES.sueloGrieta);
+        const m = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.96, 0.96),
+          new THREE.MeshBasicMaterial({ map: t2, transparent: true })
+        );
+        m.rotation.x = -Math.PI / 2;
+        m.position.set(ex.x + 0.5, 0.03, ex.y + 0.5);
         grupo.add(m);
         return;
       }
@@ -809,7 +1021,7 @@
       }
     }
 
-    return { grupo, solidos, panelMatNuevo, bandas };
+    return { grupo, solidos, panelMatsNuevo, panelPositionsNuevo, bandas, transMats };
   }
 
   // instala la estática recién construida (swap) y la atmósfera del nivel.
@@ -821,8 +1033,11 @@
     staticGroup = res.grupo;
     scene.add(staticGroup);
     solidosCamara = res.solidos;
-    panelMat = res.panelMatNuevo;
+    panelMats = res.panelMatsNuevo || [];
+    panelPositions = res.panelPositionsNuevo || [];
+    transitionMats = res.transMats;
     flkHasta = 0;
+    flkGrupo = -1;
     if (window.Atmos3D) Atmos3D.buildLevel(world, staticGroup);
 
     const pal = world.level.paleta;
@@ -830,9 +1045,18 @@
     scene.background = fondo;
     fogBase = 0.08 + world.level.oscuridad * 0.16;
     scene.fog = new THREE.FogExp2(fondo, fogBase);
-    amb.intensity = Math.max(0.12, 0.55 - world.level.oscuridad * 0.4);
+    const esLevel0 = world.level.id === 'level-0';
+    amb.intensity = esLevel0 ? 0.22 : Math.max(0.12, 0.55 - world.level.oscuridad * 0.4);
+    dlight.intensity = esLevel0 ? 0.14 : 0.35;
+    renderer.toneMappingExposure = esLevel0 ? 0.96 : 1.15;
     plight.color = new THREE.Color(pal.luz);
     plight.distance = (world.visionActual() + 3) * 1.6;
+    plight.castShadow = !esLevel0;
+    ceilingLights.forEach((l, i) => {
+      l.color.set(pal.luz);
+      l.intensity = 0;
+      l.castShadow = esLevel0 && i === 0;
+    });
 
     if (progresivo && viejo && res.bandas.length) {
       // la escena vieja (realineada) sigue tapando: idéntica en el solape
@@ -929,6 +1153,31 @@
     return tex(c, key);
   }
 
+  function actualizarLucesTecho(world, px, pz, fase0) {
+    if (world.level.id !== 'level-0' || !panelPositions.length) {
+      for (const l of ceilingLights) { l.intensity = 0; l.visible = false; }
+      return;
+    }
+    const cercanas = [];
+    for (const p of panelPositions) {
+      const d2 = (p.x - px) ** 2 + (p.z - pz) ** 2;
+      if (d2 > 64) continue;
+      let i = 0;
+      while (i < cercanas.length && cercanas[i].d2 <= d2) i++;
+      cercanas.splice(i, 0, { ...p, d2 });
+      if (cercanas.length > ceilingLights.length) cercanas.pop();
+    }
+    ceilingLights.forEach((l, i) => {
+      const p = cercanas[i];
+      if (!p) { l.intensity = 0; l.visible = false; return; }
+      l.visible = true;
+      l.position.set(p.x, WALL_H - 0.12, p.z);
+      const falla = p.group === flkGrupo && !flkOn;
+      const objetivo = (0.82 - 0.12 * fase0) * (falla ? 0.05 : 1);
+      l.intensity += (objetivo - l.intensity) * 0.22;
+    });
+  }
+
   // ---------- frame ----------
   function frame(world, t) {
     if (!world.level || !world.map) return;
@@ -959,6 +1208,10 @@
         if (staticGroup) {
           staticGroup.position.x -= world._shift3d.x;
           staticGroup.position.z -= world._shift3d.z;
+        }
+        for (const p of panelPositions) {
+          p.x -= world._shift3d.x;
+          p.z -= world._shift3d.z;
         }
         world._shift3d = null;
       }
@@ -1094,10 +1347,27 @@
     // objetos recogidos
     for (const [i, s] of itemSprites) s.visible = !(world.map.items[i]?.taken ?? true);
 
+    // En el último tramo de Level 0, los mismos materiales pierden el amarillo
+    // y dejan asomar el gris del garaje. No hay pantalla que anuncie el cambio.
+    const fase0 = level0Phase(world);
+    if (world.level.id === 'level-0' && transitionMats) {
+      const mezcla = (mat, r, g, b) => mat?.color.setRGB(
+        1 + (r - 1) * fase0, 1 + (g - 1) * fase0, 1 + (b - 1) * fase0
+      );
+      mezcla(transitionMats.floor, 0.58, 0.62, 0.65);
+      mezcla(transitionMats.wall, 0.72, 0.75, 0.76);
+      mezcla(transitionMats.ceiling, 0.68, 0.71, 0.73);
+      scene.background.setRGB(0.051 + 0.015 * fase0, 0.043 + 0.025 * fase0, 0.02 + 0.04 * fase0);
+      if (scene.fog) scene.fog.color.copy(scene.background);
+      amb.intensity = 0.22 - 0.025 * fase0;
+      renderer.toneMappingExposure = 0.96 - 0.05 * fase0;
+    }
+
     // luz del jugador con flicker fluorescente
     let flicker = 1;
-    if (Math.random() < 0.015) flicker = 0.7;
-    plight.intensity = plight.intensity * 0.85 + (1.7 * flicker) * 0.15;
+    if (!REDUCE_FLICKER && Math.random() < 0.012) flicker = 0.72;
+    const luzJugador = world.level.id === 'level-0' ? 0.72 : 1.7;
+    plight.intensity = plight.intensity * 0.85 + (luzJugador * flicker) * 0.15;
     plight.position.set(px, 1.6, pz);
     plight.distance = (world.visionActual() + 3) * (p.luz ? 2.4 : 1.6);
 
@@ -1118,25 +1388,37 @@
     // luminarias cercanas + polvo en suspensión
     if (window.Atmos3D) Atmos3D.frame(world, t, px, pz, luzOn);
 
-    // parpadeo fluorescente (v16): muy de vez en cuando los paneles del techo
-    // fallan de forma errática durante ~1 segundo (cosmético; sin RNG de juego)
-    if (panelMat && !window.NOFX) {
+    // Los paneles están repartidos en grupos sembrados. Cada fallo elige uno:
+    // parpadea una fracción del techo, nunca todos los fluorescentes a la vez.
+    if (panelMats.some(Boolean) && !window.NOFX && !REDUCE_FLICKER) {
+      const baseCenital = world.level.id === 'level-0' ? 0.14 - 0.025 * fase0 : 0.35;
       if (!flkHasta) {
-        if (Math.random() < 0.0003) { flkHasta = t + 600 + Math.random() * 1000; flkNext = 0; }
+        if (Math.random() < 0.0006) {
+          flkHasta = t + 600 + Math.random() * 1000;
+          flkNext = 0;
+          const activos = panelMats.map((m, i) => m ? i : -1).filter((i) => i >= 0);
+          flkGrupo = activos[Math.floor(Math.random() * activos.length)];
+          if (world.level.id === 'level-0' && window.Sfx) Sfx.level0Flicker?.();
+        }
       } else if (t > flkHasta) {
         flkHasta = 0;
-        panelMat.color.setHex(0xfff6dc);
-        dlight.intensity = 0.35;
+        if (panelMats[flkGrupo]) panelMats[flkGrupo].color.setHex(0xfff6dc);
+        flkGrupo = -1;
+        dlight.intensity = baseCenital;
       } else {
         if (t > flkNext) {          // cambia de estado a golpes irregulares
           flkOn = Math.random() < 0.55;
           flkNext = t + 40 + Math.random() * 140;
         }
         const f = flkOn ? 1 : 0.15 + Math.random() * 0.2;
-        panelMat.color.setRGB(f, 0.965 * f, 0.863 * f);
-        dlight.intensity = flkOn ? 0.35 : 0.12;
+        if (panelMats[flkGrupo]) panelMats[flkGrupo].color.setRGB(f, 0.965 * f, 0.863 * f);
+        // La luz cenital global no cambia: solo falla el grupo visual elegido.
+        dlight.intensity = baseCenital;
       }
+    } else if (world.level.id === 'level-0') {
+      dlight.intensity = 0.14 - 0.025 * fase0;
     }
+    actualizarLucesTecho(world, px, pz, fase0);
 
     if (CAM_MODO === 'tercera') {
       // --- CÁMARA 3ª PERSONA: pegada a la espalda, baja, inmersiva ---
@@ -1277,11 +1559,16 @@
       octx.fillStyle = `rgba(235,110,30,${resp})`;
       octx.fillRect(0, 0, W, H);
     }
+    const fase0 = level0Phase(world);
+    if (fase0 > 0) {
+      octx.fillStyle = `rgba(95,115,125,${0.055 * fase0})`;
+      octx.fillRect(0, 0, W, H);
+    }
     if (!window.NOFX) {
       // viñeta + grano
       const vin = octx.createRadialGradient(W / 2, H / 2, H * 0.38, W / 2, H / 2, H * 0.8);
       vin.addColorStop(0, 'rgba(0,0,0,0)');
-      vin.addColorStop(1, 'rgba(0,0,0,0.55)');
+      vin.addColorStop(1, `rgba(0,0,0,${world.level.id === 'level-0' ? 0.62 : 0.55})`);
       octx.fillStyle = vin;
       octx.fillRect(0, 0, W, H);
       octx.globalAlpha = 0.45;

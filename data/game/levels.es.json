@@ -10,6 +10,11 @@
    150,
    150
   ],
+  "infinito": true,
+  "pasosCaminata": [
+   800,
+   1200
+  ],
   "paleta": {
    "suelo": "#7a6b3d",
    "pared": "#a89454",
@@ -23,7 +28,8 @@
   "cita": "Si no tienes cuidado y haces no-clip fuera de la realidad, acabarás aquí.",
   "reglas": [
    "zumbido",
-   "no_euclidiano"
+   "no_euclidiano",
+   "alucinaciones"
   ],
   "entidades": [],
   "objetos": [
@@ -44,23 +50,28 @@
    {
     "texto": "Romper una pared y atravesarla hacia Level 483",
     "destino": "level-483",
-    "tipo": "normal"
+    "tipo": "normal",
+    "prob": 0.45
    },
    {
     "texto": "Romper el suelo y caer a Level 27… o al Vacío",
     "destino": "level-27",
     "tipo": "arriesgada",
-    "riesgoVoid": 0.15
+    "riesgoVoid": 0.15,
+    "mecanica": "romper_suelo",
+    "prob": 0.3
    },
    {
     "texto": "Una rara salida de emergencia que lleva a Level 14",
     "destino": "level-14",
-    "tipo": "rara"
+    "tipo": "rara",
+    "prob": 0.08
    },
    {
     "texto": "Puertas correderas de cristal, como de invernadero, hacia Level 13",
     "destino": "level-13",
-    "tipo": "normal"
+    "tipo": "normal",
+    "prob": 0.18
    }
   ],
   "esEscape": false,

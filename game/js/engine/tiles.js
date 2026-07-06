@@ -180,18 +180,26 @@
     };
     switch (estilo) {
       case 'papel_rayas': // Level 0: el rayado clásico
-        for (let x = 0; x < w; x += 6) {
-          ctx.fillStyle = shade(pal.pared, 1.12);
-          ctx.fillRect(x, 0, 3, FH);
+        // Motivo geométrico tenue, más cercano al papel clásico de Level 0.
+        ctx.globalAlpha = 0.28;
+        ctx.strokeStyle = shade(pal.detalle, 0.92);
+        ctx.lineWidth = 1;
+        for (let y = -7; y < FH + 7; y += 14) for (let x = 0; x < w + 8; x += 8) {
+          const cy = y + ((x / 8) % 2) * 7;
+          ctx.beginPath();
+          ctx.moveTo(x + 4, cy); ctx.lineTo(x + 7, cy + 7);
+          ctx.lineTo(x + 4, cy + 14); ctx.lineTo(x + 1, cy + 7);
+          ctx.closePath(); ctx.stroke();
         }
+        ctx.globalAlpha = 1;
         ctx.fillStyle = shade(pal.pared, 0.8);
         ctx.fillRect(0, 0, w, 2);
         zocalo();
-        if (rng.chance(0.3)) {
-          ctx.globalAlpha = 0.22;
+        if (rng.chance(0.22)) {
+          ctx.globalAlpha = 0.16;
           ctx.fillStyle = shade(pal.pared, 0.7);
           ctx.beginPath();
-          ctx.ellipse(rng.int(6, w - 6), rng.int(6, 16), rng.int(3, 6), rng.int(4, 8), 0, 0, 7);
+          ctx.ellipse(rng.int(6, w - 6), rng.int(7, FH - 10), rng.int(3, 6), rng.int(4, 8), 0, 0, 7);
           ctx.fill();
           ctx.globalAlpha = 1;
         }

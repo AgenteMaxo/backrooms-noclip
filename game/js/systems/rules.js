@@ -15,11 +15,15 @@
       icono: '♾',
       desc: 'De vez en cuando, una zona lejana del nivel se reorganiza de verdad. Lo oirás.',
       turno(world, rng) {
-        if (world.turn > 0 && world.turn % 90 === 0 && rng.chance(0.5)) {
+        const level0 = world.level.id === 'level-0';
+        const intervalo = level0 ? 70 : 90;
+        if (world.turn > 0 && world.turn % intervalo === 0 && rng.chance(level0 ? 0.65 : 0.5)) {
           if (world.remodelarZona()) {
-            world.log('Un crujido lejano recorre el nivel: las Backrooms se reorganizan.', 'danger');
+            world.log(level0
+              ? 'El zumbido cambia de tono. En algún lugar, un pasillo ya no conduce al mismo sitio.'
+              : 'Un crujido lejano recorre el nivel: las Backrooms se reorganizan.', 'danger');
             world.sanity(-2);
-            if (window.Sfx) Sfx.play('derrumbe'); // solo el sonido, sin sacudir la cámara
+            if (window.Sfx) Sfx.play(level0 ? 'crujido' : 'derrumbe');
           }
         }
       },

@@ -48,7 +48,7 @@
     scene.add(dust);
   }
 
-  function buildLevel() { /* v15: sin luminarias — solo queda el polvo (frame) */ }
+  function buildLevel() { /* las luminarias pertenecen al techo; aquí solo vive el polvo */ }
 
   function frame(world, t, px, pz, luzOn) {
     if (window.NOFX || !listo || !dust) return;
