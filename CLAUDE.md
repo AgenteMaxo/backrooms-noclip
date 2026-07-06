@@ -165,13 +165,9 @@ mapgen deriva del texto de la wiki (o campo `mecanica` en la ficha): `romper` = 
 agrietada (exige pared norte; `def._mec`/`def._abierta`; ESPACIO → `intentarRomper` con
 dado — tubería en mano umbral 7, puños 12 y −2 salud; al abrir `mapaVersion++` y el hueco
 blanco brilla con bloom — PINTORES.grieta/boquete en render3d y bloque en drawExit 2D);
-`caminata` = SIN casilla (`map.caminatas`): a los `world._caminataT` (1200) turnos en el
-nivel, showChoice ofrece cruzar (reaparece cada 200 si la rechazas) — el usuario quiere
-la caminata LARGA de verdad. Level 0 = 150×150 SIN
-`infinito` (el sistema de ventana deslizante queda dormido — nada lo usa; el petardeo de
-expansión desaparece por diseño). Mapas ESCALADOS por nº de salidas (≥3 ×1.25, ≥5 ×1.45,
-cap 190) y salidas REPARTIDAS: pool ancho (dist ≥ 45% del máx) + greedy max-min contra
-spawn y salidas ya puestas. **Equipo vestible**: `player.equipo {cara,cuerpo,pies}`,
+`caminata` = SIN casilla (`map.caminatas`). Mapas ESCALADOS por nº de salidas (≥3 ×1.25,
+≥5 ×1.45, cap 190; los `infinito` NO escalan) y salidas REPARTIDAS: pool ancho (dist ≥ 45%
+del máx) + greedy max-min contra spawn y salidas ya puestas. **Equipo vestible**: `player.equipo {cara,cuerpo,pies}`,
 `world.equipado(id)`, `Game.ponerEquipo/quitarEquipo`, fila «Vistiendo» en la mochila
 (drag + PONERSE en ficha); chaqueta equipo:cuerpo (frío exige PUESTA), `mascara_gas`
 (drenajes de cordura ambientales ÷2 en rules), `botas_reforzadas` (inmune charcos sirena,
@@ -185,6 +181,28 @@ pisaban todo input → ahora `input[type=range]`). El selftest responde choice-m
 (60% primera opción) — sin él se atascaba en la caminata del L0. **v20.2**: fila 🐞 Debug
 en Ajustes (solo en partida): desplegable con los 30 niveles ordenados por número +
 `Game.debugTeleport(id)` (enterLevel con `sinRetorno:true` — sin puerta de vuelta).
+
+**Era comunitaria (2026-07-06, PRs #1-#4 aceptados)**: repo público con webhook de Discord
+(anuncia push/PR/issue/release). Grexii #1: mp3 reales en `assets/sounds/` (overrides de
+`NOMBRES` en sfx.js) + ambiente `niveles/level-0.mp3` (tiene PRIORIDAD sobre la síntesis).
+fonixgm #2: parser wiki mejorado + `node pipeline/parse.test.js` (9 tests). OlafMoreno #3:
+auto-repeat del giro en 3ªP a 600 ms (constantes en main.js). fonixgm #4 («Level 0
+integral») — REVIERTE dos decisiones de v20 CON el visto bueno explícito del usuario:
+Level 0 vuelve a ser `infinito:true` (ventana 150×150; las franjas nuevas aportan
+salidas/items/props; campo `prob` por salida = probabilidad de aparecer en cada ventana) y
+la caminata ya no usa turnos ni modal — `MapGen.walkingGoal` (campo `pasosCaminata`
+[800,1200] en la ficha, RNG por runSeed) cuenta PASOS reales (`world.pasosNivel`) y cruza
+AUTOMÁTICO sin tarjeta (`sinTarjeta` en enterLevel), con transición gradual (bocadillos al
+30/65/82/94%, materiales 3D viran a gris vía `transitionMats`, zumbido sintetizado
+degradado — OJO: ese zumbido dinámico es código muerto mientras exista level-0.mp3).
+Además: mecánica `romper_suelo` (ESPACIO, tubería 7 / pisotón 11 con daño), fluorescentes
+CENTRADOS por detección de vanos + parpadeo por grupos (8) + pool de 4 PointLights que
+siguen al jugador (todos los interiores), enchufes pixel de L0, pistas de tutorial
+(`tutorialHint` en game.js), `prefers-reduced-motion` respetado, y
+`node pipeline/level0-audit.js [N] [--random|--seed=x]` (auditoría de 100 semillas:
+determinismo, salidas accesibles, rangos de caminata). Al revisar futuros PRs: leer el
+diff COMPLETO, verificar que no pisen decisiones del usuario ni PRs previos, reproducir
+los archivos generados (data.js byte a byte) y correr tests/auditoría tras el merge.
 
 (Todos existen y están committeados. v3: render cenital con paredes finas autotile en `tiles.js`/`render.js`,
 pixel-art data-driven en `sprites.js` con override PNG desde `game/assets/sprites/`, efectos de combate
