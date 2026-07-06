@@ -280,6 +280,12 @@ que solo tú puedes aceptar o rechazar.
   - Pasa el ratón por una línea y aparece un **+** azul: deja un comentario al autor ahí
     mismo para pedir cambios antes de aceptar.
   - Para rechazar: botón **Close pull request**, mejor con un comentario amable del porqué.
+- **El doble check automático (CI, desde 2026-07-06)**: cada PR (y cada push) ejecuta solo
+  una batería de comprobaciones en GitHub — sintaxis de todo el código, tests del parser,
+  auditoría del Level 0 y que nadie haya editado a mano los archivos generados. El
+  resultado sale EN el propio PR: **✓ verde = pasó lo objetivo** (aún hay que revisar
+  diseño e intenciones con Claude), **✗ rojo = ni te molestes** (el autor puede ver qué
+  falló pulsando «Details» y arreglarlo). Vive en `.github/workflows/ci.yml`.
 - **Issues**: la pestaña «Issues» es el buzón de bugs y sugerencias de la comunidad —
   puedes enseñarla en directo y pedirle a Claude que arregle los que te convenzan.
 - **Noticias automáticas en Discord** (ya configurado, 2026-07-06): cada push a `main`,

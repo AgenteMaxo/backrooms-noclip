@@ -1,0 +1,42 @@
+# CI del proyecto: el "doble check" automático de cada PR y push.
+# No sustituye la revisión humana (diseño, lore, intenciones) — filtra lo objetivo.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verificacion:
+    name: Verificación del juego y el pipeline
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Sintaxis de los JS del juego y del pipeline
+        run: |
+          set -e
+          for f in $(find game/js pipeline -name '*.js' -not -path 'game/js/lib/*'); do
+            node --check "$f"
+          done
+          echo "Sintaxis OK"
+
+      - name: Tests del parser de la wiki
+        run: node pipeline/parse.test.js
+
+      - name: Auditoría de Level 0 (100 semillas deterministas)
+        run: node pipeline/level0-audit.js
+
+      - name: data.js es el generado por build-data.js (no editado a mano)
+        run: |
+          node pipeline/build-data.js
+          git diff --exit-code game/js/data.js
+
+      - name: data/parsed es reproducible desde data/raw
+        run: |
+          node pipeline/parse.js
+          git diff --exit-code data/parsed
