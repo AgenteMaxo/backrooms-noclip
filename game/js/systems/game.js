@@ -1581,8 +1581,7 @@
       luz: false, viva: true,
     };
     world.journal = s.journal;
-    world.visited = s.visited.slice(0, -0) || [];
-    world.visited = s.visited;
+    world.visited = s.visited || [];
     world.prevStack = s.prevStack;
     world.entryCount = s.entryCount;
     world.savedLevels = {};   // los snapshots no se serializan: viven en memoria

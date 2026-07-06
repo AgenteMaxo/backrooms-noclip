@@ -353,7 +353,7 @@
       }
     for (let i = 0; i < g.t.length; i++)
       if (walkable(g.t[i]) && compOf[i] !== best)
-        g.t[i] = g.t[i] === T.DECOR ? T.PARED : T.PARED;
+        g.t[i] = T.PARED;
     return g;
   }
 

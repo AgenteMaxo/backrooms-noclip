@@ -272,7 +272,6 @@
     Game.startRun(params.get('seed') || undefined);
     if (params.get('nivel') && world.data.levels[params.get('nivel')]) {
       // salto directo para pruebas
-      const btn = document.getElementById('btn-enter');
       Game.world.prevStack.push('level-0');
       const id = params.get('nivel');
       setTimeout(() => {
