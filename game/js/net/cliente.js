@@ -13,10 +13,12 @@
   let inputEnviado = { dx: 0, dy: 0 };
   let rotEnviada = 0, rotUltEnvio = 0;
   let tileFov = null; // último tile con FOV calculado
-  // Rastro de posiciones predichas (~1 s). La posición autoritativa del
-  // servidor llega VIEJA (RTT + tick de 100 ms): hay que compararla con dónde
-  // estábamos ENTONCES — compararla con el presente da tirones con ping alto.
-  const rastro = [];
+  // v23 — latencia y reconciliación honesta: historial de posiciones locales
+  // para comparar la posición del servidor CONTRA DÓNDE ESTABAS cuando él la
+  // calculó (comparar contra el presente te arrastra hacia atrás al correr)
+  let rtt = 100;           // ms ida y vuelta (medido con ping/pong)
+  let pingTimer = null;
+  const historia = [];     // [{t, x, y}] de la predicción local (~1 s)
 
   function urlServidor() {
     const params = new URLSearchParams(location.search);
@@ -47,7 +49,7 @@
     const params = new URLSearchParams(location.search);
     ws = new WebSocket(urlServidor());
     ws.onopen = () => enviar({
-      t: 'hola', nombre, token: token(), v: 2,
+      t: 'hola', nombre, token: token(), v: 3, // debe coincidir con protocolo.js
       nivel: params.get('nivel') || undefined, // puerta de desarrollo (solo MMO_DEV=1)
     });
     ws.onmessage = (ev) => {
@@ -57,11 +59,15 @@
     };
     ws.onclose = () => {
       listo = false;
+      clearInterval(pingTimer);
       if (w.level) w.log('Conexión perdida con las Backrooms… reintentando.', 'danger');
       clearTimeout(reintento);
       reintento = setTimeout(() => iniciar(nombre), 3000);
     };
     ws.onerror = () => {};
+    // medición de RTT: alimenta la reconciliación y el retardo de interpolación
+    clearInterval(pingTimer);
+    pingTimer = setInterval(() => enviar({ t: 'ping', ts: Math.round(performance.now()) }), 4000);
   }
 
   function nombreDe(id) {
@@ -85,6 +91,8 @@
     switch (m.t) {
       case 'bienvenida':
         miId = m.id;
+        // reconexión = sesión nueva: la condición de guardián hay que revalidarla
+        if (w.esAdmin) { w.esAdmin = false; if (window.onAdminCambia) window.onAdminCambia(false); }
         Game.startRun(m.semilla); // jugador, HUD y tarjeta de presentación
         construirNivel(m, w);
         w.log(`Estás en ${w.level.nombre} · instancia ${m.inst}. Pulsa T para hablar.`, 'good');
@@ -110,7 +118,7 @@
         if (m.id === miId) {
           w.player.x = m.x; w.player.y = m.y;
           w.player.rx = m.x; w.player.ry = m.y;
-          rastro.length = 0;
+          historia.length = 0;
           fov(w);
         } else Otros.mueve(m.id, m.x, m.y);
         break;
@@ -122,7 +130,13 @@
         }
         for (const [uid, x, y] of m.e || []) {
           const e = entidadDe(uid);
-          if (e) { e.x = x; e.y = y; }
+          if (e) { e.x = x; e.y = y; Otros.pushSnap(e, x, y); }
+        }
+        break;
+      case 'pong':
+        if (m.ts !== undefined) {
+          const medida = performance.now() - m.ts;
+          rtt = rtt * 0.7 + medida * 0.3; // suavizado: un pico no dispara nada
         }
         break;
       case 'gira': if (listo) Otros.gira(m.id, m.rot); break;
@@ -133,7 +147,11 @@
         break;
 
       // ---------- entidades ----------
-      case 'entMueve': { const e = entidadDe(m.uid); if (e) { e.x = m.x; e.y = m.y; } break; }
+      case 'entMueve': { // teleport de entidad: sin interpolación que valga
+        const e = entidadDe(m.uid);
+        if (e) { e.x = m.x; e.y = m.y; e.rx = m.x; e.ry = m.y; e._snaps = null; }
+        break;
+      }
       case 'entPrep': {
         const e = entidadDe(m.uid);
         if (!e) return;
@@ -251,7 +269,23 @@
           if (m.si) w.log('Te metes dentro. Contén la respiración.', 'good');
         } else Otros.esconde(m.id, m.si);
         break;
-      case 'luzDe': Otros.luz(m.id, m.si); break;
+      case 'luzDe': // v23: la linterna es autoritativa — también la TUYA
+        if (m.id === miId) {
+          w.player.luz = m.si;
+          if (window.Sfx) Sfx.play('ui');
+        } else Otros.luz(m.id, m.si);
+        break;
+      case 'registrado': { // un contenedor de la sala queda registrado
+        const pr = (w.map.props || [])[m.i];
+        if (!pr) return;
+        pr.registrado = true;
+        if (cerca(w, pr.x, pr.y, 10) && window.Sfx) Sfx.play('registrar');
+        break;
+      }
+      case 'admin': // respuesta a la contraseña de guardián (Ajustes)
+        w.esAdmin = !!m.si;
+        if (window.onAdminCambia) window.onAdminCambia(w.esAdmin);
+        break;
 
       case 'caminata': {
         w.pasosNivel = m.pasos;
@@ -317,6 +351,17 @@
     w.map = MapGen.generate(defOnline, RNG.create(m.semilla));
     w.tiles = Tiles.build(def, RNG.create(m.semilla + '::tiles'));
     w.map.caminatas = []; // la caminata online (M3) es personal
+    // puerta personal de RETORNO (v23): solo existe en TU cliente — el
+    // servidor la vigila con el índice especial 'R'
+    if (m.retorno) {
+      w.map.exits.push({
+        x: m.retorno.x, y: m.retorno.y,
+        def: {
+          texto: 'El camino por el que llegaste sigue abierto.',
+          destino: m.retorno.destino, tipo: 'retorno',
+        },
+      });
+    }
     for (const i of m.itemsTomados || []) if (w.map.items[i]) w.map.items[i].taken = true;
     for (const i of m.abiertas || []) if (w.map.exits[i]) w.map.exits[i].def._abierta = true;
     w.entities = (m.ents || []).map((e) => ({
@@ -340,6 +385,10 @@
     try { Game.Profiles.registrarEntrada(m.nivel); } catch (e) {}
     w.itemsVersion = (w.itemsVersion || 0) + 1;
     w.mapaVersion = (w.mapaVersion || 0) + 1;
+    historia.length = 0;
+    // el servidor frena tu input al cambiar de sala: el cliente refleja lo mismo
+    input.dx = 0; input.dy = 0;
+    inputEnviado = { dx: 0, dy: 0 };
     const g = w.map.grid;
     w.explored = new Uint8Array(g.w * g.h);
     w.light = new Float32Array(g.w * g.h);
@@ -383,36 +432,44 @@
   function frame(dt) {
     const w = Game.world;
     if (!listo) return;
-    const t = performance.now();
-    rastro.push({ t, x: w.player.x, y: w.player.y });
-    while (rastro.length && t - rastro[0].t > 1000) rastro.shift();
-    if (w.escondido || (!input.dx && !input.dy)) return;
-    const [nx, ny] = Fisica.mover(w.map.grid, w.player.x, w.player.y, input.dx, input.dy, dt, Fisica.VEL_JUGADOR);
-    w.player.x = nx; w.player.y = ny;
-    const tx = Fisica.tileDe(nx), ty = Fisica.tileDe(ny);
-    if (!tileFov || tileFov[0] !== tx || tileFov[1] !== ty) {
-      tileFov = [tx, ty];
-      fov(w);
+    if (!w.escondido && (input.dx || input.dy)) {
+      const [nx, ny] = Fisica.mover(w.map.grid, w.player.x, w.player.y, input.dx, input.dy, dt, Fisica.VEL_JUGADOR);
+      w.player.x = nx; w.player.y = ny;
+      const tx = Fisica.tileDe(nx), ty = Fisica.tileDe(ny);
+      if (!tileFov || tileFov[0] !== tx || tileFov[1] !== ty) {
+        tileFov = [tx, ty];
+        fov(w);
+      }
     }
+    // historial para la reconciliación (también parado: el tiempo sigue)
+    const ahora = performance.now();
+    historia.push({ t: ahora, x: w.player.x, y: w.player.y });
+    while (historia.length && historia[0].t < ahora - 1200) historia.shift();
   }
 
-  // Posición autoritativa propia, tolerante a la latencia: si el servidor
-  // confirma algún punto de nuestro rastro reciente (es decir, solo va por
-  // detrás en el tiempo), NO se corrige nada. Solo una desviación respecto a
-  // todo el rastro es desincronización real: suave si es leve, corte si es grande.
+  // Posición autoritativa propia (v23): se compara contra DÓNDE ESTABAS hace
+  // ~RTT/2+medio tick — comparar contra el presente convertía la latencia en
+  // tirones de goma hacia atrás cada tick mientras corrías (los «lagazos»).
   function reconciliar(w, sx, sy) {
-    let d = Fisica.dist(w.player.x, w.player.y, sx, sy);
-    for (let i = rastro.length - 1; i >= 0 && d >= 0.35; i--)
-      d = Math.min(d, Fisica.dist(rastro[i].x, rastro[i].y, sx, sy));
-    if (d < 0.35) return; // el servidor va por nuestro rastro: todo en orden
-    if (d > 1.5) {        // desincronización real (teleport perdido, pared…)
-      w.player.x = sx; w.player.y = sy;
-      rastro.length = 0;
-      fov(w);
-    } else {              // deriva moderada: acercamiento suave, sin tirón
-      w.player.x += (sx - w.player.x) * 0.1;
-      w.player.y += (sy - w.player.y) * 0.1;
+    const objetivo = performance.now() - (rtt / 2 + 60);
+    let ref = null;
+    for (let i = historia.length - 1; i >= 0; i--) {
+      if (historia[i].t <= objetivo) { ref = historia[i]; break; }
     }
+    if (!ref) ref = historia[0] || { x: w.player.x, y: w.player.y };
+    const ex = sx - ref.x, ey = sy - ref.y;
+    const d = Math.hypot(ex, ey);
+    if (d < 0.06) return; // dentro del margen: la predicción va bien
+    if (d > 1.4) {
+      // desincronización real (empujón, colisión que no vimos): snap limpio
+      w.player.x = sx; w.player.y = sy;
+      historia.length = 0;
+      fov(w);
+      return;
+    }
+    // corrección suave: se APLICA EL ERROR (no se tira hacia la pos vieja)
+    const nx = w.player.x + ex * 0.25, ny = w.player.y + ey * 0.25;
+    if (!Fisica.choca(w.map.grid, nx, ny)) { w.player.x = nx; w.player.y = ny; }
   }
 
   // ---------- acciones ----------
@@ -421,10 +478,12 @@
   function mochila(que, datos) { enviar({ t: 'mochila', que, ...datos }); }
 
   function luzToggle() {
-    const w = Game.world;
-    w.player.luz = !w.player.luz;
-    enviar({ t: 'luz', si: w.player.luz });
+    // solo se PIDE: el servidor decide (linterna en mano) y responde luzDe
+    enviar({ t: 'luz', si: !Game.world.player.luz });
   }
+
+  function admin(clave) { enviar({ t: 'admin', clave }); }
+  function tp(nivelId) { enviar({ t: 'chat', txt: '/tp ' + nivelId }); }
 
   // ---------- chat ----------
   function crearChatUI() {
@@ -451,6 +510,7 @@
 
   function abrirChat() {
     if (!inputChat) return;
+    setInput(0, 0); // escribir no es caminar: frena antes de abrir el teclado
     inputChat.style.display = 'block';
     inputChat.value = '';
     inputChat.focus();
@@ -468,9 +528,10 @@
 
   window.Net = {
     iniciar, setInput, setRot, frame,
-    accion, usar, luzToggle, mochila,
+    accion, usar, luzToggle, mochila, admin, tp,
     abrirChat, chatAbierto,
     get activo() { return listo; },
     get id() { return miId; },
+    get rtt() { return rtt; },
   };
 })();

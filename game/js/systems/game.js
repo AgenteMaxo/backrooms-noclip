@@ -389,7 +389,7 @@
   function esSinRetorno(def) {
     if (def.sinRetorno) return true;
     if (def.tipo === 'void') return true;
-    return /agujero|caes |caer |caída|desplom|abismo|pozo|trampilla/i.test(def.texto || '');
+    return /agujero|caes |caer |caída|desplom|abismo|pozo|trampilla|no.?clip|desmay|despiert/i.test(def.texto || '');
   }
 
   function enterLevel(id, via, entrada) {

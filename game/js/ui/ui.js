@@ -85,10 +85,30 @@
     if (!world.player || !world.level) return;
     renderManos();
     renderMoodles();
+    renderDebugStats();
     if ($('backpack-panel').style.display !== 'none') {
       renderBackpack();
       renderEquipo();
       renderEfectos();
+    }
+  }
+
+  // ---------- barras de guardián (v23): números exactos tras la contraseña ----------
+  const DBG_BARRAS = [
+    ['dbg-salud', (p) => p.salud, '#c94a3a'],
+    ['dbg-comida', (p) => p.hambre, '#c9962f'],
+    ['dbg-bebida', (p) => p.sed, '#4a7fbf'],
+    ['dbg-cordura', (p) => p.cordura, '#9a6fc9'],
+  ];
+  function renderDebugStats() {
+    const cont = $('debug-stats');
+    if (!cont || cont.style.display === 'none' || !world.esAdmin) return;
+    for (const [id, get, color] of DBG_BARRAS) {
+      const v = Math.max(0, Math.min(100, Math.round(get(world.player) ?? 0)));
+      const fill = $(id);
+      fill.style.width = v + '%';
+      fill.style.background = color;
+      $(id + '-v').textContent = v;
     }
   }
 

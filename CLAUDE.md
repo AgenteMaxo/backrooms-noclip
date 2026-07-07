@@ -204,6 +204,42 @@ determinismo, salidas accesibles, rangos de caminata). Al revisar futuros PRs: l
 diff COMPLETO, verificar que no pisen decisiones del usuario ni PRs previos, reproducir
 los archivos generados (data.js byte a byte) y correr tests/auditoría tras el merge.
 
+**v21-v22 — BACKROOMS MMO**: el juego es un sandbox multijugador en tiempo real. Servidor en
+`server/` (única carpeta con `package.json`: dep `ws` + SQLite en `datos/mmo.db`):
+`server.js` (estáticos + WebSocket `/ws` + comandos `/admin /anuncio /kick /mute /ban /tp` +
+`cambiarDeSala`), `sala.js` (una sala = instancia de nivel, cap 60; tick 10 Hz vía
+`tickTodas`), `sim/mundo.js` (puente Node↔motor: requiere data/rng/mapgen/fov del juego —
+por la red NUNCA viaja un mapa, solo la semilla `mmo::<nivel>::<inst>`), `sim/entidades.js`
+(IA continua), `protocolo.js` (validación + P.VERSION — súbela al cambiar mensajes; el
+cliente manda `v` en `hola` y bots.js también), `bots.js` (carga), `db.js`, `filtro.js`.
+Cliente en `game/js/net/`: `cliente.js` (conexión, predicción con `sim/fisica.js` —
+archivo COMPARTIDO navegador/Node, física idéntica en ambos lados) y `otros.js` (censo de
+jugadores remotos + capa social). Arrancar local: `node server/server.js` →
+http://localhost:8080. `MMO_DEV=1` habilita `?nivel=`; `MMO_ADMIN` fija la clave de admin.
+Movimiento LIBRE (input vectorial, θ continuo en `player.rot` online); el modo solo por
+turnos sigue con `?autostart=1` (sin `?online`).
+
+**v23 — red suave, retorno online y Ajustes de guardián**: interpolación por INSTANTÁNEAS
+(`Otros.pushSnap/muestrear`, retardo 150 ms) para jugadores remotos Y entidades (main.js
+salta el lerp si hay `_snaps`); reconciliación contra HISTORIAL local (`historia` en
+cliente.js, RTT medido con ping/pong con eco `ts`) — comparar contra el presente causaba
+tirones de goma al correr; el input se frena al abrir chat y al cambiar de sala (ambos
+lados). Puerta de RETORNO online (paridad con el modo solo): `cambiarDeSala` busca en el
+destino una salida con `destino === origen` y te hace spawn PEGADO a ella, o crea
+`jug.retorno` — puerta PERSONAL (índice `'R'` en `salidaCerca`/`ofrecer`; el cliente la
+añade a `map.exits` solo en su lado vía `m.retorno`); sin retorno si `esSinRetorno`
+(regex AMPLIADA con no.?clip|desmay|despiert — copiada en game.js, server.js y
+make-map.js), caminata, muerte o /tp. ESPACIO online también REGISTRA contenedores
+(`registrarCont` en sala.js: dado autoritativo, botín compartido, difunde `registrado`;
+esconderse ahora exige mueble registrado, como en solo). Linterna AUTORITATIVA: exige
+`linterna` en manos (server), `luzDe` llega también al dueño, se apaga al desequiparla o
+morir; el cono 3D sigue el facing real (θ online / ROT_VEC en solo — antes p.dir clavaba
+el haz al sur). Ajustes: `window.VERSION_JUEGO` visible, botón pantalla completa, fila
+🔑 Guardián (mensaje `{t:'admin',clave}` → `{t:'admin',si}`) que desbloquea la fila 🐞
+Debug (online = `/tp`) y `#debug-stats` (barras salud/comida/bebida/cordura, ui.js). Local
+sin servidor: cualquier clave desbloquea. Arnés de integración e2e usado en v23 (levanta
+servidor real + cliente ws): reproducirlo si se toca sala/protocolo.
+
 (Todos existen y están committeados. v3: render cenital con paredes finas autotile en `tiles.js`/`render.js`,
 pixel-art data-driven en `sprites.js` con override PNG desde `game/assets/sprites/`, efectos de combate
 en `effects.js`, props/contenedores registrables en `mapgen.js`/`game.js`.)

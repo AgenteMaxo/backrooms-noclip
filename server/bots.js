@@ -20,7 +20,7 @@ function bot(i) {
   const ws = new WebSocket(URL);
   ws.on('open', () => {
     conectados++;
-    ws.send(JSON.stringify({ t: 'hola', nombre: `Bot-${i}`, token: `bot-${i}`, v: 2, nivel: NIVEL }));
+    ws.send(JSON.stringify({ t: 'hola', nombre: `Bot-${i}`, token: `bot-${i}`, v: 3, nivel: NIVEL }));
     // v22: los bots cambian de RUMBO (vector continuo) en vez de dar pasos
     const rumbo = setInterval(() => {
       if (ws.readyState !== 1) { clearInterval(rumbo); return; }

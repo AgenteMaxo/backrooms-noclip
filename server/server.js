@@ -112,11 +112,18 @@ wss.on('connection', (ws, req) => {
     else if (m.t === 'usar') sala.usar(jug, m.mano);
     else if (m.t === 'luz') sala.luz(jug, m.si);
     else if (m.t === 'mochila') sala.mochila(jug, m);
+    else if (m.t === 'admin') {
+      // contraseña de guardián desde Ajustes: desbloquea debug y barras
+      jug.esAdmin = m.clave === ADMIN_CLAVE ? true : jug.esAdmin;
+      sala.enviar(ws, { t: 'admin', si: !!jug.esAdmin });
+      if (m.clave !== ADMIN_CLAVE)
+        sala.enviar(ws, { t: 'aviso', txt: 'La clave no abre nada.' });
+    }
     else if (m.t === 'chat') {
       if (m.txt.startsWith('/')) { comando(jug, sala, m.txt); return; }
       const txt = filtro.chatLimpio(m.txt);
       if (txt) sala.chat(jug, txt);
-    } else if (m.t === 'ping') sala.enviar(ws, { t: 'pong' });
+    } else if (m.t === 'ping') sala.enviar(ws, m.ts !== undefined ? { t: 'pong', ts: m.ts } : { t: 'pong' });
   });
 
   ws.on('close', () => {
@@ -135,7 +142,16 @@ function prepararSala(sala) {
   sala.alMorir = (jug, salaVieja, causa) => cambiarDeSala(jug, salaVieja, {
     destino: 'level-0',
     texto: `Moriste (${causa}). Despiertas otra vez sobre la moqueta húmeda, con las manos vacías.`,
-  });
+  }, { sinRetorno: true });
+}
+
+// salidas de las que físicamente NO se puede volver — la MISMA regla que
+// esSinRetorno en game.js (caídas, vacío, desplomes) para que el mundo
+// online respete la física del modo original
+function esSinRetorno(def) {
+  if (def.sinRetorno) return true;
+  if (def.tipo === 'void') return true;
+  return /agujero|caes |caer |caída|desplom|abismo|pozo|trampilla|no.?clip|desmay|despiert/i.test(def.texto || '');
 }
 
 // cruce de salas: sacar de la sala vieja, meter en la del nivel destino y
@@ -144,9 +160,31 @@ function cambiarDeSala(jug, salaVieja, defSalida, opts) {
   salaVieja.salir(jug);
   const nueva = asignar(defSalida.destino);
   prepararSala(nueva);
-  const [x, y] = nueva.buscarSpawn();
+  // ---------- puerta de RETORNO (v23): la puerta que cruzaste te espera ----------
+  // salvo que llegaras cayendo/por el vacío/noclip (caminata o /tp): de ahí no se vuelve
+  const origen = salaVieja.nivelId;
+  const conRetorno = !(opts && opts.sinRetorno) && !(opts && opts.sinTarjeta) &&
+    !esSinRetorno(defSalida) && origen !== nueva.nivelId;
+  jug.retorno = null;
+  let x, y;
+  const iVuelta = conRetorno
+    ? nueva.map.exits.findIndex((e) => e.def.destino === origen) : -1;
+  if (iVuelta >= 0) {
+    // el nivel ya tiene la puerta que conecta de vuelta: apareces a su lado
+    const ex = nueva.map.exits[iVuelta];
+    [x, y] = nueva.buscarSpawn(ex.x, ex.y);
+    jug.ofertaEn = iVuelta; // no reabrir la oferta hasta alejarse y volver
+  } else {
+    [x, y] = nueva.buscarSpawn();
+    if (conRetorno) {
+      // puerta personal: SOLO tú la ves — es TU camino de vuelta
+      jug.retorno = { x, y, destino: origen };
+      jug.ofertaEn = 'R';
+    } else jug.ofertaEn = null;
+  }
   jug.x = x; jug.y = y;
-  jug.ofertaEn = null; jug.canal = null; jug.escondido = null;
+  jug.canal = null; jug.escondido = null;
+  jug.input = { dx: 0, dy: 0 }; // que la tarjeta del nivel no te vea andando solo
   nueva.prepararCaminata(jug);
   const id = jug.id;
   nueva.jugadores.set(id, jug);
@@ -155,10 +193,12 @@ function cambiarDeSala(jug, salaVieja, defSalida, opts) {
     x, y, rot: jug.rot, via: defSalida.texto,
     sinTarjeta: !!(opts && opts.sinTarjeta),
     salud: jug.salud, inv: jug.inv, manos: jug.manos,
+    retorno: jug.retorno,
     caminata: jug.caminataObjetivo ? { pasos: 0, objetivo: jug.caminataObjetivo } : null,
     jugadores: nueva.censo(), ...nueva.estadoDinamico(),
   });
   nueva.difundir({ t: 'entra', id, nombre: jug.nombre, x, y, rot: jug.rot }, id);
+  if (jug.luz) nueva.difundir({ t: 'luzDe', id, si: true });
   if (jug._reSala) jug._reSala(nueva);
   db.registrarVisita(jug.token, nueva.nivelId);
   if (nueva.def.esEscape) db.sumarEscape(jug.token);
@@ -182,6 +222,7 @@ function comando(jug, sala, linea) {
   if (cmd === '/admin') {
     if (arg === ADMIN_CLAVE) {
       jug.esAdmin = true;
+      sala.enviar(jug.ws, { t: 'admin', si: true }); // desbloquea la UI de debug
       sala.enviar(jug.ws, { t: 'aviso', txt: 'Las Backrooms te reconocen como su guardián.' });
     } else sala.enviar(jug.ws, { t: 'aviso', txt: 'La clave no abre nada.' });
     return;
@@ -211,7 +252,7 @@ function comando(jug, sala, linea) {
       sala.enviar(jug.ws, { t: 'aviso', txt: `Nivel desconocido: «${arg}». Ejemplos: /tp 14 · /tp level-483` });
       return;
     }
-    cambiarDeSala(jug, sala, { destino: id, texto: 'El guardián camina por donde quiere.' });
+    cambiarDeSala(jug, sala, { destino: id, texto: 'El guardián camina por donde quiere.' }, { sinRetorno: true });
   } else {
     sala.enviar(jug.ws, { t: 'aviso', txt: 'Comandos: /anuncio <txt> · /kick <nombre> · /mute <nombre> [min] · /ban <nombre> · /tp <nivel>' });
   }

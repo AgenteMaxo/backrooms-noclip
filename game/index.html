@@ -72,6 +72,13 @@
         <button id="btn-log-close" class="btn-small">Cerrar (L)</button>
       </div>
       <div id="moodles"></div>
+      <!-- barras de estado (solo guardián: se habilitan con la contraseña de admin) -->
+      <div id="debug-stats" style="display:none">
+        <div class="dbg-fila"><span class="dbg-lab">Salud</span><div class="dbg-track"><div id="dbg-salud" class="dbg-fill"></div></div><span class="dbg-v" id="dbg-salud-v"></span></div>
+        <div class="dbg-fila"><span class="dbg-lab">Comida</span><div class="dbg-track"><div id="dbg-comida" class="dbg-fill"></div></div><span class="dbg-v" id="dbg-comida-v"></span></div>
+        <div class="dbg-fila"><span class="dbg-lab">Bebida</span><div class="dbg-track"><div id="dbg-bebida" class="dbg-fill"></div></div><span class="dbg-v" id="dbg-bebida-v"></span></div>
+        <div class="dbg-fila"><span class="dbg-lab">Cordura</span><div class="dbg-track"><div id="dbg-cordura" class="dbg-fill"></div></div><span class="dbg-v" id="dbg-cordura-v"></span></div>
+      </div>
       <div id="hud-manos">
         <div class="mano-slot" id="mano-0" title="Mano izquierda"></div>
         <div class="mano-slot" id="mano-1" title="Mano derecha"></div>
@@ -163,7 +170,12 @@
       <div class="sound-row"><label>Efectos</label><input type="range" id="snd-fx" min="0" max="100"><span id="snd-fx-v"></span></div>
       <div class="sound-row"><label>Ambiente / música</label><input type="range" id="snd-amb" min="0" max="100"><span id="snd-amb-v"></span></div>
       <div class="sound-row"><label>Tirada de dado</label><label class="chk-row"><input type="checkbox" id="opt-dado"> mostrar animación</label></div>
-      <div class="sound-row" id="debug-row"><label>🐞 Debug</label>
+      <div class="sound-row"><label>Pantalla</label><button id="btn-fullscreen" class="btn-small" style="margin-top:0">Pantalla completa</button></div>
+      <div class="sound-row" id="admin-row"><label>🔑 Guardián</label>
+        <input type="password" id="admin-clave" placeholder="contraseña de admin…" maxlength="64" autocomplete="off">
+        <button id="btn-admin" class="btn-small" style="margin-top:0">Entrar</button>
+      </div>
+      <div class="sound-row" id="debug-row" style="display:none"><label>🐞 Debug</label>
         <select id="debug-nivel"></select>
         <button id="btn-debug-tp" class="btn-small" style="margin-top:0">Teleport</button>
       </div>
@@ -177,6 +189,7 @@
         <button id="btn-snd-mute" class="btn-small"></button>
         <button id="btn-snd-close" class="btn-small">Cerrar</button>
       </div>
+      <p id="ajustes-version"></p>
     </div>
   </div>
 

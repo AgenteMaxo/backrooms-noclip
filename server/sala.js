@@ -46,8 +46,10 @@ class Sala {
     return false;
   }
 
-  buscarSpawn() {
-    const [sx, sy] = this.map.spawn;
+  // busca hueco transitable y libre en anillos crecientes alrededor de un
+  // punto (por defecto el spawn del mapa; v23: también junto a una puerta)
+  buscarSpawn(cx, cy) {
+    const [sx, sy] = cx === undefined ? this.map.spawn : [cx, cy];
     for (let r = 0; r < 20; r++)
       for (let dy = -r; dy <= r; dy++)
         for (let dx = -r; dx <= r; dx++) {
@@ -86,6 +88,7 @@ class Sala {
       inv: [], manos: [null, null], equipo: { cara: null, cuerpo: null, pies: null },
       esAdmin: false, muteadoHasta: 0,
       ultMov: 0, ultChat: 0, canal: null, ofertaEn: null,
+      retorno: null, // puerta personal de vuelta (v23; la pone cambiarDeSala)
     };
     this.prepararCaminata(jug);
     this.enviar(ws, {
@@ -196,6 +199,16 @@ class Sala {
       const d = Fisica.dist(e.x, e.y, jug.x, jug.y);
       if (d <= mejorD) { mejorD = d; mejor = { i, ex: e }; }
     });
+    // tu puerta personal de retorno (v23) compite como una salida más
+    if (jug.retorno) {
+      const r = jug.retorno;
+      const d = Fisica.dist(r.x, r.y, jug.x, jug.y);
+      if (d <= mejorD) {
+        mejor = { i: 'R', ex: { x: r.x, y: r.y, def: {
+          texto: 'El camino por el que llegaste sigue abierto', destino: r.destino, tipo: 'retorno',
+        } } };
+      }
+    }
     return mejor;
   }
 
@@ -217,20 +230,66 @@ class Sala {
   // ---------- ESPACIO contextual (v22: todo por proximidad) ----------
   accion(jug) {
     if (jug.muerto || jug.canal) return;
-    // 1) escondite: cerca de un mueble escondible (o salir de él)
+    // 1) escondite: salir de él
     if (jug.escondido) { this.esconder(jug, false); return; }
-    const prop = (this.map.props || []).find(
-      (p) => ESCONDITES.has(p.id) && Fisica.dist(p.x, p.y, jug.x, jug.y) <= 1.2
+    // 2) contenedor SIN registrar cerca: registrarlo (v23 — como el modo solo)
+    const iCont = (this.map.props || []).findIndex(
+      (p) => p.contenedor && !p.registrado && Fisica.dist(p.x, p.y, jug.x, jug.y) <= 1.2
     );
-    // 2) salida con mecánica de romper (a ≤1.0)
+    if (iCont >= 0) { this.registrarCont(jug, iCont); return; }
+    const prop = (this.map.props || []).find(
+      (p) => ESCONDITES.has(p.id) && p.registrado && Fisica.dist(p.x, p.y, jug.x, jug.y) <= 1.2
+    );
+    // 3) salida con mecánica de romper (a ≤1.0)
     const s = this.salidaCerca(jug, 1.0);
     if (s && (s.ex.def._mec === 'romper' || s.ex.def._mec === 'romper_suelo') && !s.ex.def._abierta) {
       this.iniciarRomper(jug, s);
       return;
     }
-    // 3) salida normal: reofrecer
+    // 4) salida normal: reofrecer
     if (s) { this.ofrecer(jug, s); return; }
     if (prop) { this.esconder(jug, true, prop); return; }
+    this.enviar(jug.ws, { t: 'aviso', txt: 'No hay nada con lo que interactuar aquí.' });
+  }
+
+  // ---------- registrar contenedores (v23): dado autoritativo, botín compartido ----------
+  registrarCont(jug, i) {
+    const prop = this.map.props[i];
+    prop.registrado = true;
+    this.difundir({ t: 'registrado', i }); // todos ven que ese mueble ya está abierto
+    this.hacerRuido(jug.x, jug.y, 10);     // registrar HACE RUIDO (como en el modo solo)
+    const d = this.rng.int(1, 20);
+    this.difundir({ t: 'dado', id: jug.id, valor: d, exito: d >= 14 });
+    if (d >= 14) {
+      const pool = ['agua_almendras', 'agua_almendras', 'botiquin', 'amuleto', 'linterna', 'chaqueta', 'mascara_gas', 'botas_reforzadas', 'tuberia', 'fuego_griego', 'guante_paralisis', 'trebol'];
+      const id = pool[Math.min(pool.length - 1, Math.floor((d - 14) / 7 * pool.length + this.rng.int(0, 2)))];
+      if (jug.inv.length >= 6) {
+        this.enviar(jug.ws, { t: 'aviso', txt: 'Hay algo útil… pero no te cabe nada más.' });
+      } else {
+        jug.inv.push(id);
+        this.enviarInv(jug);
+        const def = DATA.objects[id];
+        this.enviar(jug.ws, { t: 'aviso', txt: `Encuentras: ${def ? def.nombre : id}.` });
+      }
+    } else if (d >= 7) {
+      this.enviar(jug.ws, { t: 'aviso', txt: 'Vacío. Solo polvo y papel amarillento.' });
+    } else if (d >= 2) {
+      this.enviar(jug.ws, { t: 'aviso', txt: 'Algo se escurre entre tus dedos. Retrocedes de golpe.' });
+    } else {
+      // pifia: el estruendo pone a cazar a la entidad más cercana
+      this.enviar(jug.ws, { t: 'aviso', txt: 'El ruido ha despertado algo en la oscuridad…' });
+      this.hacerRuido(jug.x, jug.y, 14);
+      let best = null, bestD = Infinity;
+      for (const e of this.entidades) {
+        if (!e.viva) continue;
+        const dd = Math.abs(e.x - jug.x) + Math.abs(e.y - jug.y);
+        if (dd < bestD) { bestD = dd; best = e; }
+      }
+      if (best) {
+        best.estado = 'caza';
+        if (!best.revelada) { best.revelada = true; this.difundir({ t: 'entRevela', uid: best.uid }); }
+      }
+    }
   }
 
   esconder(jug, si, prop) {
@@ -329,7 +388,14 @@ class Sala {
     }
   }
 
+  // la linterna solo alumbra EN LA MANO (v23): el servidor manda, el cliente
+  // refleja — luzDe llega también al dueño (nada de encender en local)
   luz(jug, si) {
+    if (si && !jug.manos.includes('linterna')) {
+      this.enviar(jug.ws, { t: 'aviso', txt: 'Necesitas la linterna en la mano (B: mochila, arrástrala a una mano).' });
+      si = false;
+    }
+    if (jug.luz === !!si) return;
     jug.luz = !!si;
     this.difundir({ t: 'luzDe', id: jug.id, si: jug.luz });
   }
@@ -442,9 +508,9 @@ class Sala {
       }
     }
     this.enviarInv(jug);
+    // si la linterna salió de las manos con la luz encendida, se apaga sola
+    if (jug.luz && !jug.manos.includes('linterna')) this.luz(jug, false);
   }
-
-
 
   hacerRuido(x, y, radio) {
     this.ruido = { x, y, radio, hasta: Date.now() + 3200 };
@@ -455,6 +521,7 @@ class Sala {
     jug.muerto = true;
     jug.escondido = null;
     jug.canal = null;
+    if (jug.luz) this.luz(jug, false); // la linterna se pierde con el resto
     db.sumarMuerte(jug.token);
     this.difundir({ t: 'muere', id: jug.id, causa });
     setTimeout(() => {

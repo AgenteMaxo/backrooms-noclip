@@ -1404,12 +1404,20 @@
     plight.position.set(px, 1.6, pz);
     plight.distance = (world.visionActual() + 3) * (p.luz ? 2.4 : 1.6);
 
-    // LINTERNA: cono de luz real hacia donde miras + la niebla se abre
+    // LINTERNA: cono de luz real hacia donde miras + la niebla se abre.
+    // v23: el haz sigue al FACING de verdad (θ continuo online, rot 0-3 en
+    // solo) — antes usaba p.dir, que online nunca cambia, y el cono se quedaba
+    // clavado mirando al sur como una luz fantasma.
     const luzOn = p.luz && !world.luzBloqueada;
     spot.intensity += ((luzOn ? 2.4 : 0) - spot.intensity) * 0.12;
     if (spot.intensity > 0.01) {
       let fx2 = 0, fz2 = 1;
-      if (p.dir === 'up') { fx2 = 0; fz2 = -1; }
+      if (world.online) {
+        const th = p.rot || 0;
+        fx2 = Math.sin(th); fz2 = -Math.cos(th);
+      } else if (ROT_VEC[p.rot]) {
+        [fx2, fz2] = ROT_VEC[p.rot];
+      } else if (p.dir === 'up') { fx2 = 0; fz2 = -1; }
       else if (p.dir === 'side') { fx2 = p.flip ? -1 : 1; fz2 = 0; }
       spot.position.set(px, 1.2, pz);
       spot.target.position.set(px + fx2 * 3.5, 0.2, pz + fz2 * 3.5);

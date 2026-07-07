@@ -19,7 +19,7 @@
 //   {t:'pong'}
 'use strict';
 
-const VERSION = 2; // v22: movimiento libre (input vectorial); los clientes v1 se rechazan
+const VERSION = 3; // v23: retorno personal, registrar contenedores, admin por mensaje, linterna autoritativa
 const MAX_MSG = 512;          // bytes por mensaje entrante
 const MAX_CHAT = 120;         // caracteres de un chat
 const COOLDOWN_MOVER = 165;   // ms entre pasos (el cliente usa 170: margen de jitter)
@@ -74,8 +74,15 @@ function leer(raw) {
       if (m.tipo !== undefined) { if (!['cara', 'cuerpo', 'pies'].includes(m.tipo)) return null; out.tipo = m.tipo; }
       return out;
     }
-    case 'ping':
-      return { t: 'ping' };
+    case 'admin': { // contraseña de guardián desde Ajustes (responde {t:'admin', si})
+      if (typeof m.clave !== 'string' || m.clave.length > 64) return null;
+      return { t: 'admin', clave: m.clave };
+    }
+    case 'ping': { // eco del sello de tiempo: el cliente mide su RTT con el pong
+      const out = { t: 'ping' };
+      if (m.ts !== undefined) { const ts = +m.ts; if (isFinite(ts)) out.ts = ts; }
+      return out;
+    }
     default:
       return null;
   }

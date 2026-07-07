@@ -1,5 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
+  // versión visible del juego (Ajustes); súbela con cada tanda de cambios
+  window.VERSION_JUEGO = 'v23';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -79,11 +81,9 @@
       document.getElementById(id + '-v').textContent = s.value + '%';
     }
     pintarBtnMute();
-    // fila de debug: solo en partida; preselecciona el nivel actual
-    const dbgRow = document.getElementById('debug-row');
+    actualizarAdminUI(); // debug y barras solo con la contraseña de guardián
     const enJuego = world.level && !world.over;
-    dbgRow.style.display = enJuego ? 'flex' : 'none';
-    if (enJuego) document.getElementById('debug-nivel').value = world.level.id;
+    if (enJuego && world.esAdmin) document.getElementById('debug-nivel').value = world.level.id;
     sndMenu.style.display = 'flex';
     if (world.level && !world.over) world.busy = true;
   }
@@ -116,7 +116,58 @@
   };
   document.getElementById('btn-snd-close').onclick = cerrarSndMenu;
 
-  // ---------- debug (v20.2): teleport a cualquier nivel desde Ajustes ----------
+  // ---------- versión + pantalla completa + guardián (v23) ----------
+  document.getElementById('ajustes-version').textContent =
+    `BACKROOMS MMO ${window.VERSION_JUEGO}`;
+
+  const btnFs = document.getElementById('btn-fullscreen');
+  btnFs.onclick = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(() => {});
+  };
+  document.addEventListener('fullscreenchange', () => {
+    btnFs.textContent = document.fullscreenElement
+      ? 'Salir de pantalla completa' : 'Pantalla completa';
+  });
+
+  // contraseña de guardián: valida contra el servidor (online) y desbloquea
+  // el teleport de debug + las barras de salud/comida/bebida/cordura
+  function actualizarAdminUI() {
+    const admin = !!world.esAdmin;
+    const enJuego = world.level && !world.over;
+    document.getElementById('admin-row').style.display = admin ? 'none' : 'flex';
+    document.getElementById('debug-row').style.display = admin && enJuego ? 'flex' : 'none';
+    document.getElementById('debug-stats').style.display = admin && enJuego ? 'block' : 'none';
+    if (admin) world.ui.updateHUD();
+  }
+  window.onAdminCambia = (si) => {
+    if (si) {
+      world.log('Las Backrooms te reconocen como su guardián.', 'good');
+      document.getElementById('admin-clave').value = '';
+    }
+    actualizarAdminUI();
+  };
+  {
+    const clave = document.getElementById('admin-clave');
+    const btnAdmin = document.getElementById('btn-admin');
+    // que teclear la contraseña no mueva al personaje ni dispare atajos
+    clave.addEventListener('keydown', (ev) => {
+      ev.stopPropagation();
+      if (ev.key === 'Enter') btnAdmin.click();
+    });
+    btnAdmin.onclick = () => {
+      const v = clave.value.trim();
+      if (!v) { clave.focus(); return; }
+      if (world.online && window.Net && Net.activo) Net.admin(v);
+      else {
+        // modo local (desarrollo, sin servidor): no hay clave que validar
+        world.esAdmin = true;
+        window.onAdminCambia(true);
+      }
+    };
+  }
+
+  // ---------- debug (v20.2→v23): teleport a cualquier nivel, solo guardián ----------
   {
     const sel = document.getElementById('debug-nivel');
     const niveles = Object.values(world.data.levels).slice().sort((a, b) => {
@@ -133,9 +184,10 @@
     }
     document.getElementById('btn-debug-tp').onclick = () => {
       const id = sel.value;
-      if (!world.level || world.over || !world.data.levels[id]) return;
+      if (!world.esAdmin || !world.level || world.over || !world.data.levels[id]) return;
       cerrarSndMenu();
-      Game.debugTeleport(id);
+      if (world.online && window.Net && Net.activo) Net.tp(id);
+      else Game.debugTeleport(id);
     };
   }
   // mochila (v15): botón del HUD y cierre del panel
@@ -316,6 +368,8 @@
     world.moving = Math.abs(p.rx - p.x) + Math.abs(p.ry - p.y) > 0.02;
     for (const e of world.entities) {
       if (e.rx === undefined) { e.rx = e.x; e.ry = e.y; }
+      // online las entidades interpolan entre instantáneas reales del servidor
+      if (world.online && e._snaps && Otros.muestrear(e, t)) continue;
       e.rx = lerp(e.rx, e.x, 0.2);
       e.ry = lerp(e.ry, e.y, 0.2);
     }

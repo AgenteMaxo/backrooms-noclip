@@ -27,8 +27,45 @@
       rx: j.x, ry: j.y, rot: j.rot ?? 2,
       chat: null, chatT: 0,
       escondido: !!j.escondido, luz: false,
+      _snaps: [{ t: performance.now(), x: j.x, y: j.y }],
     });
     sincroniza();
+  }
+
+  // ---------- interpolación por instantáneas (v23) ----------
+  // El servidor difunde posiciones a 10 Hz; perseguirlas con un lerp por frame
+  // producía tirones (rápido al llegar el paquete, frenazo después). Ahora se
+  // guardan con su hora de llegada y se dibuja ~RETARDO ms EN EL PASADO,
+  // interpolando entre dos instantáneas reales: velocidad constante.
+  const RETARDO_INTERP = 150; // ms (~1.5 ticks: siempre hay un par que rodear)
+
+  function pushSnap(o, x, y) {
+    const buf = o._snaps || (o._snaps = []);
+    buf.push({ t: performance.now(), x, y });
+    if (buf.length > 24) buf.shift();
+  }
+
+  // escribe la posición visual (rx/ry) muestreando el búfer; true si lo hizo
+  function muestrear(o, ahora) {
+    const buf = o._snaps;
+    if (!buf || !buf.length) return false;
+    const t = ahora - RETARDO_INTERP;
+    if (t <= buf[0].t) { o.rx = buf[0].x; o.ry = buf[0].y; return true; }
+    let a = buf[0], b = null;
+    for (let i = 1; i < buf.length; i++) {
+      if (buf[i].t >= t) { b = buf[i]; a = buf[i - 1]; break; }
+      a = buf[i];
+    }
+    if (!b || b.t - a.t > 500) {
+      // sin par que rodee t (parado) o hueco enorme (estuvo quieto): al último
+      const fin = b || a;
+      o.rx = fin.x; o.ry = fin.y;
+    } else {
+      const f = (t - a.t) / Math.max(1, b.t - a.t);
+      o.rx = a.x + (b.x - a.x) * f;
+      o.ry = a.y + (b.y - a.y) * f;
+    }
+    return true;
   }
 
   function esconde(id, si) {
@@ -49,8 +86,9 @@
   function mueve(id, x, y) { // teleports (spawn/noclip/corrección)
     const o = porId.get(id);
     if (!o) return;
-    if (Math.abs(x - o.x) + Math.abs(y - o.y) > 3) { o.rx = x; o.ry = y; }
     o.x = x; o.y = y;
+    o.rx = x; o.ry = y;
+    o._snaps = [{ t: performance.now(), x, y }]; // nada que interpolar tras un salto
   }
 
   // v22: actualización continua de posición (batched); el facing se deriva
@@ -62,6 +100,7 @@
     if ((dx || dy) && performance.now() - (o.giroT || 0) > 400)
       o.rot = Math.atan2(dx, -dy);
     o.x = x; o.y = y;
+    pushSnap(o, x, y);
   }
 
   function gira(id, rot) {
@@ -88,11 +127,14 @@
   }
   let propio = null; // tu último mensaje: también flota sobre tu cabeza
 
-  // interpolación por frame (mismo lerp que usan entidades y jugador)
+  // posición visual por frame: muestreo del búfer (lerp solo de respaldo)
   function frame() {
+    const ahora = performance.now();
     for (const o of porId.values()) {
-      o.rx += (o.x - o.rx) * 0.22;
-      o.ry += (o.y - o.ry) * 0.22;
+      if (!muestrear(o, ahora)) {
+        o.rx += (o.x - o.rx) * 0.22;
+        o.ry += (o.y - o.ry) * 0.22;
+      }
     }
   }
 
@@ -172,5 +214,6 @@
   }
 
   window.Otros = { reset, entra, sale, mueve, pos, gira, chat, esconde, luz, overlay, spriteDe, dir4, frame,
+    pushSnap, muestrear,
     get lista() { return [...porId.values()]; } };
 })();

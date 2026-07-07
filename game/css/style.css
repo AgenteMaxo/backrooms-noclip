@@ -225,6 +225,24 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
   color: var(--amarillo); font-family: inherit; font-size: 14px; padding: 5px 8px;
   cursor: pointer; min-width: 0; }
 #debug-row { border-top: 1px dashed var(--borde); padding-top: 10px; }
+/* v23: contraseña de guardián + versión del juego en Ajustes */
+#admin-row { border-top: 1px dashed var(--borde); padding-top: 10px; }
+#admin-clave { flex: 1; background: #0a0906; border: 1px solid var(--borde);
+  color: var(--amarillo); font-family: inherit; font-size: 14px; padding: 5px 8px;
+  min-width: 0; outline: none; }
+#admin-clave:focus { border-color: var(--amarillo-osc); }
+#ajustes-version { margin-top: 10px; text-align: right; color: var(--gris);
+  font-size: 12px; opacity: .8; }
+/* v23: barras de guardián (salud/comida/bebida/cordura) — abajo-izquierda */
+#debug-stats { position: absolute; left: 14px; bottom: 14px; display: flex;
+  flex-direction: column; gap: 4px; background: rgba(10,9,6,.72);
+  border: 1px solid var(--borde); padding: 8px 10px; pointer-events: none; }
+.dbg-fila { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.dbg-lab { width: 56px; color: var(--hueso); }
+.dbg-track { width: 130px; height: 8px; background: #201c12;
+  border: 1px solid #3a352a; }
+.dbg-fill { height: 100%; width: 0; transition: width .25s ease-out; }
+.dbg-v { width: 26px; text-align: right; color: var(--gris); }
 .sound-row span { width: 36px; text-align: right; color: var(--gris); font-size: 12px; }
 .chk-row { flex: 1; color: var(--gris); font-size: 13px; cursor: pointer; }
 .chk-row input { accent-color: var(--amarillo); cursor: pointer; vertical-align: middle; }

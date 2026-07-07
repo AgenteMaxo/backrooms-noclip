@@ -48,7 +48,7 @@ const colorPeligro = (p) => PELIGRO[Math.max(0, Math.min(5, p))];
 // mismas reglas que el juego (game.js→esSinRetorno): caídas irreversibles
 const esSinRetorno = (s) =>
   s.sinRetorno === true || s.tipo === 'void' ||
-  /agujero|caes |caer |caída|desplom|abismo|pozo|trampilla/i.test(s.texto || '');
+  /agujero|caes |caer |caída|desplom|abismo|pozo|trampilla|no.?clip|desmay|despiert/i.test(s.texto || '');
 
 // ---------- datos embebidos para la interacción ----------
 const DATA = {};

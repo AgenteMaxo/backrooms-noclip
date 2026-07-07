@@ -29,7 +29,7 @@ fluorescentes**, bloom cinematográfico y polvo en suspensión. Alternativas por
 | J | Diario de ruta de la partida |
 | C | Códice del Errante (expediente y colección) |
 | 1-6 | Usar objeto de la mochila |
-| ESC | **Ajustes**: volumen, controles, opciones y el menú 🐞 Debug |
+| ESC | **Ajustes**: volumen, pantalla completa, opciones, versión del juego y la caja 🔑 de guardián |
 | Q (o clic en su caja) | **Usar la mano izquierda** (linterna, tubería, fuego griego…) |
 | E (o clic en su caja) | **Usar la mano derecha** (los objetos a 2 manos solo responden a Q) |
 | G | **No-clip** (solo con su Instinto): atraviesas la pared que encaras |
@@ -228,12 +228,22 @@ Si quieres hacerlo tú: copia una ficha similar en `levels.es.json`, cámbiale `
 `bioma` (uno de: pasillos, garaje, tuneles, hospital, oficinas, exterior, bosque, ciudad, torres),
 paleta y salidas (los `destino` deben ser ids que existan), y ejecuta `build-data.js`.
 
-## 7b. Menú de debug (probar niveles rápido)
+## 7b. Menú de debug (probar niveles rápido) — ahora con contraseña
 
-En partida, abre **Ajustes** (`ESC`): abajo está la fila **🐞 Debug** con un desplegable de
-los 30 niveles (número, peligro y bioma) y el botón **Teleport**. Te lleva directo al nivel
-elegido, sin crear puerta de retorno (para no ensuciar el mundo persistente). Ideal para
-revisar un nivel concreto en el stream sin jugar hasta él.
+El menú de debug **ya no está a la vista** (v23): en **Ajustes** (`ESC`) hay una fila
+**🔑 Guardián** con una caja de contraseña. Al escribir la clave de admin del servidor
+(la misma de `/admin`; sale en la terminal al arrancar, o la que fijes con `MMO_ADMIN`):
+
+- aparece la fila **🐞 Debug** con el desplegable de los 30 niveles y el botón **Teleport**
+  (online usa `/tp` por dentro; el viaje de guardián no deja puerta de retorno), y
+- se activan las **barras de estado** (salud, comida, bebida y cordura) abajo a la
+  izquierda, con números exactos — los jugadores normales siguen sin ver barras.
+
+Jugando en local sin servidor (`?autostart=1`), cualquier texto en la caja desbloquea el
+modo guardián (no hay clave que validar sin servidor).
+
+En Ajustes también están el botón de **Pantalla completa** y el **número de versión** del
+juego (abajo a la derecha), útil para saber qué build estás enseñando en directo.
 
 ## 8. El mapa de niveles (para ti, no para el juego)
 
@@ -329,9 +339,11 @@ MMO_DOMINIO=tudominio.com bash instalar.sh
 Al terminar, `https://tudominio.com` es el juego, con candado HTTPS automático.
 El servidor arranca solo al encender y se reinicia si se cae.
 
-**C. Ser el guardián (en el chat del juego):**
-- `/admin tu-clave` — te da poderes (la clave se fija en el archivo del servicio,
-  el instalador te dice dónde; NO la digas en directo).
+**C. Ser el guardián:**
+- `/admin tu-clave` en el chat — o mejor: escribe la clave en la caja **🔑 Guardián** de
+  Ajustes (`ESC`), que no sale en pantalla (la clave se fija en el archivo del servicio,
+  el instalador te dice dónde; NO la digas en directo). Desbloquea además el menú 🐞 Debug
+  y las barras de estado.
 - `/anuncio texto` — banner para TODOS los jugadores de todas las salas.
 - `/kick nombre` · `/mute nombre 10` (minutos) · `/ban nombre` (permanente).
 - `/tp 14` (o `/tp level-483`) — teletransporte de guardián a cualquier nivel:
