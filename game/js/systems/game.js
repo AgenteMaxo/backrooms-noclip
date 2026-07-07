@@ -678,12 +678,17 @@
     world.dmap = MapGen.bfsDist(world.map.grid, world.player.x, world.player.y);
   }
 
-  // Sincroniza todo lo que depende de la casilla del jugador. En tiempo real
-  // se ejecuta al moverse/interactuar, pero no adelanta enemigos ni necesidades.
-  function syncPlayerState(refreshView = true) {
-    // Los mundos diarios se generan una sola vez: no hay reconstrucciones que
-    // congelen un fotograma. Otros niveles infinitos conservan la ventana móvil.
-    if (world.level.infinito && !world.level.mapaDiarioUtc) {
+  // ---------- turno del mundo ----------
+  function worldStep() {
+    // BACKROOMS MMO: en el mundo compartido la simulación vive en el servidor —
+    // aquí no avanza ningún turno local (ventana, reglas, entidades, sed…)
+    if (world.online) return;
+    world.turn++;
+    world.turnTotal++;
+
+    // niveles infinitos: desplazar la ventana al acercarse a un borde
+    // (M debe cumplir M <= W/4 para que tras el salto de W/2 no rebote)
+    if (world.level.infinito) {
       const M = 22, g2 = world.map.grid;
       let sx = 0, sy = 0;
       if (world.player.x < M) sx = -1; else if (world.player.x >= g2.w - M) sx = 1;
@@ -1146,6 +1151,7 @@
 
   // ---------- manos (v15): dos ranuras; linterna/armas solo funcionan empuñadas ----------
   function equipar(slot) {
+    if (world.online) { Net.mochila('equipar', { slot }); return; }
     const id = world.player.inv[slot];
     if (!id) return;
     const def = world.data.objects[id];
@@ -1166,6 +1172,7 @@
   }
 
   function desequipar(mano) {
+    if (world.online) { Net.mochila('desequipar', { mano }); return; }
     const manos = world.player.manos;
     let id = manos[mano];
     if (id === '=') { mano = 0; id = manos[0]; }
@@ -1239,6 +1246,7 @@
   }
 
   function useItem(slot) {
+    if (world.online) { Net.mochila('usarItem', { slot }); return; }
     if (world.busy || world.over) return;
     const id = world.player.inv[slot];
     if (!id) return;
@@ -1294,6 +1302,7 @@
 
   // usar lo que llevas en la mano con el ratón (v17): 0 = clic izq, 1 = clic der
   function usarMano(m) {
+    if (world.online) { Net.usar(m); return; }
     if (world.busy || world.over || !world.player || !world.level || world.escondido) return;
     const manos = world.player.manos || [null, null];
     const id = manos[m];
@@ -1318,6 +1327,7 @@
 
   // tirar un objeto de la mochila al suelo (acción libre, no consume turno)
   function tirarItem(slot) {
+    if (world.online) { Net.mochila('tirar', { slot }); return; }
     const id = world.player.inv[slot];
     if (!id || world.over) return;
     world.player.inv.splice(slot, 1);
@@ -1331,6 +1341,7 @@
   // ARROJAR (v18): lanzas el objeto a un punto visible lejano — el golpe hace
   // RUIDO allí y distrae a lo que acecha. El objeto queda en el suelo.
   function arrojarItem(slot) {
+    if (world.online) { Net.mochila('arrojar', { slot }); return; }
     const id = world.player.inv[slot];
     if (!id || world.over) return;
     const g = world.map.grid;
@@ -1379,6 +1390,7 @@
 
   // No-clip (Instinto de umbral 80): atraviesas la pared que encaras
   function noclip() {
+    if (world.online) return; // sin Sintonía en el MMO (retirada a petición)
     if (world.busy || world.over || world.escondido) return;
     if (!world.instinto('noclip')) {
       if ((world.player.instintos || []).length)
@@ -1489,6 +1501,7 @@
 
   // ---------- equipamiento vestible (v20): cara / cuerpo / pies ----------
   function ponerEquipo(slot) {
+    if (world.online) { Net.mochila('ponerEquipo', { slot }); return; }
     const id = world.player.inv[slot];
     if (!id || world.over) return;
     const def = world.data.objects[id];
@@ -1504,6 +1517,7 @@
   }
 
   function quitarEquipo(tipo) {
+    if (world.online) { Net.mochila('quitarEquipo', { tipo }); return; }
     const id = world.player.equipo[tipo];
     if (!id) return;
     if (world.player.inv.length >= 6) { world.log('La mochila está llena: no puedes guardarlo.', 'event'); return; }

@@ -14,3 +14,6 @@ package-lock.json
 # Temporales
 *.log
 *.tmp
+
+# BACKROOMS MMO: base de datos local del servidor
+server/datos/

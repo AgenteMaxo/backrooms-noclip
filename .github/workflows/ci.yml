@@ -4,7 +4,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, v21-mmo]
   pull_request:
 
 jobs:
@@ -40,3 +40,14 @@ jobs:
         run: |
           node pipeline/parse.js
           git diff --exit-code data/parsed
+
+      - name: Servidor MMO — dependencias y arranque seco
+        run: |
+          cd server && npm ci
+          node server.js 8199 &
+          SRV=$!
+          sleep 3
+          curl -sf http://localhost:8199/estado
+          curl -sf -o /dev/null http://localhost:8199/
+          kill $SRV
+          echo "servidor OK"

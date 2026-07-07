@@ -1,0 +1,38 @@
+# Despliegue automático del servidor MMO al publicar un tag v* (o a mano
+# desde la pestaña Actions). La clave SSH de los secrets solo puede ejecutar
+# el script de despliegue del servidor (comando forzado) — no da shell.
+# Secrets necesarios: MMO_DEPLOY_KEY, MMO_DEPLOY_JUMP, MMO_DEPLOY_TARGET,
+# MMO_DEPLOY_PORT.
+
+name: Desplegar MMO
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag a desplegar (ej: v22.1)'
+        required: true
+
+concurrency: deploy-mmo   # nunca dos despliegues a la vez
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Desplegar por SSH
+        env:
+          DEPLOY_KEY: ${{ secrets.MMO_DEPLOY_KEY }}
+          JUMP: ${{ secrets.MMO_DEPLOY_JUMP }}
+          TARGET: ${{ secrets.MMO_DEPLOY_TARGET }}
+          PUERTO: ${{ secrets.MMO_DEPLOY_PORT }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          ssh -i ~/.ssh/deploy \
+              -o StrictHostKeyChecking=accept-new \
+              -o ProxyCommand="ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=accept-new -p $PUERTO -W %h:%p $JUMP" \
+              -p "$PUERTO" "$TARGET" "$TAG"

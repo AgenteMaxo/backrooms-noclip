@@ -1,0 +1,8 @@
+# BACKROOMS MMO — Caddy: HTTPS automático (Let's Encrypt) delante del servidor.
+# El dominio se toma de la variable de entorno MMO_DOMINIO (o edítalo aquí).
+# El servidor Node ya sirve el juego y el WebSocket: Caddy solo pone el candado.
+
+{$MMO_DOMINIO} {
+	encode gzip
+	reverse_proxy localhost:8080
+}

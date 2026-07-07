@@ -1,0 +1,13 @@
+{
+  "name": "backrooms-mmo-server",
+  "private": true,
+  "description": "Servidor de salas de BACKROOMS MMO (Node puro + ws)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "bots": "node bots.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

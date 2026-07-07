@@ -149,11 +149,52 @@
   const btnSndTitle = document.getElementById('btn-sound-menu-title');
   if (btnSndTitle) btnSndTitle.onclick = abrirSndMenu;
 
+  // v22: conjunto de teclas de movimiento PULSADAS (keydown/keyup); el vector
+  // de input se calcula en cada frame del bucle — movimiento libre y suave
+  const teclas = new Set();
+  document.addEventListener('keyup', (ev) => teclas.delete(ev.code));
+  window.addEventListener('blur', () => {
+    teclas.clear();
+    if (world.online && window.Net) Net.setInput(0, 0);
+  });
+
   let lastStepT = 0; // mantener pulsado = velocidad CONSTANTE (v16)
   document.addEventListener('keydown', (ev) => {
     if (!world.level || world.over) return;
     if (document.getElementById('screen-card').style.display !== 'none') return;
+    // escribiendo en el chat del MMO: el juego no oye nada
+    if (window.Net && Net.chatAbierto && Net.chatAbierto()) return;
     const tercera = use3D && Render3D.modo === 'tercera';
+    // ---------- modo online (BACKROOMS MMO v22): movimiento LIBRE ----------
+    // las teclas de movimiento solo se apuntan; el vector se calcula por frame
+    if (world.online) {
+      if (KEYS[ev.code]) {
+        ev.preventDefault();
+        teclas.add(ev.code);
+      } else if (ev.code === 'KeyT' || ev.code === 'Enter') {
+        ev.preventDefault();
+        Net.abrirChat();
+      } else if (ev.code === 'Space') {
+        ev.preventDefault();
+        Net.accion(); // contextual: esconderse, romper, reabrir la oferta de salida
+      } else if (ev.code === 'KeyQ' || ev.code === 'KeyE') {
+        if (tercera || !use3D) Net.usar(ev.code === 'KeyQ' ? 0 : 1);
+        else Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
+      } else if (ev.code === 'KeyF') Net.luzToggle();
+      else if (/^Digit[1-6]$/.test(ev.code)) Game.useItem(parseInt(ev.code.slice(5), 10) - 1);
+      else if (ev.code === 'KeyB') world.ui.toggleBackpack();
+      else if (ev.code === 'KeyL') world.ui.toggleLog();
+      else if (ev.code === 'KeyC') world.ui.toggleCodex();
+      else if (ev.code === 'KeyM' || ev.code === 'KeyN') Minimap.toggleBig();
+      else if (ev.code === 'Escape') {
+        if (Minimap.visible) Minimap.toggleBig(false);
+        else if (document.getElementById('backpack-panel').style.display !== 'none') world.ui.toggleBackpack(false);
+        else if (sndMenu.style.display !== 'none') cerrarSndMenu();
+        else abrirSndMenu();
+      }
+      // (X=esperar no aplica online: el mundo ya no espera por nadie)
+      return;
+    }
     const autoRepeatTime2DMove = 150; // tiempo en ms mínimo entre pasos al mantener pulsada una tecla de movimiento en modo 2D
     const autoRepeatTime3DYMove = 150; // tiempo en ms mínimo entre pasos al mantener pulsada una tecla de movimiento vertical en modo 3D
     const autoRepeatTime3DXMove = 600; // tiempo en ms mínimo entre pasos al mantener pulsada una tecla de movimiento horizontal en modo 3D
@@ -217,17 +258,61 @@
     } else if (/^Digit[1-6]$/.test(ev.code)) Game.useItem(parseInt(ev.code.slice(5), 10) - 1);
   });
 
-  // ---------- bucle de animación + reloj de simulación ----------
+  // ---------- bucle de animación (y, online, también el input continuo) ----------
   function lerp(a, b, f) { return a + (b - a) * f; }
+
+  const GIRO_RAD_S = 3.1; // velocidad de giro manteniendo A/D en tercera persona
+  let lastFrameT = 0;
 
   function loop(t) {
     requestAnimationFrame(loop);
+    const dtF = Math.min(0.1, (t - lastFrameT) / 1000 || 0);
+    lastFrameT = t;
     if (!world.level || !world.player) return;
     Game.tickRealTime(t);
     const p = world.player;
+
+    // ---------- v22: vector de movimiento por frame (movimiento libre) ----------
+    if (world.online && window.Net && Net.activo &&
+        !(Net.chatAbierto && Net.chatAbierto()) &&
+        document.getElementById('screen-card').style.display === 'none') {
+      // suma de las teclas pulsadas en coordenadas de PANTALLA
+      let sx = 0, sy = 0;
+      for (const code of teclas) {
+        const v = KEYS[code];
+        if (v) { sx += v[0]; sy += v[1]; }
+      }
+      sx = Math.sign(sx); sy = Math.sign(sy);
+      const tercera = use3D && Render3D.modo === 'tercera';
+      if (tercera) {
+        // A/D giran suave; W/S avanzan según el ángulo θ
+        if (sx) Net.setRot((p.rot || 0) + sx * GIRO_RAD_S * dtF);
+        const s = -sy; // W (pantalla arriba) = avanzar
+        if (s) Net.setInput(Math.sin(p.rot || 0) * s, -Math.cos(p.rot || 0) * s);
+        else Net.setInput(0, 0);
+      } else {
+        // 2D / cámara alta: 8 direcciones relativas a la pantalla
+        let dx = sx, dy = sy;
+        if (use3D && Render3D.rot) {
+          const th = -Render3D.rot * Math.PI / 2;
+          const rx2 = Math.cos(th) * sx - Math.sin(th) * sy;
+          const ry2 = Math.sin(th) * sx + Math.cos(th) * sy;
+          dx = rx2; dy = ry2;
+        }
+        Net.setInput(dx, dy);
+        if (dx || dy) {
+          // el facing sigue al movimiento (sprite 2D + acciones por ángulo)
+          if (Math.abs(dy) >= Math.abs(dx)) p.dir = dy > 0 ? 'down' : 'up';
+          else { p.dir = 'side'; p.flip = dx < 0; }
+          Net.setRot(Math.atan2(dx, -dy));
+        }
+      }
+      Net.frame(dtF); // predicción local con la misma física del servidor
+    }
+
     // desliza la posición visual hacia la lógica
-    p.rx = lerp(p.rx, p.x, 0.28);
-    p.ry = lerp(p.ry, p.y, 0.28);
+    p.rx = lerp(p.rx, p.x, world.online ? 0.5 : 0.28);
+    p.ry = lerp(p.ry, p.y, world.online ? 0.5 : 0.28);
     world.moving = Math.abs(p.rx - p.x) + Math.abs(p.ry - p.y) > 0.02;
     for (const e of world.entities) {
       if (e.rx === undefined) { e.rx = e.x; e.ry = e.y; }
@@ -269,9 +354,20 @@
   const params = new URLSearchParams(location.search);
   if (params.get('nofx')) window.NOFX = true;
   if (params.get('debug3d')) window.DEBUG3D_ON = true;
-  if ((params.get('autostart') || params.get('selftest')) && !Game.Profiles.activeName())
-    Game.Profiles.create('Errante');
-  if (params.get('autostart')) {
+  if ((params.get('autostart') || params.get('selftest') || params.get('online')) && !Game.Profiles.activeName())
+    Game.Profiles.create(params.get('nombre') || 'Errante');
+  // ---------- BACKROOMS MMO: ?online=1 conecta al mundo compartido ----------
+  if (params.get('online')) {
+    Net.iniciar(params.get('nombre') || Game.Profiles.activeName() || 'Errante');
+    // la tarjeta del nivel aparece al recibir la bienvenida; se entra sola
+    const esperaCard = setInterval(() => {
+      const btn = document.getElementById('btn-enter');
+      if (Net.activo && btn && document.getElementById('screen-card').style.display !== 'none') {
+        clearInterval(esperaCard);
+        btn.click();
+      }
+    }, 100);
+  } else if (params.get('autostart')) {
     Game.startRun(params.get('seed') || undefined);
     if (params.get('nivel') && world.data.levels[params.get('nivel')]) {
       // salto directo para pruebas
@@ -535,12 +631,22 @@
   $id('btn-start').onclick = () => {
     if (!P.activeName()) P.create($id('profile-name').value.trim() || 'Errante');
     refreshTitle();
-    const seed = $id('seed-input').value.trim();
-    Game.startRun(seed || undefined);
+    // BACKROOMS MMO: el botón del título conecta al mundo compartido
+    const btn = $id('btn-start');
+    btn.disabled = true;
+    btn.textContent = 'CRUZANDO LA REALIDAD…';
+    Net.iniciar(P.activeName());
+    const espera = setInterval(() => {
+      if (Net.activo) {
+        clearInterval(espera);
+        btn.disabled = false;
+        btn.textContent = 'DESPERTAR EN LEVEL 0';
+      }
+    }, 200);
   };
   $id('btn-again').onclick = () => {
     refreshTitle();
-    Game.startRun();
+    world.ui.show('title');
   };
   $id('btn-journal-close').onclick = () => world.ui.toggleJournal();
   $id('btn-end-codex').onclick = () => world.ui.toggleCodex(true);

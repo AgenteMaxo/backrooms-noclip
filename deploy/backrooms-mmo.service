@@ -1,0 +1,17 @@
+# BACKROOMS MMO — unidad de systemd: arranque al encender y reinicio si se cae.
+# Instalación: ver deploy/instalar.sh (o MANUAL.md sección del MMO).
+[Unit]
+Description=BACKROOMS MMO (servidor de salas)
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/backrooms-mmo
+ExecStart=/usr/bin/node server/server.js 8080
+Restart=always
+RestartSec=3
+User=mmo
+# clave del chat de administración (/admin <clave>) — CÁMBIALA:
+Environment=MMO_ADMIN=cambia-esta-clave
+
+[Install]
+WantedBy=multi-user.target

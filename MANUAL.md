@@ -299,7 +299,52 @@ que solo tú puedes aceptar o rechazar.
   es SECRETA (quien la tenga puede escribir en tu canal): no la enseñes en directo ni la
   subas al repositorio. Si se filtra: bórrala en Discord, crea otra y reconfigura.
 
-## 12. Si algo falla
+## 12. BACKROOMS MMO: tu servidor (v21)
+
+El juego ahora es un mundo compartido: necesita un servidor encendido.
+
+**Jugar en local (probar en tu PC):** abre una terminal en la carpeta del proyecto y:
+```
+node server/server.js
+```
+Juega en `http://localhost:8080` (dos ventanas = dos jugadores; la de incógnito cuenta
+como otra persona). `Ctrl+C` lo para. La clave de admin sale en la terminal al arrancar.
+Gente de tu misma WiFi puede entrar con `http://TU-IP-LOCAL:8080` (IP con `ipconfig`).
+
+**Para que juegue cualquiera por internet**, hace falta un servidor de verdad — el
+tutorial completo está en `deploy/README.md`. Tu única parte manual es contratar dos cosas:
+
+**A. Contratar (una vez, ~5 €/mes):**
+1. **VPS**: un servidor pequeño con Ubuntu 24.04 (p. ej. Hetzner CX22, DigitalOcean,
+   OVH…). Al crearlo te dan una **dirección IP** y acceso root por SSH.
+2. **Dominio** (p. ej. en Namecheap/Porkbun): crea un registro **A** apuntando a esa IP
+   (en la gestión DNS del dominio: tipo A, nombre @, valor = la IP del VPS).
+
+**B. Instalar (una vez, 5 minutos):** entra al VPS por SSH (o pídeselo a Claude con
+la IP) y ejecuta:
+```
+curl -fsSL https://raw.githubusercontent.com/AgenteMaxo/backrooms-noclip/v21-mmo/deploy/instalar.sh -o instalar.sh
+MMO_DOMINIO=tudominio.com bash instalar.sh
+```
+Al terminar, `https://tudominio.com` es el juego, con candado HTTPS automático.
+El servidor arranca solo al encender y se reinicia si se cae.
+
+**C. Ser el guardián (en el chat del juego):**
+- `/admin tu-clave` — te da poderes (la clave se fija en el archivo del servicio,
+  el instalador te dice dónde; NO la digas en directo).
+- `/anuncio texto` — banner para TODOS los jugadores de todas las salas.
+- `/kick nombre` · `/mute nombre 10` (minutos) · `/ban nombre` (permanente).
+- `/tp 14` (o `/tp level-483`) — teletransporte de guardián a cualquier nivel:
+  tu menú de debug para enseñar niveles en directo.
+
+**D. Mantenimiento:**
+- Actualizar a la última versión: `bash /opt/backrooms-mmo/deploy/desplegar.sh`
+- Ver el mundo en vivo: `https://tudominio.com/estado` (jugadores, salas, rendimiento).
+- Ver los registros: `journalctl -u backrooms-mmo -f`
+- Probado con **500 jugadores simultáneos** en un equipo modesto (130-190 MB de RAM):
+  un VPS básico va sobrado.
+
+## 13. Si algo falla
 
 - Pulsa **F12** en el navegador → pestaña «Consola» → haz captura de los mensajes en rojo
   y enséñasela a Claude.
