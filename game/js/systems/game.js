@@ -356,7 +356,13 @@
   // Todos los jugadores sin semilla manual reciben el mismo Level 0 durante
   // el día UTC. Una partida ya iniciada conserva su mundo al cruzar medianoche.
   function dailySeedUTC(now = new Date()) {
-    return `utc-${now.toISOString().slice(0, 10)}`;
+    const dia = now.toISOString().slice(0, 10);
+    let h = 2166136261;
+    for (let i = 0; i < dia.length; i++) {
+      h ^= dia.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return String(h >>> 0);
   }
 
   function startRun(seed) {
@@ -1731,7 +1737,7 @@
 
   function continueRun(s) {
     world.runSeed = s.runSeed;
-    world.dailySeed = /^utc-\d{4}-\d{2}-\d{2}$/.test(s.runSeed || '');
+    world.dailySeed = s.runSeed === dailySeedUTC();
     world._realtimeAt = 0;
     world.player = {
       x: 0, y: 0, rx: 0, ry: 0, dir: 'down', flip: false, rot: 2,

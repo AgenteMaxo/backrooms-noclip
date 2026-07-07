@@ -4,6 +4,7 @@
 // NO se bloquean entre sí; las entidades sí ocupan casilla.
 'use strict';
 
+const crypto = require('crypto');
 const { DATA, RNG, MapGen, generarMapa, esTransitable } = require('./sim/mundo');
 const Entidades = require('./sim/entidades');
 const Fisica = require('../game/js/sim/fisica');
@@ -12,6 +13,33 @@ const db = require('./db');
 
 let siguienteId = 1;
 const ESCONDITES = new Set(['taquilla', 'nevera', 'archivador']);
+const SALA_PUBLICA = 'publica';
+
+function grupoSala(grupo) {
+  return grupo && grupo !== SALA_PUBLICA ? String(grupo) : SALA_PUBLICA;
+}
+
+function idGrupo(grupo) {
+  grupo = grupoSala(grupo);
+  if (grupo === SALA_PUBLICA) return SALA_PUBLICA;
+  return crypto.createHash('sha256').update(grupo).digest('hex').slice(0, 10);
+}
+
+function claveInterna(nivelId, inst, grupo) {
+  return `${grupoSala(grupo)}::${nivelId}::${inst}`;
+}
+
+function claveVisible(nivelId, inst, grupo) {
+  grupo = grupoSala(grupo);
+  if (grupo === SALA_PUBLICA) return `${nivelId}::${inst}`;
+  return `${nivelId}::privada-${idGrupo(grupo)}::${inst}`;
+}
+
+function semillaSala(nivelId, inst, grupo) {
+  grupo = grupoSala(grupo);
+  if (grupo === SALA_PUBLICA) return `mmo::${nivelId}::${inst}`;
+  return `mmo::privada::${idGrupo(grupo)}::${nivelId}::${inst}`;
+}
 
 // vector cardinal más cercano a un ángulo θ (0=N, π/2=E, π=S, 3π/2=O)
 function cardinalDe(th) {
@@ -21,12 +49,14 @@ function cardinalDe(th) {
 const r2 = (v) => Math.round(v * 100) / 100;
 
 class Sala {
-  constructor(nivelId, inst) {
+  constructor(nivelId, inst, grupo = SALA_PUBLICA) {
     this.nivelId = nivelId;
     this.inst = inst;
-    this.clave = `${nivelId}::${inst}`;
+    this.grupo = grupoSala(grupo);
+    this.privada = this.grupo !== SALA_PUBLICA;
+    this.clave = claveVisible(nivelId, inst, this.grupo);
     // La semilla es el contrato con el cliente: mismo string → mismo mapa.
-    this.semilla = `mmo::${nivelId}::${inst}`;
+    this.semilla = semillaSala(nivelId, inst, this.grupo);
     const { def, map } = generarMapa(nivelId, this.semilla);
     this.def = def;
     this.map = map;
@@ -34,6 +64,7 @@ class Sala {
     this.rng = RNG.create(this.semilla + '::sim'); // dados y azar de la sala
     this.entidades = Entidades.crear(map, DATA.entities, RNG.create(this.semilla + '::ents'));
     this.ruido = null;
+    this.conexiones = new Map(); // salida física -> instancia destino estable
     this.alCruzar = null; // lo inyecta server.js (cambio de sala)
     this.alMorir = null;  // ídem (respawn en Level 0)
   }
@@ -93,7 +124,7 @@ class Sala {
     this.prepararCaminata(jug);
     this.enviar(ws, {
       t: 'bienvenida', id, nivel: this.nivelId, inst: this.inst,
-      semilla: this.semilla, x, y, rot: jug.rot,
+      semilla: this.semilla, privada: this.privada, x, y, rot: jug.rot,
       salud: jug.salud, inv: jug.inv, manos: jug.manos,
       caminata: jug.caminataObjetivo ? { pasos: 0, objetivo: jug.caminataObjetivo } : null,
       jugadores: this.censo(), ...this.estadoDinamico(),
@@ -354,7 +385,7 @@ class Sala {
       this.enviar(jug.ws, { t: 'aviso', txt: 'Ese camino no lleva a ninguna parte (nivel fuera del piloto).' });
       return;
     }
-    if (this.alCruzar) this.alCruzar(jug, this, def);
+    if (this.alCruzar) this.alCruzar(jug, this, def, { salidaIndice: s.i });
   }
 
   // ---------- manos: tubería (golpe hacia donde miras) y linterna ----------
@@ -667,19 +698,32 @@ class Sala {
 // ---------- registro de salas ----------
 const salas = new Map();
 
-function asignar(nivelId) {
+function crearSala(nivelId, inst, grupo) {
+  const sala = new Sala(nivelId, inst, grupo);
+  salas.set(claveInterna(nivelId, inst, grupo), sala);
+  console.log(`[sala] abierta ${sala.clave} (${sala.map.grid.w}×${sala.map.grid.h}, ${sala.entidades.length} entidades)`);
+  return sala;
+}
+
+function asignar(nivelId, grupo = SALA_PUBLICA) {
+  grupo = grupoSala(grupo);
   let inst = 1;
   for (;;) {
-    const clave = `${nivelId}::${inst}`;
+    const clave = claveInterna(nivelId, inst, grupo);
     let sala = salas.get(clave);
-    if (!sala) {
-      sala = new Sala(nivelId, inst);
-      salas.set(clave, sala);
-      console.log(`[sala] abierta ${clave} (${sala.map.grid.w}×${sala.map.grid.h}, ${sala.entidades.length} entidades)`);
-    }
+    if (!sala) sala = crearSala(nivelId, inst, grupo);
     if (!sala.llena) return sala;
     inst++;
   }
+}
+
+function asignarExacta(nivelId, inst, grupo = SALA_PUBLICA) {
+  grupo = grupoSala(grupo);
+  inst = Math.max(1, inst | 0);
+  const clave = claveInterna(nivelId, inst, grupo);
+  let sala = salas.get(clave);
+  if (!sala) sala = crearSala(nivelId, inst, grupo);
+  return sala;
 }
 
 // métricas del bucle de simulación (visibles en /estado)
@@ -723,4 +767,4 @@ setInterval(() => {
 
 function todas() { return [...salas.values()]; }
 
-module.exports = { Sala, asignar, tickTodas, estado, todas };
+module.exports = { Sala, asignar, asignarExacta, tickTodas, estado, todas };

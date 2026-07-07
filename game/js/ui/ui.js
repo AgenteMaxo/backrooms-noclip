@@ -27,6 +27,8 @@
     for (const [k, el] of Object.entries(screens))
       el.style.display = k === name ? 'flex' : 'none';
     if (name === 'game') screens.game.style.display = 'flex';
+    document.body.classList.toggle('game-active', name === 'game');
+    document.body.classList.toggle('card-active', name === 'card');
     if (name === 'card') {
       // re-dispara la animación de entrada de la tarjeta
       const card = screens.card.querySelector('.level-card');

@@ -26,6 +26,16 @@
     }
   }
 
+  // ---------- viewport móvil ----------
+  function resizeViewport() {
+    const vv = window.visualViewport;
+    const h = vv ? vv.height : window.innerHeight;
+    document.documentElement.style.setProperty('--vh', `${h * 0.01}px`);
+  }
+  resizeViewport();
+  window.addEventListener('resize', resizeViewport);
+  window.addEventListener('orientationchange', () => setTimeout(resizeViewport, 120));
+
   // sprites PNG personalizados (game/assets/sprites/) si existen
   Sprites.tryOverrides([
     ...Sprites.list(),
@@ -168,6 +178,34 @@
   }
 
   // ---------- debug (v20.2→v23): teleport a cualquier nivel, solo guardián ----------
+
+  // ---------- menú de partida ----------
+  const gameMenu = document.getElementById('game-menu');
+  function abrirGameMenu() {
+    if (!world.level || world.over) return;
+    gameMenu.style.display = 'flex';
+    world.busy = true;
+  }
+  function cerrarGameMenu() {
+    gameMenu.style.display = 'none';
+    if (world.level && !world.over &&
+        document.getElementById('exit-modal').style.display === 'none' &&
+        document.getElementById('dice-overlay').style.display === 'none' &&
+        document.getElementById('sound-menu').style.display === 'none') world.busy = false;
+  }
+  function salirATitulo() {
+    if (window.Net?.cerrar) Net.cerrar();
+    world.online = false;
+    world.over = false;
+    cerrarGameMenu();
+    world.ui.show('title');
+    refreshTitle();
+  }
+  document.getElementById('btn-game-menu').onclick = abrirGameMenu;
+  document.getElementById('btn-menu-continue').onclick = cerrarGameMenu;
+  document.getElementById('btn-menu-sound').onclick = () => { cerrarGameMenu(); abrirSndMenu(); };
+  document.getElementById('btn-menu-exit').onclick = salirATitulo;
+
   {
     const sel = document.getElementById('debug-nivel');
     const niveles = Object.values(world.data.levels).slice().sort((a, b) => {
@@ -621,6 +659,8 @@
   const P = Game.Profiles;
 
   function refreshTitle() {
+    const seedDisplay = $id('seed-display');
+    if (seedDisplay) seedDisplay.textContent = Game.dailySeedUTC();
     const sel = $id('profile-select');
     sel.innerHTML = '';
     const names = P.list();
@@ -685,11 +725,17 @@
   $id('btn-start').onclick = () => {
     if (!P.activeName()) P.create($id('profile-name').value.trim() || 'Errante');
     refreshTitle();
+    const salaPrivada = ($id('room-input')?.value || '').trim().toLowerCase();
+    if (salaPrivada && !/^[a-z0-9_-]{3,32}$/.test(salaPrivada)) {
+      alert('La sala privada debe tener 3-32 caracteres: letras, números, _ o -.');
+      $id('room-input').focus();
+      return;
+    }
     // BACKROOMS MMO: el botón del título conecta al mundo compartido
     const btn = $id('btn-start');
     btn.disabled = true;
     btn.textContent = 'CRUZANDO LA REALIDAD…';
-    Net.iniciar(P.activeName());
+    Net.iniciar(P.activeName(), salaPrivada || undefined);
     const espera = setInterval(() => {
       if (Net.activo) {
         clearInterval(espera);
@@ -705,5 +751,28 @@
   $id('btn-journal-close').onclick = () => world.ui.toggleJournal();
   $id('btn-end-codex').onclick = () => world.ui.toggleCodex(true);
   $id('btn-end-title').onclick = () => { world.ui.show('title'); refreshTitle(); };
+
+  // ---------- controles táctiles ----------
+  const touch = {
+    up: () => world.online ? Net.setInput(0, -1) : Game.tryMove(0, -1),
+    down: () => world.online ? Net.setInput(0, 1) : Game.tryMove(0, 1),
+    left: () => world.online ? Net.setInput(-1, 0) : Game.tryMove(-1, 0),
+    right: () => world.online ? Net.setInput(1, 0) : Game.tryMove(1, 0),
+    act: () => world.online ? Net.accion() : Game.interact(),
+    q: () => world.online ? Net.usar(0) : Game.usarMano(0),
+    e: () => world.online ? Net.usar(1) : Game.usarMano(1),
+    bag: () => world.ui.toggleBackpack(),
+  };
+  document.querySelectorAll('[data-touch]').forEach((btn) => {
+    const k = btn.dataset.touch;
+    const start = (ev) => { ev.preventDefault(); touch[k]?.(); };
+    const stop = () => {
+      if (world.online && ['up', 'down', 'left', 'right'].includes(k)) Net.setInput(0, 0);
+    };
+    btn.addEventListener('pointerdown', start);
+    btn.addEventListener('pointerup', stop);
+    btn.addEventListener('pointercancel', stop);
+    btn.addEventListener('pointerleave', stop);
+  });
   refreshTitle();
 })();

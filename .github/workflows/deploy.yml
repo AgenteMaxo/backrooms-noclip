@@ -1,27 +1,39 @@
-# Despliegue automático del servidor MMO al publicar un tag v* (o a mano
-# desde la pestaña Actions). La clave SSH de los secrets solo puede ejecutar
-# el script de despliegue del servidor (comando forzado) — no da shell.
-# Secrets necesarios: MMO_DEPLOY_KEY, MMO_DEPLOY_JUMP, MMO_DEPLOY_TARGET,
-# MMO_DEPLOY_PORT.
+# Despliegue automatico del servidor MMO al publicar un tag v* o desde Actions.
+# La clave SSH debe estar limitada en el servidor con comando forzado: no shell.
+# Secrets:
+# - MMO_DEPLOY_KEY: clave privada SSH de despliegue.
+# - MMO_DEPLOY_TARGET: usuario@host del servidor final.
+# - MMO_DEPLOY_PORT: puerto SSH.
+# - MMO_DEPLOY_JUMP: usuario@host del servidor puente (opcional).
 
 name: Desplegar MMO
 
 on:
   push:
-    tags: ['v*']
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       tag:
         description: 'Tag a desplegar (ej: v22.1)'
         required: true
+        type: string
 
-concurrency: deploy-mmo   # nunca dos despliegues a la vez
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-mmo
+  cancel-in-progress: false
 
 jobs:
   deploy:
+    name: Desplegar servidor
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Desplegar por SSH
+      - name: Validar parametros
+        shell: bash
         env:
           DEPLOY_KEY: ${{ secrets.MMO_DEPLOY_KEY }}
           JUMP: ${{ secrets.MMO_DEPLOY_JUMP }}
@@ -29,10 +41,51 @@ jobs:
           PUERTO: ${{ secrets.MMO_DEPLOY_PORT }}
           TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
+          set -euo pipefail
+
+          [ -n "$DEPLOY_KEY" ] || { echo "::error::Falta el secret MMO_DEPLOY_KEY"; exit 1; }
+          [ -n "$TARGET" ] || { echo "::error::Falta el secret MMO_DEPLOY_TARGET"; exit 1; }
+          [ -n "$PUERTO" ] || { echo "::error::Falta el secret MMO_DEPLOY_PORT"; exit 1; }
+          [ -n "$TAG" ] || { echo "::error::No se ha recibido tag de despliegue"; exit 1; }
+
+          if ! [[ "$PUERTO" =~ ^[0-9]+$ ]]; then
+            echo "::error::MMO_DEPLOY_PORT debe ser numerico"
+            exit 1
+          fi
+
+          if ! [[ "$TAG" =~ ^v[0-9A-Za-z._-]+$ ]]; then
+            echo "::error::Tag invalido: $TAG. Usa formato v* (ej: v22.1)"
+            exit 1
+          fi
+
+      - name: Desplegar por SSH
+        shell: bash
+        env:
+          DEPLOY_KEY: ${{ secrets.MMO_DEPLOY_KEY }}
+          JUMP: ${{ secrets.MMO_DEPLOY_JUMP }}
+          TARGET: ${{ secrets.MMO_DEPLOY_TARGET }}
+          PUERTO: ${{ secrets.MMO_DEPLOY_PORT }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          umask 077
+
           mkdir -p ~/.ssh
           printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy
           chmod 600 ~/.ssh/deploy
-          ssh -i ~/.ssh/deploy \
-              -o StrictHostKeyChecking=accept-new \
-              -o ProxyCommand="ssh -i ~/.ssh/deploy -o StrictHostKeyChecking=accept-new -p $PUERTO -W %h:%p $JUMP" \
-              -p "$PUERTO" "$TARGET" "$TAG"
+
+          ssh_opts=(
+            -i ~/.ssh/deploy
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=accept-new
+            -o ServerAliveInterval=20
+            -o ServerAliveCountMax=3
+            -p "$PUERTO"
+          )
+
+          if [ -n "${JUMP:-}" ]; then
+            proxy_cmd="ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -p $PUERTO -W %h:%p $JUMP"
+            ssh_opts+=(-o "ProxyCommand=$proxy_cmd")
+          fi
+
+          ssh "${ssh_opts[@]}" "$TARGET" "$TAG"

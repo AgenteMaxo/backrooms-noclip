@@ -17,7 +17,7 @@
 }
 html, body { height: 100%; background: #060504; color: var(--hueso);
   font-family: var(--font-body); overflow: hidden; }
-#app { height: 100vh; display: flex; align-items: center; justify-content: center; }
+#app { height: calc(var(--vh, 1vh) * 100); display: flex; align-items: center; justify-content: center; }
 
 /* iconos pixel-art (js/ui/icons.js) */
 .icono { image-rendering: pixelated; vertical-align: -3px; }
@@ -46,9 +46,22 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
 .subtitle { color: var(--gris); letter-spacing: 3px; margin-bottom: 28px; font-size: 17px; }
 .intro-text { color: var(--hueso); line-height: 1.6; margin-bottom: 24px; font-size: 19px; }
 .seed-row { margin-bottom: 18px; color: var(--gris); font-size: 16px; }
-.seed-row input { background: #0a0906; border: 1px solid var(--borde); color: var(--amarillo);
+.seed-row input[type="text"] { background: #0a0906; border: 1px solid var(--borde); color: var(--amarillo);
   font-family: inherit; font-size: 16px; padding: 6px 10px; width: 180px; }
+.seed-value { display: inline-block; min-width: 112px; color: var(--amarillo);
+  font-family: var(--font-title); letter-spacing: 1px; }
+.room-row { margin: -4px 0 18px; color: var(--gris); font-size: 15px; }
+.room-row input { background: #0a0906; border: 1px solid var(--borde); color: var(--amarillo);
+  font-family: inherit; font-size: 15px; padding: 6px 10px; width: 180px; }
 .hint { margin-top: 26px; color: #6a6455; font-size: 15px; line-height: 1.7; }
+
+#rotate-overlay { display: none; position: fixed; inset: 0; z-index: 80;
+  align-items: center; justify-content: center; text-align: center; padding: 24px;
+  background: radial-gradient(ellipse at center, rgba(18,15,8,.98), rgba(0,0,0,.98)); }
+#rotate-overlay h2 { font-family: var(--font-title); color: var(--amarillo);
+  font-size: 18px; line-height: 1.5; margin: 14px 0; }
+#rotate-overlay p { max-width: 420px; color: var(--gris); font-size: 20px; line-height: 1.35; }
+.rotate-icon { font-size: 46px; color: var(--amarillo); }
 
 .btn-big { display: inline-block; background: var(--amarillo-osc); color: #0a0906;
   border: 2px solid var(--amarillo); font-family: var(--font-title);
@@ -100,6 +113,14 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
   background: rgba(10,9,6,.72); border: 1px solid var(--borde); cursor: pointer;
   display: flex; align-items: center; justify-content: center; z-index: 12; }
 #btn-log:hover { border-color: var(--amarillo-osc); box-shadow: 0 0 8px rgba(217,198,110,.25); }
+#btn-game-menu { position: absolute; top: 10px; left: 46px; z-index: 12;
+  height: 28px; padding: 0 10px; background: rgba(10,9,6,.72);
+  border: 1px solid var(--borde); color: var(--gris); font-family: var(--font-body);
+  font-size: 13px; cursor: pointer; }
+#btn-game-menu:hover { border-color: var(--amarillo-osc); color: var(--hueso);
+  box-shadow: 0 0 8px rgba(217,198,110,.25); }
+#game-menu { position: absolute; inset: 0; background: rgba(0,0,0,.62);
+  align-items: center; justify-content: center; z-index: 19; }
 #log-panel { position: absolute; top: 44px; left: 10px; width: 360px; max-height: 68%;
   overflow: auto; background: rgba(12,11,7,.95); border: 1px solid var(--borde);
   padding: 12px 16px; z-index: 13; }
@@ -267,6 +288,40 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
 #game-log p.log-out { opacity: 0; }
 #game-log p.danger { color: #e88a7a; } #game-log p.good { color: #a8d8a0; }
 #game-log p.event { color: #d8c88a; font-style: italic; }
+
+#touch-controls { display: none; position: fixed; inset: auto 0 16px 0; z-index: 45;
+  pointer-events: none; justify-content: space-between; align-items: flex-end;
+  padding: 0 max(18px, env(safe-area-inset-right)) 0 max(18px, env(safe-area-inset-left)); }
+#touch-controls button { pointer-events: auto; min-width: 52px; min-height: 48px;
+  background: rgba(10,9,6,.74); border: 1px solid var(--borde); color: var(--hueso);
+  font: 13px var(--font-title); box-shadow: 0 0 12px rgba(0,0,0,.45); }
+#touch-controls button:active { border-color: var(--amarillo); color: var(--amarillo);
+  transform: translateY(1px); }
+.touch-dpad { display: grid; grid-template-columns: repeat(3, 54px); grid-template-rows: repeat(3, 50px); gap: 4px; }
+.touch-dpad [data-touch="up"] { grid-column: 2; grid-row: 1; }
+.touch-dpad [data-touch="left"] { grid-column: 1; grid-row: 2; }
+.touch-dpad [data-touch="down"] { grid-column: 2; grid-row: 3; }
+.touch-dpad [data-touch="right"] { grid-column: 3; grid-row: 2; }
+.touch-actions { display: grid; grid-template-columns: repeat(2, 58px); gap: 7px; }
+
+@media (pointer: coarse) {
+  body.game-active #touch-controls { display: flex; }
+  #hud-manos { display: none; }
+  #game-wrap { max-width: 100vw; max-height: calc(var(--vh, 1vh) * 100); overflow: hidden; }
+  .title-box { max-width: 96vw; padding: 18px; }
+  .hint { display: none; }
+  #backpack-box { max-width: 94vw; max-height: 92vh; overflow: auto; }
+}
+@media (pointer: coarse) and (orientation: portrait) {
+  body.game-active #rotate-overlay,
+  body.card-active #rotate-overlay { display: flex; }
+}
+@media (pointer: coarse) and (orientation: landscape) {
+  #game-canvas, #gl-canvas { max-width: 100vw; max-height: calc(var(--vh, 1vh) * 100); }
+  #touch-controls { inset: auto env(safe-area-inset-right) max(8px, env(safe-area-inset-bottom)) env(safe-area-inset-left);
+    padding: 0 12px; }
+  #touch-controls button { min-width: 58px; min-height: 52px; }
+}
 
 /* ---------- dado ---------- */
 #dice-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.55);

@@ -8,6 +8,7 @@
   let listo = false;
   let reintento = null;
   let inputChat = null;
+  let salaActual = null;
   // v22 — movimiento libre: estado de input y reconciliación
   const input = { dx: 0, dy: 0 };
   let inputEnviado = { dx: 0, dy: 0 };
@@ -44,13 +45,16 @@
     if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg));
   }
 
-  function iniciar(nombre) {
+  function iniciar(nombre, salaForzada) {
     const w = Game.world;
     const params = new URLSearchParams(location.search);
+    const sala = salaForzada || params.get('sala') || params.get('room') || undefined;
+    salaActual = sala || null;
     ws = new WebSocket(urlServidor());
     ws.onopen = () => enviar({
       t: 'hola', nombre, token: token(), v: 3, // debe coincidir con protocolo.js
       nivel: params.get('nivel') || undefined, // puerta de desarrollo (solo MMO_DEV=1)
+      sala,
     });
     ws.onmessage = (ev) => {
       let m;
@@ -62,12 +66,25 @@
       clearInterval(pingTimer);
       if (w.level) w.log('Conexión perdida con las Backrooms… reintentando.', 'danger');
       clearTimeout(reintento);
-      reintento = setTimeout(() => iniciar(nombre), 3000);
+      reintento = setTimeout(() => iniciar(nombre, salaActual), 3000);
     };
     ws.onerror = () => {};
     // medición de RTT: alimenta la reconciliación y el retardo de interpolación
     clearInterval(pingTimer);
     pingTimer = setInterval(() => enviar({ t: 'ping', ts: Math.round(performance.now()) }), 4000);
+  }
+
+  function cerrar() {
+    listo = false;
+    clearTimeout(reintento);
+    reintento = null;
+    input.dx = 0; input.dy = 0;
+    inputEnviado = { dx: 0, dy: 0 };
+    salaActual = null;
+    if (ws) {
+      try { ws.onclose = null; ws.close(); } catch (e) {}
+      ws = null;
+    }
   }
 
   function nombreDe(id) {
@@ -95,7 +112,7 @@
         if (w.esAdmin) { w.esAdmin = false; if (window.onAdminCambia) window.onAdminCambia(false); }
         Game.startRun(m.semilla); // jugador, HUD y tarjeta de presentación
         construirNivel(m, w);
-        w.log(`Estás en ${w.level.nombre} · instancia ${m.inst}. Pulsa T para hablar.`, 'good');
+        w.log(`Estás en ${w.level.nombre} · ${m.privada ? 'sala privada' : 'sala pública'} · instancia ${m.inst}. Pulsa T para hablar.`, 'good');
         crearChatUI();
         break;
       case 'nivel': { // cruce de salida: nivel nuevo (la caminata funde sin tarjeta)
@@ -476,6 +493,7 @@
   function accion() { enviar({ t: 'accion' }); }           // ESPACIO
   function usar(mano) { enviar({ t: 'usar', mano }); }     // Q/E
   function mochila(que, datos) { enviar({ t: 'mochila', que, ...datos }); }
+  function adminTeleport(nivel) { enviar({ t: 'chat', txt: `/tp ${nivel}` }); }
 
   function luzToggle() {
     // solo se PIDE: el servidor decide (linterna en mano) y responde luzDe
@@ -527,7 +545,7 @@
   }
 
   window.Net = {
-    iniciar, setInput, setRot, frame,
+    iniciar, cerrar, setInput, setRot, frame,
     accion, usar, luzToggle, mochila, admin, tp,
     abrirChat, chatAbierto,
     get activo() { return listo; },
