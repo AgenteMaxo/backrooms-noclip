@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v23.1';
+  window.VERSION_JUEGO = 'v23.2';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -405,6 +405,7 @@
   const params = new URLSearchParams(location.search);
   if (params.get('nofx')) window.NOFX = true;
   if (params.get('debug3d')) window.DEBUG3D_ON = true;
+  if (params.get('netdebug')) window.NETDEBUG = true; // consola: derivas de red y rtt
   if ((params.get('autostart') || params.get('selftest') || params.get('online')) && !Game.Profiles.activeName())
     Game.Profiles.create(params.get('nombre') || 'Errante');
   // ---------- BACKROOMS MMO: ?online=1 conecta al mundo compartido ----------

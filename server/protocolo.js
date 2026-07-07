@@ -19,7 +19,7 @@
 //   {t:'pong'}
 'use strict';
 
-const VERSION = 3; // v23: retorno personal, registrar contenedores, admin por mensaje, linterna autoritativa
+const VERSION = 4; // v23.2: expulsa clientes cacheados con la reconciliación vieja (vibraban)
 const MAX_MSG = 512;          // bytes por mensaje entrante
 const MAX_CHAT = 120;         // caracteres de un chat
 const COOLDOWN_MOVER = 165;   // ms entre pasos (el cliente usa 170: margen de jitter)

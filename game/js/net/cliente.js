@@ -19,6 +19,7 @@
   let rtt = 100;           // ms ida y vuelta (medido con ping/pong; telemetría)
   let pingTimer = null;
   const historia = [];     // [{t, x, y}] de la predicción local (~1.2 s)
+  const corr = { x: 0, y: 0 }; // corrección pendiente: se aplica REPARTIDA por frames
 
   function urlServidor() {
     const params = new URLSearchParams(location.search);
@@ -49,7 +50,7 @@
     const params = new URLSearchParams(location.search);
     ws = new WebSocket(urlServidor());
     ws.onopen = () => enviar({
-      t: 'hola', nombre, token: token(), v: 3, // debe coincidir con protocolo.js
+      t: 'hola', nombre, token: token(), v: 4, // debe coincidir con protocolo.js
       nivel: params.get('nivel') || undefined, // puerta de desarrollo (solo MMO_DEV=1)
     });
     ws.onmessage = (ev) => {
@@ -119,6 +120,7 @@
           w.player.x = m.x; w.player.y = m.y;
           w.player.rx = m.x; w.player.ry = m.y;
           historia.length = 0;
+          corr.x = 0; corr.y = 0;
           fov(w);
         } else Otros.mueve(m.id, m.x, m.y);
         break;
@@ -386,6 +388,7 @@
     w.itemsVersion = (w.itemsVersion || 0) + 1;
     w.mapaVersion = (w.mapaVersion || 0) + 1;
     historia.length = 0;
+    corr.x = 0; corr.y = 0;
     // el servidor frena tu input al cambiar de sala: el cliente refleja lo mismo
     input.dx = 0; input.dy = 0;
     inputEnviado = { dx: 0, dy: 0 };
@@ -435,11 +438,22 @@
     if (!w.escondido && (input.dx || input.dy)) {
       const [nx, ny] = Fisica.mover(w.map.grid, w.player.x, w.player.y, input.dx, input.dy, dt, Fisica.VEL_JUGADOR);
       w.player.x = nx; w.player.y = ny;
-      const tx = Fisica.tileDe(nx), ty = Fisica.tileDe(ny);
-      if (!tileFov || tileFov[0] !== tx || tileFov[1] !== ty) {
-        tileFov = [tx, ty];
-        fov(w);
+    }
+    // corrección pendiente de la reconciliación, repartida por frames
+    // (exponencial ~6/s): nunca un salto de golpe al ritmo del tick
+    if (corr.x || corr.y) {
+      const k = Math.min(1, dt * 6);
+      const cx = corr.x * k, cy = corr.y * k;
+      if (!Fisica.choca(w.map.grid, w.player.x + cx, w.player.y + cy)) {
+        w.player.x += cx; w.player.y += cy;
       }
+      corr.x -= cx; corr.y -= cy;
+      if (Math.abs(corr.x) + Math.abs(corr.y) < 0.004) corr.x = corr.y = 0;
+    }
+    const tx = Fisica.tileDe(w.player.x), ty = Fisica.tileDe(w.player.y);
+    if (!tileFov || tileFov[0] !== tx || tileFov[1] !== ty) {
+      tileFov = [tx, ty];
+      fov(w);
     }
     // historial para la reconciliación (también parado: el tiempo sigue)
     const ahora = performance.now();
@@ -460,22 +474,28 @@
   function reconciliar(w, sx, sy) {
     let d = Fisica.dist(w.player.x, w.player.y, sx, sy);
     let refX = w.player.x, refY = w.player.y;
+    // umbral: en movimiento se tolera el jitter del camino; parado, cliente y
+    // servidor deben CONVERGER al mismo sitio (umbral fino)
+    const umbral = (input.dx || input.dy) ? 0.4 : 0.15;
     for (let i = historia.length - 1; i >= 0; i--) {
       const h = historia[i];
       const dh = Fisica.dist(h.x, h.y, sx, sy);
       if (dh < d) { d = dh; refX = h.x; refY = h.y; }
-      if (d < 0.35) return; // el servidor va por nuestro rastro: todo en orden
+      if (d < umbral) { corr.x = 0; corr.y = 0; return; } // va por nuestro rastro
     }
     if (d > 1.5) {
       // desincronización real (teleport perdido, empujón, pared): corte limpio
       w.player.x = sx; w.player.y = sy;
       historia.length = 0;
+      corr.x = 0; corr.y = 0;
       fov(w);
       return;
     }
-    // deriva moderada: fracción del error (servidor − punto más cercano)
-    const nx = w.player.x + (sx - refX) * 0.25, ny = w.player.y + (sy - refY) * 0.25;
-    if (!Fisica.choca(w.map.grid, nx, ny)) { w.player.x = nx; w.player.y = ny; }
+    // deriva real: el error (servidor − punto más cercano del rastro) queda
+    // PENDIENTE y frame() lo aplica suave — nada de saltos a 10 Hz
+    corr.x = sx - refX;
+    corr.y = sy - refY;
+    if (window.NETDEBUG) console.log(`[net] deriva ${d.toFixed(2)} tiles · rtt ${rtt | 0} ms`);
   }
 
   // ---------- acciones ----------

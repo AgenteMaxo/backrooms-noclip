@@ -45,7 +45,14 @@ const servidor = http.createServer((req, res) => {
   if (!ruta.startsWith(RAIZ)) { res.writeHead(403); res.end(); return; }
   fs.readFile(ruta, (err, datos) => {
     if (err) { res.writeHead(404); res.end('no existe'); return; }
-    res.writeHead(200, { 'content-type': MIME[path.extname(ruta).toLowerCase()] || 'application/octet-stream' });
+    const ext = path.extname(ruta).toLowerCase();
+    const cab = { 'content-type': MIME[ext] || 'application/octet-stream' };
+    // el CÓDIGO no se cachea: tras un deploy, F5 normal basta para jugar la
+    // versión nueva (un cliente viejo cacheado jugaba con bugs ya arreglados);
+    // los assets pesados (audio/imagen/fuentes) sí pueden cachear un rato
+    if (ext === '.html' || ext === '.js' || ext === '.css') cab['cache-control'] = 'no-cache';
+    else cab['cache-control'] = 'public, max-age=3600';
+    res.writeHead(200, cab);
     res.end(datos);
   });
 });

@@ -229,7 +229,16 @@ reloj (rtt/2+X) como referencia — el jitter de red hace imposible clavar el in
 cada foto aplica un micro-tirón a 10 Hz (verificado con simulación: ~1.8 tiles/12 s de
 tirones por reloj vs 0 por rastro; ping local ≈0 NO reproduce el bug — probar con
 latencia). RTT medido con ping/pong eco `ts` (telemetría en Net.rtt). El input se frena al
-abrir chat y al cambiar de sala (ambos lados). Puerta de RETORNO online (paridad con el modo solo): `cambiarDeSala` busca en el
+abrir chat y al cambiar de sala (ambos lados). **v23.2** (seguía vibrando en giros y
+frenadas): el servidor integraba el input SOLO en el tick de 100 ms (±0.46 tiles de desvío
+en cada maniobra → correcciones) — ahora `input()` en sala.js integra el TRAMO PARCIAL con
+el input viejo al llegar el mensaje (`_integradoHasta`, `_movidosExtra`, dedupe en la
+difusión); la corrección del cliente queda PENDIENTE en `corr` y frame() la aplica
+exponencial ~6/s (jamás un salto a 10 Hz); umbral 0.4 en movimiento / 0.15 parado
+(convergencia). Estáticos html/js/css con `Cache-Control: no-cache` (un cliente cacheado
+con código viejo jugaba con bugs ya arreglados — protocolo v4 expulsó a los de v23);
+`?netdebug=1` loguea derivas y rtt en consola. Simulador de los algoritmos con
+giros/frenadas/tick: corrMaxFrame 0.137 (v23.1) → 0.017 (v23.2). Puerta de RETORNO online (paridad con el modo solo): `cambiarDeSala` busca en el
 destino una salida con `destino === origen` y te hace spawn PEGADO a ella, o crea
 `jug.retorno` — puerta PERSONAL (índice `'R'` en `salidaCerca`/`ofrecer`; el cliente la
 añade a `map.exits` solo en su lado vía `m.retorno`); sin retorno si `esSinRetorno`

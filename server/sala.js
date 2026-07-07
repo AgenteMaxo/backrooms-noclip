@@ -129,6 +129,16 @@ class Sala {
   // ---------- movimiento libre (v22): el cliente manda un VECTOR de deseo ----------
   input(jug, dx, dy) {
     if (jug.muerto) return;
+    // v23.2: integra el tramo parcial del tick con el input VIEJO antes de
+    // cambiarlo. Sin esto, arrancar/frenar/girar queda cuantizado al tick de
+    // 100 ms (hasta ~0.5 tiles de desvío del camino real del cliente) y la
+    // reconciliación lo interpreta como deriva → temblores en cada maniobra.
+    const ahora = Date.now();
+    const dtParcial = (ahora - (this._ultTick || ahora)) / 1000;
+    if (dtParcial > 0.004 && (jug.input.dx || jug.input.dy) && !jug.escondido) {
+      this.integrar(jug, Math.min(0.25, dtParcial), this._movidosExtra || (this._movidosExtra = []));
+      jug._integradoHasta = ahora;
+    }
     jug.input = { dx, dy };
   }
 
@@ -598,17 +608,24 @@ class Sala {
     if (!this.jugadores.size) return;
     const dt = Math.min(0.25, (ahora - (this._ultTick || ahora)) / 1000);
     this._ultTick = ahora;
-    const movidos = [];
+    // arrastra los tramos parciales ya integrados en input() (v23.2)
+    const movidos = this._movidosExtra || [];
+    this._movidosExtra = [];
     for (const jug of this.jugadores.values()) {
-      this.integrar(jug, dt, movidos);
+      // si input() ya integró parte del tick, aquí solo queda el resto
+      const dtJ = jug._integradoHasta
+        ? Math.min(dt, Math.max(0, (ahora - jug._integradoHasta) / 1000)) : dt;
+      jug._integradoHasta = null;
+      this.integrar(jug, dtJ, movidos);
       if (jug.canal && ahora >= jug.canal.hasta) this.resolverCanal(jug);
     }
     Entidades.tick(this, ahora, dt);
-    // difusión BATCHED de posiciones: un solo mensaje por tick con lo que se movió
+    // difusión BATCHED de posiciones: un solo mensaje por tick con lo que se
+    // movió (dedupe: un jugador puede venir del tramo parcial Y del tick)
     if (movidos.length || (this._entMovidas && this._entMovidas.length)) {
       this.difundir({
         t: 'pos',
-        j: movidos.map((j) => [j.id, r2(j.x), r2(j.y)]),
+        j: [...new Map(movidos.map((j) => [j.id, j])).values()].map((j) => [j.id, r2(j.x), r2(j.y)]),
         e: (this._entMovidas || []).map((e) => [e.uid, r2(e.x), r2(e.y)]),
       });
       this._entMovidas = [];
