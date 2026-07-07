@@ -101,6 +101,9 @@ wss.on('connection', (ws, req) => {
     else if (m.t === 'cruzar') sala.cruzar(jug, m.si);
     else if (m.t === 'usar') sala.usar(jug, m.mano);
     else if (m.t === 'luz') sala.luz(jug, m.si);
+    else if (m.t === 'mochila') sala.mochila(jug, m);
+    else if (m.t === 'instinto') sala.elegirInstinto(jug, m.id);
+    else if (m.t === 'noclip') sala.noclip(jug);
     else if (m.t === 'chat') {
       if (m.txt.startsWith('/')) { comando(jug, sala, m.txt); return; }
       const txt = filtro.chatLimpio(m.txt);

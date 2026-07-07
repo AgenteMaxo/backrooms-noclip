@@ -73,11 +73,14 @@ class Sala {
     const jug = {
       id, ws, nombre, token, x, y, rot: 2,
       salud: 100, luz: false, escondido: null, muerto: false,
-      inv: [], manos: [null, null],
+      inv: [], manos: [null, null], equipo: { cara: null, cuerpo: null, pies: null },
       sintonia: expediente ? expediente.sintonia : 0,
+      instintos: expediente ? (expediente.instintos || []) : [],
+      ofertaInst: null, umbralesVistos: {},
       esAdmin: false, muteadoHasta: 0,
       ultMov: 0, ultChat: 0, canal: null, ofertaEn: null,
     };
+    for (const u of [20, 40, 60, 80]) if (jug.sintonia >= u) jug.umbralesVistos[u] = true;
     this.prepararCaminata(jug);
     this.enviar(ws, {
       t: 'bienvenida', id, nivel: this.nivelId, inst: this.inst,
@@ -103,11 +106,43 @@ class Sala {
       : 0;
   }
 
-  // sube la Sintonía (0-100): presenciar horrores te acompasa con el lugar
+  // sube la Sintonía (0-100): presenciar horrores te acompasa con el lugar.
+  // Al cruzar un umbral (20/40/60/80) las Backrooms ofrecen un INSTINTO.
   tune(jug, n) {
     jug.sintonia = Math.max(0, Math.min(100, (jug.sintonia || 0) + n));
     db.guardarSintonia(jug.token, jug.sintonia);
     this.enviar(jug.ws, { t: 'sintonia', v: jug.sintonia });
+    for (const u of [20, 40, 60, 80]) {
+      if (jug.sintonia < u || jug.umbralesVistos[u]) continue;
+      jug.umbralesVistos[u] = true;
+      this.ofrecerInstinto(jug, u);
+    }
+  }
+
+  ofrecerInstinto(jug, umbral) {
+    let pool = Sala.INSTINTOS_MMO.filter((k) => !jug.instintos.includes(k));
+    if (umbral < 80) pool = pool.filter((k) => k !== 'noclip'); // el noclip se gana
+    if (!pool.length) return;
+    const rng = RNG.create(`${jug.token}::instinto::${umbral}`);
+    const ofertas = rng.shuffle(pool.slice()).slice(0, 3);
+    jug.ofertaInst = ofertas;
+    this.enviar(jug.ws, { t: 'instintos', umbral, ofertas });
+  }
+
+  elegirInstinto(jug, id) {
+    if (!jug.ofertaInst || !jug.ofertaInst.includes(id)) return;
+    jug.ofertaInst = null;
+    jug.instintos.push(id);
+    db.guardarInstintos(jug.token, jug.instintos);
+    this.enviarInv(jug);
+    this.enviar(jug.ws, { t: 'aviso', txt: 'El instinto se asienta en tu carne. Ya es tuyo.' });
+  }
+
+  enviarInv(jug) {
+    this.enviar(jug.ws, {
+      t: 'inv', inv: jug.inv, manos: jug.manos,
+      equipo: jug.equipo, instintos: jug.instintos,
+    });
   }
 
   salir(jug) {
@@ -150,10 +185,16 @@ class Sala {
 
   // efectos de pisar una casilla: recoger objeto, oferta de salida
   pisar(jug) {
-    const i = this.map.items.findIndex((it) => !it.taken && it.x === jug.x && it.y === jug.y);
+    // lo que acabas de tirar no se auto-recoge hasta que abandones la casilla
+    for (const it of this.map.items)
+      if (it.recien === jug.id && (it.x !== jug.x || it.y !== jug.y)) delete it.recien;
+    const i = this.map.items.findIndex(
+      (it) => !it.taken && it.x === jug.x && it.y === jug.y && it.recien !== jug.id
+    );
     if (i >= 0 && jug.inv.length < 6) {
       const it = this.map.items[i];
       it.taken = true;
+      delete it.recien;
       jug.inv.push(it.id);
       // tubería o linterna a una mano libre: lista para usar
       const m = jug.manos.indexOf(null);
@@ -162,7 +203,7 @@ class Sala {
         jug.inv.pop();
       }
       this.difundir({ t: 'itemCogido', idx: i, por: jug.id, id: it.id });
-      this.enviar(jug.ws, { t: 'inv', inv: jug.inv, manos: jug.manos });
+      this.enviarInv(jug);
     }
     const ex = this.salidaEn(jug.x, jug.y);
     if (ex && jug.ofertaEn !== ex.i) this.ofrecer(jug, ex);
@@ -303,6 +344,137 @@ class Sala {
     this.difundir({ t: 'luzDe', id: jug.id, si: jug.luz });
   }
 
+  // ---------- mochila autoritativa (los gestos del panel llegan por red) ----------
+  mochila(jug, m) {
+    if (jug.muerto) return;
+    const OBJ = DATA.objects;
+    const VEC = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+    const aviso = (txt) => this.enviar(jug.ws, { t: 'aviso', txt });
+    switch (m.que) {
+      case 'equipar': {
+        const id = jug.inv[m.slot];
+        const def = id && OBJ[id];
+        if (!def || !def.manos) { aviso('Eso no se empuña.'); return; }
+        if (def.manos === 2) {
+          if (jug.manos[0] || jug.manos[1]) { aviso('Necesitas las DOS manos libres.'); return; }
+          jug.manos = [id, '='];
+        } else {
+          const libre = jug.manos.indexOf(null);
+          if (libre < 0) { aviso('Tienes las manos ocupadas.'); return; }
+          jug.manos[libre] = id;
+        }
+        jug.inv.splice(m.slot, 1);
+        break;
+      }
+      case 'desequipar': {
+        let mano = m.mano;
+        if (jug.manos[mano] === '=') mano = 0;
+        const id = jug.manos[mano];
+        if (!id) return;
+        if (jug.inv.length >= 6) { aviso('La mochila está llena.'); return; }
+        if (OBJ[id] && OBJ[id].manos === 2) jug.manos = [null, null];
+        else jug.manos[mano] = null;
+        jug.inv.push(id);
+        break;
+      }
+      case 'usarItem': {
+        const id = jug.inv[m.slot];
+        const def = id && OBJ[id];
+        if (!def) return;
+        const ef = def.efecto || {};
+        if (ef.salud) {
+          jug.salud = Math.min(100, jug.salud + ef.salud);
+          jug.inv.splice(m.slot, 1);
+          this.enviar(jug.ws, { t: 'salud', valor: jug.salud });
+          aviso(`${def.nombre}: recuperas ${ef.salud} de salud.`);
+        } else if (ef.activo === 'fuego') {
+          jug.inv.splice(m.slot, 1);
+          this.hacerRuido(jug.x, jug.y, 10);
+          for (const e of this.entidades) {
+            if (!e.viva || Math.abs(e.x - jug.x) + Math.abs(e.y - jug.y) > 3) continue;
+            e.vida -= 30;
+            e.huyendoHasta = Date.now() + 4000;
+            if (e.vida <= 0) { e.viva = false; this.difundir({ t: 'entMuere', uid: e.uid }); this.tune(jug, 8); }
+            else this.difundir({ t: 'entHit', uid: e.uid });
+          }
+          this.difundir({ t: 'golpe', id: jug.id, x: jug.x, y: jug.y });
+          this.tune(jug, 5); // el fuego griego deja marca
+        } else if (ef.activo === 'paralisis') {
+          jug.inv.splice(m.slot, 1);
+          for (const e of this.entidades) {
+            if (!e.viva || Math.abs(e.x - jug.x) + Math.abs(e.y - jug.y) > 1) continue;
+            e.paralizadaHasta = Date.now() + 2400;
+            this.difundir({ t: 'entHit', uid: e.uid });
+          }
+        } else if (ef.toggle === 'luz') {
+          this.luz(jug, !jug.luz);
+        } else {
+          aviso('Aquí dentro, eso todavía no surte efecto.');
+          return;
+        }
+        break;
+      }
+      case 'tirar': case 'arrojar': {
+        const id = jug.inv[m.slot];
+        if (!id) return;
+        jug.inv.splice(m.slot, 1);
+        let tx = jug.x, ty = jug.y;
+        if (m.que === 'arrojar') {
+          // vuela hasta 4 casillas en la dirección encarada: distracción sonora
+          const [fx, fy] = VEC[jug.rot ?? 2];
+          for (let d = 4; d >= 1; d--) {
+            if (esTransitable(this.map, jug.x + fx * d, jug.y + fy * d)) { tx = jug.x + fx * d; ty = jug.y + fy * d; break; }
+          }
+          this.hacerRuido(tx, ty, 12);
+        }
+        const it = { x: tx, y: ty, id, taken: false };
+        if (m.que === 'tirar') it.recien = jug.id;
+        this.map.items.push(it);
+        this.difundir({ t: 'itemSuelto', idx: this.map.items.length - 1, x: tx, y: ty, id });
+        break;
+      }
+      case 'ponerEquipo': {
+        const id = jug.inv[m.slot];
+        const def = id && OBJ[id];
+        if (!def || !def.equipo) { aviso('Eso no se viste.'); return; }
+        const anterior = jug.equipo[def.equipo];
+        jug.equipo[def.equipo] = id;
+        jug.inv.splice(m.slot, 1);
+        if (anterior) jug.inv.push(anterior);
+        break;
+      }
+      case 'quitarEquipo': {
+        const id = jug.equipo[m.tipo];
+        if (!id) return;
+        if (jug.inv.length >= 6) { aviso('La mochila está llena.'); return; }
+        jug.equipo[m.tipo] = null;
+        jug.inv.push(id);
+        break;
+      }
+    }
+    this.enviarInv(jug);
+  }
+
+  // ---------- noclip (instinto de sintonía 80): atravesar la pared con G ----------
+  noclip(jug) {
+    if (jug.muerto || !jug.instintos.includes('noclip')) return;
+    const VEC = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+    const [fx, fy] = VEC[jug.rot ?? 2];
+    const mx = jug.x + fx, my = jug.y + fy;         // el muro que atraviesas
+    const dx = jug.x + fx * 2, dy = jug.y + fy * 2; // donde reapareces
+    if (esTransitable(this.map, mx, my) || !esTransitable(this.map, dx, dy)) {
+      this.enviar(jug.ws, { t: 'aviso', txt: 'Necesitas una pared delante y un hueco al otro lado.' });
+      return;
+    }
+    const d = this.rng.int(1, 20);
+    this.difundir({ t: 'dado', id: jug.id, valor: d, exito: d > 3 });
+    if (d <= 3) { this.morir(jug, 'el Vacío entre las paredes'); return; }
+    jug.x = dx; jug.y = dy;
+    this.tune(jug, 2);
+    this.difundir({ t: 'mueve', id: jug.id, x: dx, y: dy });
+    this.pisar(jug);
+  }
+
   hacerRuido(x, y, radio) {
     this.ruido = { x, y, radio, hasta: Date.now() + 3200 };
   }
@@ -386,8 +558,16 @@ class Sala {
   // ---------- tick de simulación (lo llama server.js a 10 Hz) ----------
   tick(ahora) {
     if (!this.jugadores.size) return;
-    for (const jug of this.jugadores.values())
+    for (const jug of this.jugadores.values()) {
       if (jug.canal && ahora >= jug.canal.hasta) this.resolverCanal(jug);
+      // sangre amarilla: el lugar te repara — 1 de salud cada 6 s
+      if (jug.instintos.includes('sangre_amarilla') && !jug.muerto && jug.salud < 100 &&
+          ahora - (jug._regenT || 0) > 6000) {
+        jug._regenT = ahora;
+        jug.salud++;
+        this.enviar(jug.ws, { t: 'salud', valor: jug.salud });
+      }
+    }
     Entidades.tick(this, ahora);
     // regla no_euclidiana de la ficha: cada 45-90 s el nivel se reorganiza
     if ((this.def.reglas || []).includes('no_euclidiano')) {
@@ -484,6 +664,11 @@ function estado() {
     memoriaMB: Math.round(process.memoryUsage().rss / 1048576),
   };
 }
+
+// pool de instintos que tienen efecto en el mundo compartido (los de sed/
+// hambre/registro llegarán cuando esas mecánicas existan online)
+Sala.INSTINTOS_MMO = ['oido_moqueta', 'pies_moqueta', 'reflejos_errante',
+  'piel_fluorescente', 'sangre_amarilla', 'noclip'];
 
 function todas() { return [...salas.values()]; }
 

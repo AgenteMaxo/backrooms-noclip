@@ -182,6 +182,8 @@
         if (tercera || !use3D) Net.usar(ev.code === 'KeyQ' ? 0 : 1);
         else Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
       } else if (ev.code === 'KeyF') Net.luzToggle();
+      else if (ev.code === 'KeyG') Game.noclip();
+      else if (/^Digit[1-6]$/.test(ev.code)) Game.useItem(parseInt(ev.code.slice(5), 10) - 1);
       else if (ev.code === 'KeyB') world.ui.toggleBackpack();
       else if (ev.code === 'KeyL') world.ui.toggleLog();
       else if (ev.code === 'KeyC') world.ui.toggleCodex();
@@ -192,7 +194,7 @@
         else if (sndMenu.style.display !== 'none') cerrarSndMenu();
         else abrirSndMenu();
       }
-      // (X/G/1-6 y la mochila interactiva llegan en M3)
+      // (X=esperar no aplica online: el mundo ya no espera por nadie)
       return;
     }
     const autoRepeatTime2DMove = 150; // tiempo en ms mínimo entre pasos al mantener pulsada una tecla de movimiento en modo 2D

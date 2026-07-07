@@ -65,6 +65,20 @@ function leer(raw) {
     }
     case 'luz':
       return { t: 'luz', si: !!m.si };                // F: linterna encendida/apagada
+    case 'mochila': {                                 // gestos del panel de inventario
+      const que = m.que;
+      if (!['equipar', 'desequipar', 'usarItem', 'tirar', 'arrojar', 'ponerEquipo', 'quitarEquipo'].includes(que)) return null;
+      const out = { t: 'mochila', que };
+      if (m.slot !== undefined) { out.slot = m.slot | 0; if (out.slot < 0 || out.slot > 9) return null; }
+      if (m.mano !== undefined) { out.mano = m.mano | 0; if (out.mano !== 0 && out.mano !== 1) return null; }
+      if (m.tipo !== undefined) { if (!['cara', 'cuerpo', 'pies'].includes(m.tipo)) return null; out.tipo = m.tipo; }
+      return out;
+    }
+    case 'instinto':
+      if (typeof m.id !== 'string' || m.id.length > 32) return null;
+      return { t: 'instinto', id: m.id };             // elección de carta de instinto
+    case 'noclip':
+      return { t: 'noclip' };                         // G: atravesar la pared (instinto 80)
     case 'ping':
       return { t: 'ping' };
     default:

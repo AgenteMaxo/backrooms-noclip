@@ -162,8 +162,22 @@
       case 'inv':
         w.player.inv = m.inv;
         w.player.manos = m.manos;
+        if (m.equipo) w.player.equipo = m.equipo;
+        if (m.instintos) w.player.instintos = m.instintos;
         w.ui.updateHUD();
+        if (document.getElementById('backpack-panel').style.display !== 'none')
+          w.ui.toggleBackpack(true); // repintar el panel abierto
         break;
+      case 'instintos':
+        w.ui.showInstintos(m.umbral,
+          m.ofertas.map((k) => ({ id: k, ...Game.INSTINTOS[k] })),
+          (id) => enviar({ t: 'instinto', id }));
+        break;
+      case 'itemSuelto': {
+        w.map.items[m.idx] = { x: m.x, y: m.y, id: m.id, taken: false };
+        w.itemsVersion = (w.itemsVersion || 0) + 1;
+        break;
+      }
       case 'muere':
         if (m.id === miId) {
           w.log(`La oscuridad te traga (${m.causa}).`, 'danger');
@@ -378,6 +392,8 @@
   // ---------- acciones ----------
   function accion() { enviar({ t: 'accion' }); }           // ESPACIO
   function usar(mano) { enviar({ t: 'usar', mano }); }     // Q/E
+  function mochila(que, datos) { enviar({ t: 'mochila', que, ...datos }); }
+  function noclip() { enviar({ t: 'noclip' }); }           // G (instinto 80)
 
   function luzToggle() {
     const w = Game.world;
@@ -427,7 +443,7 @@
 
   window.Net = {
     iniciar, mover, avanzar, girar, moverPantalla,
-    accion, usar, luzToggle,
+    accion, usar, luzToggle, mochila, noclip,
     abrirChat, chatAbierto,
     get activo() { return listo; },
     get id() { return miId; },

@@ -29,6 +29,8 @@ db.exec(`
     PRIMARY KEY (token, nivel)
   );
 `);
+// columna añadida en v21 (instintos online): migración suave
+try { db.exec('ALTER TABLE jugadores ADD COLUMN instintos TEXT DEFAULT "[]"'); } catch (e) {}
 
 const qCarga = db.prepare('SELECT * FROM jugadores WHERE token = ?');
 const qAlta = db.prepare(
@@ -50,14 +52,20 @@ function conectar(token, nombre) {
   const ahora = Date.now();
   qAlta.run(token, nombre, ahora, ahora);
   const fila = qCarga.get(token);
+  let instintos = [];
+  try { instintos = JSON.parse(fila.instintos || '[]'); } catch (e) {}
   return {
     sintonia: fila.sintonia | 0,
     muertes: fila.muertes | 0,
     escapes: fila.escapes | 0,
     baneado: !!fila.baneado,
     niveles: qNiveles.get(token).n | 0,
+    instintos,
   };
 }
+
+const qInstintos = db.prepare('UPDATE jugadores SET instintos = ? WHERE token = ?');
+function guardarInstintos(token, lista) { qInstintos.run(JSON.stringify(lista || []), token); }
 
 function guardarSintonia(token, v) { qSintonia.run(Math.max(0, Math.min(100, v | 0)), token); }
 function sumarMuerte(token) { qMuerte.run(token); }
@@ -65,4 +73,4 @@ function sumarEscape(token) { qEscape.run(token); }
 function registrarVisita(token, nivel) { qVisita.run(token, nivel); }
 function ban(token, si = true) { qBan.run(si ? 1 : 0, token); }
 
-module.exports = { conectar, guardarSintonia, sumarMuerte, sumarEscape, registrarVisita, ban };
+module.exports = { conectar, guardarSintonia, guardarInstintos, sumarMuerte, sumarEscape, registrarVisita, ban };

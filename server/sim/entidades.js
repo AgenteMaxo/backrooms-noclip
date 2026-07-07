@@ -133,7 +133,6 @@ function enPenumbra(sala, j) {
 // que el modo por turnos, sin la Sintonía (llega en M3).
 function detecta(sala, e) {
   const d = e.def.deteccion || {};
-  const radio = Math.max(1, d.radio ?? 6);
   let objetivo = null, mejorDist = Infinity;
   for (const j of sala.jugadores.values()) {
     if (j.escondido || j.muerto) continue;
@@ -141,6 +140,10 @@ function detecta(sala, e) {
     // del lugar y cada vez le importas menos
     if ((j.sintonia || 0) >= 30 && e.def.comportamiento !== 'cazador' &&
         sala.rng.chance((j.sintonia - 20) / 180)) continue;
+    // pies de moqueta (−2) y botas reforzadas (−1): te detectan más tarde
+    const rMod = ((j.instintos || []).includes('pies_moqueta') ? -2 : 0) +
+      (j.equipo && j.equipo.pies === 'botas_reforzadas' ? -1 : 0);
+    const radio = Math.max(1, (d.radio ?? 6) + rMod);
     const dd = Math.hypot(e.x - j.x, e.y - j.y);
     if (dd >= mejorDist) continue;
     const ver = () => FOV.los(sala.map.grid, e.x, e.y, j.x, j.y);
@@ -148,12 +151,14 @@ function detecta(sala, e) {
     switch (d.tipo) {
       case 'vista': ve = dd <= radio && ver(); break;
       case 'oscuridad': ve = dd <= radio && ver() && enPenumbra(sala, j); break;
-      case 'luz': ve = j.luz && dd <= radio; break;
+      case 'luz': // piel de fluorescente: te creen una luz más del techo
+        ve = j.luz && dd <= radio && !(j.instintos || []).includes('piel_fluorescente');
+        break;
       case 'adyacente':
-      case 'contacto': ve = dd <= (d.radio || 1); break; // faceling: solo si lo tocas
+      case 'contacto': ve = dd <= Math.max(1, (d.radio || 1) + rMod); break;
       case 'sigilo': ve = dd <= radio && ver(); break;
       case 'global': ve = true; break;
-      default: ve = dd <= Math.max(1, 6) && ver();
+      default: ve = dd <= Math.max(1, 6 + rMod) && ver();
     }
     if (ve) { objetivo = j; mejorDist = dd; }
   }
@@ -178,6 +183,11 @@ function golpe(sala, e, jug) {
   e.preparando = false;
   e.prepObjetivo = null;
   if (jug.muerto) return; // los cadáveres no se rematan (muertes dobles en BD)
+  // reflejos de errante: 25% de esquivar el golpe que viste venir
+  if ((jug.instintos || []).includes('reflejos_errante') && sala.rng.chance(0.25)) {
+    sala.difundir({ t: 'entFalla', uid: e.uid });
+    return;
+  }
   const dano = e.def.dano ?? 10;
   jug.salud = Math.max(0, jug.salud - dano);
   sala.difundir({ t: 'entAtaca', uid: e.uid, id: jug.id, dano });
@@ -203,6 +213,21 @@ function pasoEntidad(sala, e, ahora) {
   const comp = e.def.comportamiento;
 
   if (ahora < e.paralizadaHasta) return;
+
+  // huyendo del fuego griego: se aleja de los jugadores (dmap creciente)
+  if (e.huyendoHasta && ahora < e.huyendoHasta) {
+    e.preparando = false;
+    const g = sala.map.grid, dm = sala._dmap;
+    let mejor = null, mejorV = dm[e.y * g.w + e.x];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = e.x + dx, ny = e.y + dy;
+      if (!transitable(sala, nx, ny) || ocupada(sala, nx, ny, e)) continue;
+      const v = dm[ny * g.w + nx];
+      if (v > mejorV) { mejorV = v; mejor = [nx, ny]; }
+    }
+    if (mejor) moverA(sala, e, mejor[0], mejor[1]);
+    return;
+  }
 
   if (comp === 'cazador' && e.dormidaHasta > 0) {
     e.dormidaHasta -= PERIODO_PASO;
