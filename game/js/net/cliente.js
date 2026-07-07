@@ -437,12 +437,18 @@
   }
 
   // ---------- movimiento libre (v22): input vectorial + predicción local ----------
+  let inputUltEnvio = 0;
   function setInput(dx, dy) {
     input.dx = Math.max(-1, Math.min(1, dx || 0));
     input.dy = Math.max(-1, Math.min(1, dy || 0));
-    // se envía solo al CAMBIAR (el servidor mantiene el último estado)
-    if (Math.abs(input.dx - inputEnviado.dx) > 0.01 || Math.abs(input.dy - inputEnviado.dy) > 0.01) {
+    // se envía solo al CAMBIAR; los cambios GRANDES (arrancar/parar/invertir)
+    // salen al instante y la deriva fina del giro se limita a ~11/s — girar
+    // andando cambia el vector CADA frame y saturaba al servidor (v23.4)
+    const cambio = Math.hypot(input.dx - inputEnviado.dx, input.dy - inputEnviado.dy);
+    const ahora = performance.now();
+    if (cambio > 0.6 || (cambio > 0.01 && ahora - inputUltEnvio > 90)) {
       inputEnviado = { dx: input.dx, dy: input.dy };
+      inputUltEnvio = ahora;
       enviar({ t: 'input', dx: input.dx, dy: input.dy });
     }
   }

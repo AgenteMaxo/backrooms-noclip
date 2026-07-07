@@ -246,7 +246,15 @@ index.html llevan `?v=NNN` — SUBIRLO en cada versión junto con `VERSION_JUEGO
 se cachea → HTML nuevo = URLs nuevas = edge bypass); (2) `#title-net` muestra
 `Net.ultimoError` o timeout de 10 s en el título (nunca más un botón colgado sin motivo);
 (3) cierre con reason 'version' → `autoActualizar()` (fetch cache:'reload' de todos los
-scripts + location.reload, guarda anti-bucle en sessionStorage, se limpia en bienvenida). Puerta de RETORNO online (paridad con el modo solo): `cambiarDeSala` busca en el
+scripts + location.reload, guarda anti-bucle en sessionStorage, se limpia en bienvenida).
+**v23.4** (saltos hacia delante al girar andando): la integración sub-tick de v23.2 medía
+el tramo desde `_ultTick` en vez de desde la última integración DEL JUGADOR — girar
+andando manda ~60 inputs/s (el vector cambia con θ cada frame) y cada mensaje re-integraba
+el mismo tramo → velocidad ×2-3 en el servidor → la reconciliación saltaba hacia delante.
+Fix: `desde = max(_ultTick, jug._integradoHasta)` (invariante: Σdt ≤ tiempo real =
+anti-speedhack) + throttle de setInput en cliente (~11/s para deriva fina; arrancar/parar
+inmediato con cambio >0.6). Test de regresión «sin speedhack por spam de input» en
+test-integracion.js (verificado que FALLA sin el fix). Puerta de RETORNO online (paridad con el modo solo): `cambiarDeSala` busca en el
 destino una salida con `destino === origen` y te hace spawn PEGADO a ella, o crea
 `jug.retorno` — puerta PERSONAL (índice `'R'` en `salidaCerca`/`ofrecer`; el cliente la
 añade a `map.exits` solo en su lado vía `m.retorno`); sin retorno si `esSinRetorno`

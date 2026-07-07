@@ -69,7 +69,10 @@ class Cliente {
           for (const i of m.abiertas || []) if (this.map.exits[i]) this.map.exits[i].def._abierta = true;
         }
         if (m.t === 'pos') {
-          for (const [id, x, y] of m.j || []) if (id === this.id) { this.x = x; this.y = y; }
+          for (const [id, x, y] of m.j || []) if (id === this.id) {
+            this.recorrido = (this.recorrido || 0) + Math.hypot(x - this.x, y - this.y);
+            this.x = x; this.y = y;
+          }
         }
         if (m.t === 'mueve' && m.id === this.id) { this.x = m.x; this.y = m.y; }
         this.buzon.push({ m, t: Date.now() });
@@ -171,6 +174,25 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     const avisoLuz = c.buzon.slice(n0).find((e) => e.m.t === 'aviso' && /linterna/i.test(e.m.txt));
     ok(!luzDe, 'sin linterna en mano NO se difunde luzDe');
     ok(!!avisoLuz, 'sin linterna en mano llega el aviso explicativo');
+
+    // --- invariante de velocidad (fix v23.4): girar andando manda ~60
+    // inputs/s y cada uno integraba el tramo del tick OTRA VEZ → ×3 de
+    // velocidad en el servidor. El camino recorrido no puede superar vel×t.
+    {
+      c.recorrido = 0;
+      const t0 = Date.now();
+      for (let i = 0; i < 72; i++) { // 72 mensajes en ~1.2 s, vector girando
+        const th = i * 0.05;
+        c.enviar({ t: 'input', dx: Math.sin(th), dy: -Math.cos(th) });
+        await espera(16);
+      }
+      c.enviar({ t: 'input', dx: 0, dy: 0 });
+      await espera(400); // a que lleguen las últimas posiciones del tick
+      const dur = (Date.now() - t0) / 1000;
+      const tope = 4.6 * dur * 1.15 + 0.3;
+      ok(c.recorrido <= tope,
+        `sin speedhack por spam de input (${c.recorrido.toFixed(1)} tiles en ${dur.toFixed(1)} s, tope ${tope.toFixed(1)})`);
+    }
 
     // --- registrar un contenedor con ESPACIO ---
     const g = c.map.grid;

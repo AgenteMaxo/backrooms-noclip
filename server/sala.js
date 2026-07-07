@@ -133,8 +133,14 @@ class Sala {
     // cambiarlo. Sin esto, arrancar/frenar/girar queda cuantizado al tick de
     // 100 ms (hasta ~0.5 tiles de desvío del camino real del cliente) y la
     // reconciliación lo interpreta como deriva → temblores en cada maniobra.
+    // OJO (fix v23.4): el tramo arranca en la ÚLTIMA integración de ESTE
+    // jugador, no en el inicio del tick — con varios inputs por tick (girar
+    // andando manda ~uno por frame) se re-integraba el mismo tramo una y otra
+    // vez: velocidad ×3 en el servidor y saltos hacia delante al reconciliar.
+    // Invariante: la suma de dt integrados NUNCA supera el tiempo real.
     const ahora = Date.now();
-    const dtParcial = (ahora - (this._ultTick || ahora)) / 1000;
+    const desde = Math.max(this._ultTick || ahora, jug._integradoHasta || 0);
+    const dtParcial = (ahora - desde) / 1000;
     if (dtParcial > 0.004 && (jug.input.dx || jug.input.dy) && !jug.escondido) {
       this.integrar(jug, Math.min(0.25, dtParcial), this._movidosExtra || (this._movidosExtra = []));
       jug._integradoHasta = ahora;
