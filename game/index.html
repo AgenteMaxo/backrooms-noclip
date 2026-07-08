@@ -2,9 +2,9 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>BACKROOMS MMO</title>
-<link rel="stylesheet" href="css/style.css?v=240">
+<link rel="stylesheet" href="css/style.css?v=241">
 </head>
 <body>
 <div id="app">
@@ -84,6 +84,13 @@
         <div class="mano-slot" id="mano-0" title="Mano izquierda"></div>
         <div class="mano-slot" id="mano-1" title="Mano derecha"></div>
         <button id="btn-mochila" title="Mochila (B)"></button>
+      </div>
+      <!-- v25: D-pad táctil, solo movimiento (main.js escucha keydown/keyup) -->
+      <div id="touch-controls">
+        <button type="button" class="tc-btn tc-up" data-code="ArrowUp" aria-label="Arriba">▲</button>
+        <button type="button" class="tc-btn tc-left" data-code="ArrowLeft" aria-label="Izquierda">◀</button>
+        <button type="button" class="tc-btn tc-right" data-code="ArrowRight" aria-label="Derecha">▶</button>
+        <button type="button" class="tc-btn tc-down" data-code="ArrowDown" aria-label="Abajo">▼</button>
       </div>
       <div id="backpack-panel" style="display:none">
         <div class="modal-box" id="backpack-box">
@@ -246,35 +253,36 @@
 
 <!-- ?v= rompe la caché del edge (Cloudflare cachea .js/.css por defecto aunque
      el origen no lo pida): SUBIR el número en cada versión, junto con VERSION_JUEGO -->
-<script src="js/data.js?v=240"></script>
-<script src="js/engine/rng.js?v=240"></script>
-<script src="js/mapgen/mapgen.js?v=240"></script>
-<script src="js/engine/tiles.js?v=240"></script>
-<script src="js/engine/sprites.js?v=240"></script>
-<script src="js/engine/effects.js?v=240"></script>
-<script src="js/audio-manifest.js?v=240"></script>
-<script src="js/engine/sfx.js?v=240"></script>
-<script src="js/engine/fov.js?v=240"></script>
-<script src="js/systems/entities.js?v=240"></script>
-<script src="js/systems/rules.js?v=240"></script>
-<script src="js/engine/render.js?v=240"></script>
-<script src="js/lib/three.min.js?v=240"></script>
-<script src="js/lib/shaders/CopyShader.js?v=240"></script>
-<script src="js/lib/shaders/LuminosityHighPassShader.js?v=240"></script>
-<script src="js/lib/shaders/GammaCorrectionShader.js?v=240"></script>
-<script src="js/lib/postprocessing/EffectComposer.js?v=240"></script>
-<script src="js/lib/postprocessing/RenderPass.js?v=240"></script>
-<script src="js/lib/postprocessing/ShaderPass.js?v=240"></script>
-<script src="js/lib/postprocessing/UnrealBloomPass.js?v=240"></script>
-<script src="js/engine/atmos3d.js?v=240"></script>
-<script src="js/engine/render3d.js?v=240"></script>
-<script src="js/systems/game.js?v=240"></script>
-<script src="js/ui/icons.js?v=240"></script>
-<script src="js/ui/ui.js?v=240"></script>
-<script src="js/ui/minimap.js?v=240"></script>
-<script src="js/sim/fisica.js?v=240"></script>
-<script src="js/net/otros.js?v=240"></script>
-<script src="js/net/cliente.js?v=240"></script>
-<script src="js/main.js?v=240"></script>
+<script src="js/data.js?v=241"></script>
+<script src="js/engine/rng.js?v=241"></script>
+<script src="js/mapgen/mapgen.js?v=241"></script>
+<script src="js/engine/tiles.js?v=241"></script>
+<script src="js/engine/sprites.js?v=241"></script>
+<script src="js/engine/effects.js?v=241"></script>
+<script src="js/audio-manifest.js?v=241"></script>
+<script src="js/engine/sfx.js?v=241"></script>
+<script src="js/engine/fov.js?v=241"></script>
+<script src="js/systems/entities.js?v=241"></script>
+<script src="js/systems/rules.js?v=241"></script>
+<script src="js/engine/render.js?v=241"></script>
+<script src="js/lib/three.min.js?v=241"></script>
+<script src="js/lib/shaders/CopyShader.js?v=241"></script>
+<script src="js/lib/shaders/LuminosityHighPassShader.js?v=241"></script>
+<script src="js/lib/shaders/GammaCorrectionShader.js?v=241"></script>
+<script src="js/lib/postprocessing/EffectComposer.js?v=241"></script>
+<script src="js/lib/postprocessing/RenderPass.js?v=241"></script>
+<script src="js/lib/postprocessing/ShaderPass.js?v=241"></script>
+<script src="js/lib/postprocessing/UnrealBloomPass.js?v=241"></script>
+<script src="js/engine/atmos3d.js?v=241"></script>
+<script src="js/engine/render3d.js?v=241"></script>
+<script src="js/systems/game.js?v=241"></script>
+<script src="js/ui/icons.js?v=241"></script>
+<script src="js/ui/ui.js?v=241"></script>
+<script src="js/ui/minimap.js?v=241"></script>
+<script src="js/ui/touch-controls.js?v=241"></script>
+<script src="js/sim/fisica.js?v=241"></script>
+<script src="js/net/otros.js?v=241"></script>
+<script src="js/net/cliente.js?v=241"></script>
+<script src="js/main.js?v=241"></script>
 </body>
 </html>

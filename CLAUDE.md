@@ -299,6 +299,27 @@ Debug (online = `/tp`) y `#debug-stats` (barras salud/comida/bebida/cordura, ui.
 sin servidor: cualquier clave desbloquea. Arnés de integración e2e usado en v23 (levanta
 servidor real + cliente ws): reproducirlo si se toca sala/protocolo.
 
+**v25 — controles táctiles de movimiento (móvil)**: primera pasada de soporte móvil,
+SOLO movimiento (interacción/mochila quedan para después). `game/js/ui/touch-controls.js`
+(nuevo, cargado tras `ui/minimap.js`) NO reimplementa el pipeline de movimiento — cada
+botón del D-pad dispara `KeyboardEvent` sintéticos (`code:'ArrowUp'` etc.) sobre
+`document`, reutilizando tal cual el listener de `keydown`/`keyup` de `main.js` (mismo
+auto-repeat 150/600ms, mismo `Set teclas` en modo online, misma lógica de
+avanzar/girar/tryMove en las tres cámaras) — así no puede divergir del teclado. Detección
+táctil por `ontouchstart`/`maxTouchPoints`/`matchMedia('(pointer:coarse)')`, con override
+`?touch=1|0` para probar sin emulación táctil real; clase `html.touch` en
+`<html>` controla la visibilidad CSS de `#touch-controls` (oculto por defecto, así que en
+desktop no cambia nada). Efecto colateral NECESARIO: el lienzo fijo 960×600 desbordaba en
+viewports estrechos (el D-pad quedaba fuera de pantalla) — `#game-wrap`/`#game-canvas`/
+`#gl-canvas` ahora llevan `max-width:100vw;max-height:100vh` (+ `height:auto`), así que en
+móvil el juego se escala completo dentro de la pantalla (con barras negras por el aspect
+ratio ancho) en vez de desbordar; en desktop no tiene efecto. Meta viewport con
+`maximum-scale=1,user-scalable=no` para que el pinch-zoom no interfiera con los botones.
+Verificado con Playwright (`devices['iPhone 13']`, `hasTouch` vía dispatchEvent de
+`pointerdown/up`) en 2D y en 3ª persona 3D: mantener pulsado repite pasos al mismo ritmo
+que el teclado, soltar corta el movimiento sin dejar intervalos fantasma, y en desktop sin
+touch el D-pad permanece `display:none`.
+
 (Todos existen y están committeados. v3: render cenital con paredes finas autotile en `tiles.js`/`render.js`,
 pixel-art data-driven en `sprites.js` con override PNG desde `game/assets/sprites/`, efectos de combate
 en `effects.js`, props/contenedores registrables en `mapgen.js`/`game.js`.)
