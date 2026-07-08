@@ -38,6 +38,15 @@
     ArrowRight: [1, 0], KeyD: [1, 0],
   };
 
+  // v22: conjunto de teclas de movimiento PULSADAS (keydown/keyup); el vector
+  // de input se calcula en cada frame del bucle — movimiento libre y suave
+  const teclas = new Set();
+  document.addEventListener('keyup', (ev) => teclas.delete(ev.code));
+  window.addEventListener('blur', () => {
+    teclas.clear();
+    if (world.online && window.Net) Net.parar();
+  });
+
   // el audio se desbloquea con el primer gesto (política de los navegadores)
   document.addEventListener('keydown', () => Sfx.unlock(), { once: true });
   document.addEventListener('click', () => Sfx.unlock(), { once: true });
@@ -55,7 +64,7 @@
   }
 
   // ---------- opciones persistentes (v16) ----------
-  window.OPTS = { dado: true, camaraModo: 'arrastrar', camaraInvertir: false };
+  window.OPTS = { dado: true, camaraModo: 'arrastrar', camaraInvertir: false, camaraSens: 100 };
   try { Object.assign(window.OPTS, JSON.parse(localStorage.getItem('backrooms-opts')) || {}); }
   catch (e) { /* opciones corruptas: valores por defecto */ }
   const optDado = document.getElementById('opt-dado');
@@ -82,6 +91,20 @@
     optCamaraInvertir.checked = !!OPTS.camaraInvertir;
     optCamaraInvertir.onchange = () => {
       OPTS.camaraInvertir = optCamaraInvertir.checked;
+      try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
+    };
+  }
+
+  const optCamaraSens = document.getElementById('opt-camara-sens');
+  const optCamaraSensV = document.getElementById('opt-camara-sens-v');
+  if (optCamaraSens) {
+    optCamaraSens.value = OPTS.camaraSens !== undefined ? OPTS.camaraSens : 100;
+    if (optCamaraSensV) optCamaraSensV.textContent = optCamaraSens.value + '%';
+    optCamaraSens.oninput = () => {
+      OPTS.camaraSens = parseInt(optCamaraSens.value, 10);
+      if (optCamaraSensV) optCamaraSensV.textContent = OPTS.camaraSens + '%';
+    };
+    optCamaraSens.onchange = () => {
       try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
     };
   }
@@ -167,6 +190,7 @@
   {
     const wrap = document.getElementById('game-wrap');
     let arrastre = null;
+    let justLocked = false;
     wrap.addEventListener('contextmenu', (ev) => ev.preventDefault());
     wrap.addEventListener('mousedown', (ev) => {
       if (!world.online || !use3D || Render3D.modo !== 'tercera') return;
@@ -188,12 +212,18 @@
       
       const modo = window.OPTS.camaraModo || 'arrastrar';
       const factor = window.OPTS.camaraInvertir ? 1 : -1;
+      const sensMult = (window.OPTS.camaraSens !== undefined ? window.OPTS.camaraSens : 100) / 100;
       
       if (modo === 'libre' && document.pointerLockElement === wrap) {
+        if (justLocked) {
+          justLocked = false;
+          return;
+        }
         const dx = ev.movementX || 0;
-        Render3D.orbita(factor * dx * 0.0035);
+        if (Math.abs(dx) > 200) return; // ignora saltos de teletransporte anómalos del cursor
+        Render3D.orbita(factor * dx * 0.0035 * sensMult);
       } else if (modo === 'arrastrar' && arrastre !== null) {
-        Render3D.orbita(factor * (ev.clientX - arrastre) * 0.0085);
+        Render3D.orbita(factor * (ev.clientX - arrastre) * 0.0085 * sensMult);
         arrastre = ev.clientX;
       }
     });
@@ -202,9 +232,13 @@
       wrap.classList.remove('orbitando');
     });
     document.addEventListener('pointerlockchange', () => {
-      if (document.pointerLockElement !== wrap) {
+      if (document.pointerLockElement === wrap) {
+        justLocked = true;
+      } else {
         arrastre = null;
         wrap.classList.remove('orbitando');
+        teclas.clear();
+        if (world.online && window.Net) Net.parar();
       }
     });
   }
@@ -285,15 +319,6 @@
   const btnSndTitle = document.getElementById('btn-sound-menu-title');
   if (btnSndTitle) btnSndTitle.onclick = abrirSndMenu;
 
-  // v22: conjunto de teclas de movimiento PULSADAS (keydown/keyup); el vector
-  // de input se calcula en cada frame del bucle — movimiento libre y suave
-  const teclas = new Set();
-  document.addEventListener('keyup', (ev) => teclas.delete(ev.code));
-  window.addEventListener('blur', () => {
-    teclas.clear();
-    if (world.online && window.Net) Net.parar();
-  });
-
   let lastStepT = 0; // mantener pulsado = velocidad CONSTANTE (v16)
   document.addEventListener('keydown', (ev) => {
     if (!world.level || world.over) return;
@@ -332,7 +357,10 @@
         if (document.pointerLockElement) document.exitPointerLock();
         Minimap.toggleBig();
       } else if (ev.code === 'Escape') {
-        if (document.pointerLockElement) document.exitPointerLock();
+        if (document.pointerLockElement) {
+          document.exitPointerLock();
+          return;
+        }
         if (Minimap.visible) Minimap.toggleBig(false);
         else if (document.getElementById('backpack-panel').style.display !== 'none') world.ui.toggleBackpack(false);
         else if (sndMenu.style.display !== 'none') cerrarSndMenu();
@@ -412,7 +440,10 @@
     }
     else if (ev.code === 'Escape') {
       // ESC: cierra lo que esté abierto; si no hay nada, abre/cierra Ajustes
-      if (document.pointerLockElement) document.exitPointerLock();
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+        return;
+      }
       if (Minimap.visible) Minimap.toggleBig(false);
       else if (document.getElementById('backpack-panel').style.display !== 'none') world.ui.toggleBackpack(false);
       else if (sndMenu.style.display !== 'none') cerrarSndMenu();
