@@ -139,8 +139,24 @@
   // resolución del monitor (nada de cuadro de 960×600 sobre fondo negro)
   function ajustarLienzo() {
     const fs = !!document.fullscreenElement;
-    const w = fs ? window.innerWidth : 960;
-    const h = fs ? window.innerHeight : 600;
+    let w = fs ? Math.max(320, window.innerWidth) : 960;
+    let h = fs ? Math.max(200, window.innerHeight) : 600;
+    if (!fs) {
+      const vv = window.visualViewport;
+      const vw = Math.max(320, Math.floor(vv ? vv.width : window.innerWidth));
+      const vh = Math.max(200, Math.floor(vv ? vv.height : window.innerHeight));
+      const esTactil = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+      const margen = esTactil ? 0 : 24;
+      const ratio = 16 / 10;
+      w = Math.min(1280, vw - margen);
+      h = Math.min(800, vh - margen);
+      if (w / h > ratio) w = Math.floor(h * ratio);
+      else h = Math.floor(w / ratio);
+      w = Math.max(320, w);
+      h = Math.max(200, h);
+    }
+    document.documentElement.style.setProperty('--game-w', `${w}px`);
+    document.documentElement.style.setProperty('--game-h', `${h}px`);
     if (canvas.width !== w || canvas.height !== h) {
       canvas.width = w; canvas.height = h;
       if (use3D && Render3D.resize) Render3D.resize(w, h);
@@ -152,12 +168,15 @@
       ? 'Salir de pantalla completa' : 'Pantalla completa';
     ajustarLienzo();
   });
-  window.addEventListener('resize', () => { if (document.fullscreenElement) ajustarLienzo(); });
+  window.addEventListener('resize', ajustarLienzo);
+  window.addEventListener('orientationchange', () => setTimeout(ajustarLienzo, 140));
+  ajustarLienzo();
 
   // ---------- cámara libre con el RATÓN (v25, online 3ªP): mantener y arrastrar ----------
   {
     const wrap = document.getElementById('game-wrap');
     let arrastre = null;
+    let arrastreTactil = null;
     wrap.addEventListener('contextmenu', (ev) => ev.preventDefault());
     wrap.addEventListener('mousedown', (ev) => {
       if (!world.online || !use3D || Render3D.modo !== 'tercera') return;
@@ -174,6 +193,29 @@
       arrastre = null;
       wrap.classList.remove('orbitando');
     });
+    wrap.addEventListener('pointerdown', (ev) => {
+      if (ev.pointerType === 'mouse') return;
+      if (!world.online || !use3D || Render3D.modo !== 'tercera') return;
+      if (ev.target.closest('#touch-controls, button, input, select, #backpack-panel, #log-panel, #game-menu, #sound-menu, #item-modal')) return;
+      ev.preventDefault();
+      arrastreTactil = { id: ev.pointerId, x: ev.clientX };
+      try { wrap.setPointerCapture(ev.pointerId); } catch (e) {}
+      wrap.classList.add('orbitando');
+    }, { passive: false });
+    wrap.addEventListener('pointermove', (ev) => {
+      if (!arrastreTactil || arrastreTactil.id !== ev.pointerId) return;
+      ev.preventDefault();
+      Render3D.orbita((ev.clientX - arrastreTactil.x) * 0.010);
+      arrastreTactil.x = ev.clientX;
+    }, { passive: false });
+    function finArrastreTactil(ev) {
+      if (!arrastreTactil || arrastreTactil.id !== ev.pointerId) return;
+      arrastreTactil = null;
+      wrap.classList.remove('orbitando');
+      try { wrap.releasePointerCapture(ev.pointerId); } catch (e) {}
+    }
+    wrap.addEventListener('pointerup', finArrastreTactil);
+    wrap.addEventListener('pointercancel', finArrastreTactil);
   }
 
   // contraseña de guardián: valida contra el servidor (online) y desbloquea
@@ -283,9 +325,11 @@
   // v22: conjunto de teclas de movimiento PULSADAS (keydown/keyup); el vector
   // de input se calcula en cada frame del bucle — movimiento libre y suave
   const teclas = new Set();
+  const tactilDirs = new Set();
   document.addEventListener('keyup', (ev) => teclas.delete(ev.code));
   window.addEventListener('blur', () => {
     teclas.clear();
+    tactilDirs.clear();
     if (world.online && window.Net) Net.parar();
   });
 
@@ -415,7 +459,7 @@
         document.getElementById('screen-card').style.display === 'none') {
       // suma de las teclas pulsadas en coordenadas de PANTALLA
       let sx = 0, sy = 0;
-      for (const code of teclas) {
+      for (const code of new Set([...teclas, ...tactilDirs])) {
         const v = KEYS[code];
         if (v) { sx += v[0]; sy += v[1]; }
       }
@@ -821,23 +865,41 @@
   $id('btn-end-title').onclick = () => { world.ui.show('title'); refreshTitle(); };
 
   // ---------- controles táctiles ----------
+  const touchDir = {
+    up: ['KeyW', [0, -1]],
+    down: ['KeyS', [0, 1]],
+    left: ['KeyA', [-1, 0]],
+    right: ['KeyD', [1, 0]],
+  };
   const touch = {
-    up: () => world.online ? Net.setInput(0, -1) : Game.tryMove(0, -1),
-    down: () => world.online ? Net.setInput(0, 1) : Game.tryMove(0, 1),
-    left: () => world.online ? Net.setInput(-1, 0) : Game.tryMove(-1, 0),
-    right: () => world.online ? Net.setInput(1, 0) : Game.tryMove(1, 0),
     act: () => world.online ? Net.accion() : Game.interact(),
     q: () => world.online ? Net.usar(0) : Game.usarMano(0),
     e: () => world.online ? Net.usar(1) : Game.usarMano(1),
     bag: () => world.ui.toggleBackpack(),
   };
+  function soltarDireccionTactil(k) {
+    const dir = touchDir[k];
+    if (!dir) return;
+    tactilDirs.delete(dir[0]);
+    if (world.online && window.Net && !tactilDirs.size) Net.parar();
+  }
   document.querySelectorAll('[data-touch]').forEach((btn) => {
     const k = btn.dataset.touch;
-    const start = (ev) => { ev.preventDefault(); touch[k]?.(); };
-    const stop = () => {
-      if (world.online && ['up', 'down', 'left', 'right'].includes(k)) Net.setInput(0, 0);
+    const start = (ev) => {
+      ev.preventDefault();
+      Sfx.unlock();
+      const dir = touchDir[k];
+      if (dir) {
+        if (world.online) tactilDirs.add(dir[0]);
+        else Game.tryMove(dir[1][0], dir[1][1]);
+        return;
+      }
+      touch[k]?.();
     };
-    btn.addEventListener('pointerdown', start);
+    const stop = () => {
+      soltarDireccionTactil(k);
+    };
+    btn.addEventListener('pointerdown', start, { passive: false });
     btn.addEventListener('pointerup', stop);
     btn.addEventListener('pointercancel', stop);
     btn.addEventListener('pointerleave', stop);
