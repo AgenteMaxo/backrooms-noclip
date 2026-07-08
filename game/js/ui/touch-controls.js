@@ -1,11 +1,8 @@
-// D-pad táctil (v25): solo movimiento. En vez de reimplementar el pipeline
-// de movimiento (turnos/online, auto-repeat, giro de cámara...) cada botón
-// dispara los mismos KeyboardEvent que ya escucha main.js, así el D-pad se
-// comporta idéntico al teclado en los dos modos y en las tres cámaras.
+// D-pad + ESC táctiles (v25/v25.1): solo movimiento y el ESC contextual
+// (cierra paneles / abre Ajustes). En vez de reimplementar esa lógica, cada
+// botón dispara los mismos KeyboardEvent que ya escucha main.js, así se
+// comportan idéntico al teclado en los dos modos y en las tres cámaras.
 (function () {
-  const wrap = document.getElementById('touch-controls');
-  if (!wrap) return;
-
   const params = new URLSearchParams(location.search);
   const forzado = params.get('touch');
   const esTactil = forzado === '1' ? true : forzado === '0' ? false :
@@ -19,8 +16,9 @@
     document.dispatchEvent(new KeyboardEvent('keydown', { code, repeat, bubbles: true }));
   }
 
-  for (const btn of wrap.querySelectorAll('.tc-btn')) {
+  document.querySelectorAll('.tc-btn[data-code]').forEach((btn) => {
     const code = btn.dataset.code;
+    const soloToque = btn.dataset.tap === '1'; // ESC: un disparo por toque, sin auto-repeat
     let timer = null;
     const empezar = (ev) => {
       ev.preventDefault();
@@ -28,7 +26,7 @@
       if (window.Sfx) Sfx.unlock();
       btn.classList.add('activo');
       disparar(code, false);
-      timer = setInterval(() => disparar(code, true), REPEAT_MS);
+      if (!soloToque) timer = setInterval(() => disparar(code, true), REPEAT_MS);
     };
     const parar = (ev) => {
       if (ev) ev.preventDefault();
@@ -40,5 +38,5 @@
     btn.addEventListener('pointerup', parar);
     btn.addEventListener('pointercancel', parar);
     btn.addEventListener('pointerleave', parar);
-  }
+  });
 })();

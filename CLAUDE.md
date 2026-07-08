@@ -320,6 +320,15 @@ Verificado con Playwright (`devices['iPhone 13']`, `hasTouch` vía dispatchEvent
 que el teclado, soltar corta el movimiento sin dejar intervalos fantasma, y en desktop sin
 touch el D-pad permanece `display:none`.
 
+**v25.1 — ESC táctil**: botón `#touch-esc` (icono engranaje), mismo mecanismo que el D-pad
+(`.tc-btn[data-code="Escape"]` en `touch-controls.js`) pero de UN SOLO toque —
+`data-tap="1"` salta el `setInterval` de auto-repeat (repetir ESC cada 60ms abriría/
+cerraría Ajustes en bucle). Reutiliza la lógica cascada ya existente en `main.js`
+(cierra minimapa/mochila/Ajustes, o abre Ajustes si no hay nada abierto) sin tocarla.
+Colocado bajo `#moodles` (`top:52px;right:10px`, debajo de su fila de iconos que crece
+desde la esquina) para no pelear por ancho con ellos ni con el D-pad/manos, ya de por sí
+ajustados en las esquinas inferiores en pantallas estrechas.
+
 (Todos existen y están committeados. v3: render cenital con paredes finas autotile en `tiles.js`/`render.js`,
 pixel-art data-driven en `sprites.js` con override PNG desde `game/assets/sprites/`, efectos de combate
 en `effects.js`, props/contenedores registrables en `mapgen.js`/`game.js`.)

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>BACKROOMS MMO</title>
-<link rel="stylesheet" href="css/style.css?v=241">
+<link rel="stylesheet" href="css/style.css?v=242">
 </head>
 <body>
 <div id="app">
@@ -92,6 +92,10 @@
         <button type="button" class="tc-btn tc-right" data-code="ArrowRight" aria-label="Derecha">▶</button>
         <button type="button" class="tc-btn tc-down" data-code="ArrowDown" aria-label="Abajo">▼</button>
       </div>
+      <!-- v25.1: botón ESC táctil (ajustes / cerrar paneles) — un solo toque, sin auto-repeat -->
+      <button type="button" id="touch-esc" class="tc-btn" data-code="Escape" data-tap="1" aria-label="Ajustes">
+        <span data-icon="engranaje" data-icon-size="20"></span>
+      </button>
       <div id="backpack-panel" style="display:none">
         <div class="modal-box" id="backpack-box">
           <h3><span data-icon="mochila" data-icon-size="20"></span> Mochila del errante</h3>
@@ -253,36 +257,36 @@
 
 <!-- ?v= rompe la caché del edge (Cloudflare cachea .js/.css por defecto aunque
      el origen no lo pida): SUBIR el número en cada versión, junto con VERSION_JUEGO -->
-<script src="js/data.js?v=241"></script>
-<script src="js/engine/rng.js?v=241"></script>
-<script src="js/mapgen/mapgen.js?v=241"></script>
-<script src="js/engine/tiles.js?v=241"></script>
-<script src="js/engine/sprites.js?v=241"></script>
-<script src="js/engine/effects.js?v=241"></script>
-<script src="js/audio-manifest.js?v=241"></script>
-<script src="js/engine/sfx.js?v=241"></script>
-<script src="js/engine/fov.js?v=241"></script>
-<script src="js/systems/entities.js?v=241"></script>
-<script src="js/systems/rules.js?v=241"></script>
-<script src="js/engine/render.js?v=241"></script>
-<script src="js/lib/three.min.js?v=241"></script>
-<script src="js/lib/shaders/CopyShader.js?v=241"></script>
-<script src="js/lib/shaders/LuminosityHighPassShader.js?v=241"></script>
-<script src="js/lib/shaders/GammaCorrectionShader.js?v=241"></script>
-<script src="js/lib/postprocessing/EffectComposer.js?v=241"></script>
-<script src="js/lib/postprocessing/RenderPass.js?v=241"></script>
-<script src="js/lib/postprocessing/ShaderPass.js?v=241"></script>
-<script src="js/lib/postprocessing/UnrealBloomPass.js?v=241"></script>
-<script src="js/engine/atmos3d.js?v=241"></script>
-<script src="js/engine/render3d.js?v=241"></script>
-<script src="js/systems/game.js?v=241"></script>
-<script src="js/ui/icons.js?v=241"></script>
-<script src="js/ui/ui.js?v=241"></script>
-<script src="js/ui/minimap.js?v=241"></script>
-<script src="js/ui/touch-controls.js?v=241"></script>
-<script src="js/sim/fisica.js?v=241"></script>
-<script src="js/net/otros.js?v=241"></script>
-<script src="js/net/cliente.js?v=241"></script>
-<script src="js/main.js?v=241"></script>
+<script src="js/data.js?v=242"></script>
+<script src="js/engine/rng.js?v=242"></script>
+<script src="js/mapgen/mapgen.js?v=242"></script>
+<script src="js/engine/tiles.js?v=242"></script>
+<script src="js/engine/sprites.js?v=242"></script>
+<script src="js/engine/effects.js?v=242"></script>
+<script src="js/audio-manifest.js?v=242"></script>
+<script src="js/engine/sfx.js?v=242"></script>
+<script src="js/engine/fov.js?v=242"></script>
+<script src="js/systems/entities.js?v=242"></script>
+<script src="js/systems/rules.js?v=242"></script>
+<script src="js/engine/render.js?v=242"></script>
+<script src="js/lib/three.min.js?v=242"></script>
+<script src="js/lib/shaders/CopyShader.js?v=242"></script>
+<script src="js/lib/shaders/LuminosityHighPassShader.js?v=242"></script>
+<script src="js/lib/shaders/GammaCorrectionShader.js?v=242"></script>
+<script src="js/lib/postprocessing/EffectComposer.js?v=242"></script>
+<script src="js/lib/postprocessing/RenderPass.js?v=242"></script>
+<script src="js/lib/postprocessing/ShaderPass.js?v=242"></script>
+<script src="js/lib/postprocessing/UnrealBloomPass.js?v=242"></script>
+<script src="js/engine/atmos3d.js?v=242"></script>
+<script src="js/engine/render3d.js?v=242"></script>
+<script src="js/systems/game.js?v=242"></script>
+<script src="js/ui/icons.js?v=242"></script>
+<script src="js/ui/ui.js?v=242"></script>
+<script src="js/ui/minimap.js?v=242"></script>
+<script src="js/ui/touch-controls.js?v=242"></script>
+<script src="js/sim/fisica.js?v=242"></script>
+<script src="js/net/otros.js?v=242"></script>
+<script src="js/net/cliente.js?v=242"></script>
+<script src="js/main.js?v=242"></script>
 </body>
 </html>

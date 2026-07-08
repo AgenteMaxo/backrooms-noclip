@@ -169,6 +169,11 @@ html.touch #touch-controls { display: grid; }
 .tc-left { grid-column: 1; grid-row: 2; }
 .tc-right { grid-column: 3; grid-row: 2; }
 .tc-down { grid-column: 2; grid-row: 3; }
+/* v25.1: ESC táctil — debajo de los moodles (top:10+34+8) para no pelear
+   por ancho con ellos, que crecen desde la esquina superior derecha */
+#touch-esc { display: none; position: absolute; top: 52px; right: 10px;
+  width: 44px; height: 44px; }
+html.touch #touch-esc { display: flex; }
 #backpack-panel { position: absolute; inset: 0; background: rgba(0,0,0,.6);
   display: flex; align-items: center; justify-content: center; z-index: 15; }
 /* v17: mochila inmersiva — bolsillos de tela cosida y manos a los lados */
