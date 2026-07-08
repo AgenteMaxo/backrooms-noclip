@@ -55,7 +55,7 @@
   }
 
   // ---------- opciones persistentes (v16) ----------
-  window.OPTS = { dado: true };
+  window.OPTS = { dado: true, camaraModo: 'arrastrar', camaraInvertir: false };
   try { Object.assign(window.OPTS, JSON.parse(localStorage.getItem('backrooms-opts')) || {}); }
   catch (e) { /* opciones corruptas: valores por defecto */ }
   const optDado = document.getElementById('opt-dado');
@@ -64,6 +64,27 @@
     OPTS.dado = optDado.checked;
     try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
   };
+
+  const optCamaraModo = document.getElementById('opt-camara-modo');
+  if (optCamaraModo) {
+    optCamaraModo.value = OPTS.camaraModo || 'arrastrar';
+    optCamaraModo.onchange = () => {
+      OPTS.camaraModo = optCamaraModo.value;
+      try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
+      if (OPTS.camaraModo !== 'libre' && document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+    };
+  }
+
+  const optCamaraInvertir = document.getElementById('opt-camara-invertir');
+  if (optCamaraInvertir) {
+    optCamaraInvertir.checked = !!OPTS.camaraInvertir;
+    optCamaraInvertir.onchange = () => {
+      OPTS.camaraInvertir = optCamaraInvertir.checked;
+      try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
+    };
+  }
 
   // ---------- menú de ajustes de sonido ----------
   const sndMenu = document.getElementById('sound-menu');
@@ -142,25 +163,49 @@
   });
   window.addEventListener('resize', () => { if (document.fullscreenElement) ajustarLienzo(); });
 
-  // ---------- cámara libre con el RATÓN (v25, online 3ªP): mantener y arrastrar ----------
+  // ---------- cámara libre con el RATÓN (v25, online 3ªP) ----------
   {
     const wrap = document.getElementById('game-wrap');
     let arrastre = null;
     wrap.addEventListener('contextmenu', (ev) => ev.preventDefault());
     wrap.addEventListener('mousedown', (ev) => {
       if (!world.online || !use3D || Render3D.modo !== 'tercera') return;
-      if (ev.target.closest('button, input, select, #backpack-panel, #log-panel')) return;
-      arrastre = ev.clientX;
-      wrap.classList.add('orbitando');
+      if (world.busy) return;
+      if (ev.target.closest('button, input, select, #backpack-panel, #log-panel, #journal-panel, #codex-panel, #sound-menu, .choice-modal, .modal-box')) return;
+      
+      const modo = window.OPTS.camaraModo || 'arrastrar';
+      if (modo === 'libre') {
+        if (document.pointerLockElement !== wrap) {
+          wrap.requestPointerLock();
+        }
+      } else {
+        arrastre = ev.clientX;
+        wrap.classList.add('orbitando');
+      }
     });
     window.addEventListener('mousemove', (ev) => {
-      if (arrastre === null) return;
-      Render3D.orbita((ev.clientX - arrastre) * 0.0085);
-      arrastre = ev.clientX;
+      if (!world.online || !use3D || Render3D.modo !== 'tercera') return;
+      
+      const modo = window.OPTS.camaraModo || 'arrastrar';
+      const factor = window.OPTS.camaraInvertir ? 1 : -1;
+      
+      if (modo === 'libre' && document.pointerLockElement === wrap) {
+        const dx = ev.movementX || 0;
+        Render3D.orbita(factor * dx * 0.0035);
+      } else if (modo === 'arrastrar' && arrastre !== null) {
+        Render3D.orbita(factor * (ev.clientX - arrastre) * 0.0085);
+        arrastre = ev.clientX;
+      }
     });
     window.addEventListener('mouseup', () => {
       arrastre = null;
       wrap.classList.remove('orbitando');
+    });
+    document.addEventListener('pointerlockchange', () => {
+      if (document.pointerLockElement !== wrap) {
+        arrastre = null;
+        wrap.classList.remove('orbitando');
+      }
     });
   }
 
@@ -264,6 +309,7 @@
         teclas.add(ev.code);
       } else if (ev.code === 'KeyT' || ev.code === 'Enter') {
         ev.preventDefault();
+        if (document.pointerLockElement) document.exitPointerLock();
         Net.abrirChat();
       } else if (ev.code === 'Space') {
         ev.preventDefault();
@@ -273,11 +319,20 @@
         else Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
       } else if (ev.code === 'KeyF') Net.luzToggle();
       else if (/^Digit[1-6]$/.test(ev.code)) Game.useItem(parseInt(ev.code.slice(5), 10) - 1);
-      else if (ev.code === 'KeyB') world.ui.toggleBackpack();
-      else if (ev.code === 'KeyL') world.ui.toggleLog();
-      else if (ev.code === 'KeyC') world.ui.toggleCodex();
-      else if (ev.code === 'KeyM' || ev.code === 'KeyN') Minimap.toggleBig();
-      else if (ev.code === 'Escape') {
+      else if (ev.code === 'KeyB') {
+        if (document.pointerLockElement) document.exitPointerLock();
+        world.ui.toggleBackpack();
+      } else if (ev.code === 'KeyL') {
+        if (document.pointerLockElement) document.exitPointerLock();
+        world.ui.toggleLog();
+      } else if (ev.code === 'KeyC') {
+        if (document.pointerLockElement) document.exitPointerLock();
+        world.ui.toggleCodex();
+      } else if (ev.code === 'KeyM' || ev.code === 'KeyN') {
+        if (document.pointerLockElement) document.exitPointerLock();
+        Minimap.toggleBig();
+      } else if (ev.code === 'Escape') {
+        if (document.pointerLockElement) document.exitPointerLock();
         if (Minimap.visible) Minimap.toggleBig(false);
         else if (document.getElementById('backpack-panel').style.display !== 'none') world.ui.toggleBackpack(false);
         else if (sndMenu.style.display !== 'none') cerrarSndMenu();
@@ -335,13 +390,29 @@
     } else if (ev.code === 'KeyX') Game.wait();
     else if (ev.code === 'KeyF') Game.toggleLuz();
     else if (ev.code === 'KeyG') Game.noclip();
-    else if (ev.code === 'KeyB') world.ui.toggleBackpack();
-    else if (ev.code === 'KeyL') world.ui.toggleLog();
-    else if (ev.code === 'KeyJ') world.ui.toggleJournal();
-    else if (ev.code === 'KeyC') world.ui.toggleCodex();
-    else if (ev.code === 'KeyM' || ev.code === 'KeyN') Minimap.toggleBig();
+    else if (ev.code === 'KeyB') {
+      if (document.pointerLockElement) document.exitPointerLock();
+      world.ui.toggleBackpack();
+    }
+    else if (ev.code === 'KeyL') {
+      if (document.pointerLockElement) document.exitPointerLock();
+      world.ui.toggleLog();
+    }
+    else if (ev.code === 'KeyJ') {
+      if (document.pointerLockElement) document.exitPointerLock();
+      world.ui.toggleJournal();
+    }
+    else if (ev.code === 'KeyC') {
+      if (document.pointerLockElement) document.exitPointerLock();
+      world.ui.toggleCodex();
+    }
+    else if (ev.code === 'KeyM' || ev.code === 'KeyN') {
+      if (document.pointerLockElement) document.exitPointerLock();
+      Minimap.toggleBig();
+    }
     else if (ev.code === 'Escape') {
       // ESC: cierra lo que esté abierto; si no hay nada, abre/cierra Ajustes
+      if (document.pointerLockElement) document.exitPointerLock();
       if (Minimap.visible) Minimap.toggleBig(false);
       else if (document.getElementById('backpack-panel').style.display !== 'none') world.ui.toggleBackpack(false);
       else if (sndMenu.style.display !== 'none') cerrarSndMenu();

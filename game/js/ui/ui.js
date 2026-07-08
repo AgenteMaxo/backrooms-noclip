@@ -286,6 +286,7 @@
   function backpackAbierta() { return $('backpack-panel').style.display !== 'none'; }
   function toggleBackpack(force) {
     const vis = force !== undefined ? force : !backpackAbierta();
+    if (vis && document.pointerLockElement) document.exitPointerLock();
     $('backpack-panel').style.display = vis ? 'flex' : 'none';
     if (vis) { renderBackpack(); renderManos(); renderEquipo(); renderEfectos(); }
     if (window.Sfx) Sfx.play('ui');
@@ -450,6 +451,7 @@
 
   // ---------- dado ----------
   function showDice(texto, cb) {
+    if (document.pointerLockElement) document.exitPointerLock();
     // la animación puede apagarse en Ajustes (v16): la tirada se resuelve igual
     if (window.OPTS && !window.OPTS.dado) {
       setTimeout(() => cb(1 + Math.floor(Math.random() * 20)), 120);
@@ -475,6 +477,7 @@
   // ---------- modal de salida ----------
   let exitDefShown = null;
   function showExitModal(def) {
+    if (document.pointerLockElement) document.exitPointerLock();
     exitDefShown = def;
     world.busy = true;
     // colección: ver una salida la desbloquea en el códice (las de retorno no cuentan)
@@ -503,6 +506,7 @@
 
   // ---------- selector de nivel (llave del Hub) ----------
   function showLevelPicker(ids, cb) {
+    if (document.pointerLockElement) document.exitPointerLock();
     world.busy = true;
     const modal = $('exit-modal');
     modal.style.display = 'flex';
@@ -528,6 +532,7 @@
 
   // ---------- Instintos (v18): elige 1 de 3 al cruzar un umbral de Sintonía ----------
   function showInstintos(umbral, ofertas, cb) {
+    if (document.pointerLockElement) document.exitPointerLock();
     world.busy = true;
     $('instinto-nivel').textContent = umbral;
     const cont = $('instinto-cards');
@@ -558,6 +563,7 @@
 
   // ---------- elección libre (beber agua, rituales…) ----------
   function showChoice(titulo, texto, opciones) {
+    if (document.pointerLockElement) document.exitPointerLock();
     world.busy = true;
     $('choice-title').textContent = titulo;
     $('choice-text').textContent = texto;
@@ -598,6 +604,7 @@
   function toggleJournal() {
     const p = $('journal-panel');
     const visible = p.style.display !== 'none';
+    if (!visible && document.pointerLockElement) document.exitPointerLock();
     p.style.display = visible ? 'none' : 'block';
     if (!visible) renderJournal($('journal-list'));
   }
@@ -751,6 +758,7 @@
   let codexVisible = false;
   function toggleCodex(force) {
     codexVisible = force !== undefined ? force : !codexVisible;
+    if (codexVisible && document.pointerLockElement) document.exitPointerLock();
     $('codex-panel').style.display = codexVisible ? 'flex' : 'none';
     if (codexVisible) renderCodex();
     // pausa el juego mientras el códice está abierto (sin pisar modales/dado)

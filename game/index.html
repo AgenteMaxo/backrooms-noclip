@@ -171,6 +171,17 @@
       <div class="sound-row"><label>Efectos</label><input type="range" id="snd-fx" min="0" max="100"><span id="snd-fx-v"></span></div>
       <div class="sound-row"><label>Ambiente / música</label><input type="range" id="snd-amb" min="0" max="100"><span id="snd-amb-v"></span></div>
       <div class="sound-row"><label>Tirada de dado</label><label class="chk-row"><input type="checkbox" id="opt-dado"> mostrar animación</label></div>
+      <div class="sound-row">
+        <label>Modo de cámara</label>
+        <select id="opt-camara-modo" style="background:#0a0906; border:1px solid var(--borde); color:var(--texto); font-family:inherit; padding:3px 6px; outline:none; font-size:12px; border-radius:2px; cursor:pointer;">
+          <option value="arrastrar">Arrastrar con ratón</option>
+          <option value="libre">Cámara libre (Pointer Lock)</option>
+        </select>
+      </div>
+      <div class="sound-row">
+        <label>Giro de cámara</label>
+        <label class="chk-row"><input type="checkbox" id="opt-camara-invertir"> Invertir arrastre horizontal</label>
+      </div>
       <div class="sound-row"><label>Pantalla</label><button id="btn-fullscreen" class="btn-small" style="margin-top:0">Pantalla completa</button></div>
       <div class="sound-row" id="admin-row"><label>🔑 Guardián</label>
         <input type="password" id="admin-clave" placeholder="contraseña de admin…" maxlength="64" autocomplete="off">
