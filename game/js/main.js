@@ -865,6 +865,16 @@
   $id('btn-end-title').onclick = () => { world.ui.show('title'); refreshTitle(); };
 
   // ---------- controles táctiles ----------
+  {
+    const capaTactil = document.getElementById('touch-controls');
+    const wrap = document.getElementById('game-wrap');
+    for (const el of [capaTactil, wrap]) {
+      if (!el) continue;
+      for (const evName of ['contextmenu', 'selectstart', 'dragstart']) {
+        el.addEventListener(evName, (ev) => ev.preventDefault());
+      }
+    }
+  }
   const touchDir = {
     up: ['KeyW', [0, -1]],
     down: ['KeyS', [0, 1]],
@@ -876,6 +886,7 @@
     q: () => world.online ? Net.usar(0) : Game.usarMano(0),
     e: () => world.online ? Net.usar(1) : Game.usarMano(1),
     bag: () => world.ui.toggleBackpack(),
+    map: () => Minimap.toggleBig(),
   };
   function soltarDireccionTactil(k) {
     const dir = touchDir[k];
