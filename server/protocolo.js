@@ -19,7 +19,7 @@
 //   {t:'pong'}
 'use strict';
 
-const VERSION = 3; // v23: retorno personal, registrar contenedores, admin por mensaje, linterna autoritativa
+const VERSION = 7; // v25: loot/cajas/dados client-side, cámara libre — el server solo valida
 const MAX_MSG = 512;          // bytes por mensaje entrante
 const MAX_CHAT = 120;         // caracteres de un chat
 const COOLDOWN_MOVER = 165;   // ms entre pasos (el cliente usa 170: margen de jitter)
@@ -43,15 +43,11 @@ function leer(raw) {
       if (m.nivel !== undefined && (typeof m.nivel !== 'string' || m.nivel.length > 32)) return null;
       if (m.sala !== undefined && (typeof m.sala !== 'string' || m.sala.length > MAX_SALA_PRIVADA)) return null;
       return m;
-    case 'input': { // v22: ESTADO de movimiento (vector deseado; la velocidad la pone el servidor)
-      const dx = +m.dx, dy = +m.dy;
-      if (!isFinite(dx) || !isFinite(dy)) return null;
-      return { t: 'input', dx: Math.max(-1, Math.min(1, dx)), dy: Math.max(-1, Math.min(1, dy)) };
-    }
-    case 'rot': { // v22: ángulo continuo en radianes (θ=0 norte, θ=π/2 este)
-      const th = +m.th;
-      if (!isFinite(th)) return null;
-      return { t: 'rot', th };
+    case 'p': { // v24: POSICIÓN reportada por el cliente (él es la autoridad
+      // del movimiento; el servidor la VALIDA — velocidad, paredes, teleports)
+      const x = +m.x, y = +m.y, rot = +m.rot;
+      if (!isFinite(x) || !isFinite(y)) return null;
+      return { t: 'p', x, y, rot: isFinite(rot) ? rot : 0, sec: m.sec | 0 };
     }
     case 'chat':
       if (typeof m.txt !== 'string') return null;
@@ -75,6 +71,11 @@ function leer(raw) {
       if (m.mano !== undefined) { out.mano = m.mano | 0; if (out.mano !== 0 && out.mano !== 1) return null; }
       if (m.tipo !== undefined) { if (!['cara', 'cuerpo', 'pies'].includes(m.tipo)) return null; out.tipo = m.tipo; }
       return out;
+    }
+    case 'loot': { // v25: el botín es INDIVIDUAL y se resuelve en el cliente;
+      // aquí solo se pide el alta en el inventario (el server pone cadencia y hueco)
+      if (typeof m.id !== 'string' || m.id.length > 32) return null;
+      return { t: 'loot', id: m.id };
     }
     case 'admin': { // contraseña de guardián desde Ajustes (responde {t:'admin', si})
       if (typeof m.clave !== 'string' || m.clave.length > 64) return null;

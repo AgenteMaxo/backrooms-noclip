@@ -17,9 +17,8 @@ fluorescentes**, bloom cinematográfico y polvo en suspensión. Alternativas por
 
 | Tecla | Acción |
 |---|---|
-| W / ↑ | Avanzar un paso hacia donde miras; la simulación continúa en tiempo real |
-| S / ↓ | Retroceder un paso (sin girarte) |
-| A / D | Girarte 90° a izquierda/derecha |
+| W / A / S / D | Moverte: adelante, izquierda, atrás y derecha **respecto a la cámara** (online) |
+| RATÓN (mantener y arrastrar) | Girar la cámara alrededor del personaje, estilo Roblox (online; respeta las paredes) |
 | ESPACIO | Interactuar: salidas, muebles registrables, **beber agua**… |
 | X | Detenerte y escuchar el entorno |
 | F | Linterna (debe estar EN UNA MANO): cono de luz real (¡atrae a las Deathmoths!) |
@@ -77,7 +76,11 @@ fluorescentes**, bloom cinematográfico y polvo en suspensión. Alternativas por
   exactamente qué te aflige y cómo remediarlo.
 - **Cajas y contenedores**: taquillas, archivadores, neveras, cajas… TODOS se pueden
   registrar con ESPACIO (dado de botín). Ya no hay cajas de atrezzo que confundan.
-  ¡Ojo!: registrar HACE RUIDO, y el ruido atrae a lo que ronda cerca.
+  **Online (v25) el botín es INDIVIDUAL**: cada jugador tiene su propia copia de cajas y
+  objetos del suelo — nadie te «roba» la tubería; lo que ya registraste queda recordado en
+  tu navegador. La tirada de dado es tuya (los demás no la ven).
+- **Pantalla completa (v25)**: el botón de Ajustes ahora extiende el juego a TODA la
+  pantalla, re-renderizando a la resolución del monitor (nada de cuadro con bordes).
 
 ## 2b. La Sintonía (el "RPG" de las Backrooms)
 

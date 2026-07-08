@@ -9,17 +9,36 @@
   let reintento = null;
   let inputChat = null;
   let salaActual = null;
-  // v22 — movimiento libre: estado de input y reconciliación
+  // v24 — EL MOVIMIENTO ES DEL CLIENTE (el servidor valida): aquí se integra
+  // la física local (input vectorial o intención av/giro de 3ª persona) y se
+  // REPORTA la posición ~15 veces/s ({t:'p'}). Sin reconciliación: lo que ves
+  // es donde estás. El servidor solo interviene si un informe es imposible
+  // (velocidad, paredes, teleport) devolviendo 'mueve' con `sec`.
   const input = { dx: 0, dy: 0 };
-  let inputEnviado = { dx: 0, dy: 0 };
-  let rotEnviada = 0, rotUltEnvio = 0;
-  let tileFov = null; // último tile con FOV calculado
-  // v23 — latencia y reconciliación honesta: historial de posiciones locales
-  // para comparar la posición del servidor CONTRA DÓNDE ESTABAS cuando él la
-  // calculó (comparar contra el presente te arrastra hacia atrás al correr)
-  let rtt = 100;           // ms ida y vuelta (medido con ping/pong)
+  const mov = { av: 0, giro: 0 };
+  let modoMov = false;   // true si el último gesto fue de intención (3ªP)
+  let sec = 0;           // nº de teleport del servidor: los informes viejos caducan
+  let repX = 0, repY = 0, repRot = 0, repT = 0; // último informe enviado
+  let tileFov = null;    // último tile con FOV calculado
+  let rtt = 100;         // ms ida y vuelta (medido con ping/pong; telemetría)
   let pingTimer = null;
-  const historia = [];     // [{t, x, y}] de la predicción local (~1 s)
+  let ultimoError = null; // último rechazo del servidor (lo muestra el título)
+  let pasoAcum = 0;       // distancia andada desde el último sonido de paso
+  const r2 = (v) => Math.round(v * 100) / 100;
+
+  // fuerza la recarga real de los scripts (sin caché) y reinicia la página.
+  // Guarda de sesión: si tras recargar seguimos con versión vieja, no ciclar.
+  function autoActualizar() {
+    try {
+      if (sessionStorage.getItem('mmo-actualizando')) return false;
+      sessionStorage.setItem('mmo-actualizando', '1');
+    } catch (e) { return false; }
+    const urls = [...document.querySelectorAll('script[src], link[rel=stylesheet]')]
+      .map((el) => el.src || el.href).filter(Boolean);
+    Promise.allSettled(urls.map((u) => fetch(u, { cache: 'reload' })))
+      .then(() => location.reload());
+    return true;
+  }
 
   function urlServidor() {
     const params = new URLSearchParams(location.search);
@@ -52,7 +71,7 @@
     salaActual = sala || null;
     ws = new WebSocket(urlServidor());
     ws.onopen = () => enviar({
-      t: 'hola', nombre, token: token(), v: 3, // debe coincidir con protocolo.js
+      t: 'hola', nombre, token: token(), v: 7, // debe coincidir con protocolo.js
       nivel: params.get('nivel') || undefined, // puerta de desarrollo (solo MMO_DEV=1)
       sala,
     });
@@ -61,14 +80,21 @@
       try { m = JSON.parse(ev.data); } catch (e) { return; }
       recibir(m, w);
     };
-    ws.onclose = () => {
+    ws.onclose = (ev) => {
       listo = false;
       clearInterval(pingTimer);
+      // rechazo por VERSIÓN: el navegador (o el edge de Cloudflare) sirvió
+      // código viejo — refrescar los scripts y recargar, una sola vez
+      if (ev && ev.reason === 'version') {
+        if (autoActualizar()) return;
+        ultimoError = 'El juego se actualizó y tu navegador cargó una versión vieja. Pulsa Ctrl+F5.';
+        return; // reintentar con el mismo código viejo no lleva a nada
+      }
       if (w.level) w.log('Conexión perdida con las Backrooms… reintentando.', 'danger');
       clearTimeout(reintento);
       reintento = setTimeout(() => iniciar(nombre, salaActual), 3000);
     };
-    ws.onerror = () => {};
+    ws.onerror = () => { ultimoError = ultimoError || 'No se pudo conectar con el servidor.'; };
     // medición de RTT: alimenta la reconciliación y el retardo de interpolación
     clearInterval(pingTimer);
     pingTimer = setInterval(() => enviar({ t: 'ping', ts: Math.round(performance.now()) }), 4000);
@@ -79,8 +105,10 @@
     clearTimeout(reintento);
     reintento = null;
     input.dx = 0; input.dy = 0;
-    inputEnviado = { dx: 0, dy: 0 };
+    mov.av = 0; mov.giro = 0;
     salaActual = null;
+    clearInterval(pingTimer);
+    pingTimer = null;
     if (ws) {
       try { ws.onclose = null; ws.close(); } catch (e) {}
       ws = null;
@@ -108,6 +136,8 @@
     switch (m.t) {
       case 'bienvenida':
         miId = m.id;
+        ultimoError = null;
+        try { sessionStorage.removeItem('mmo-actualizando'); } catch (e) {}
         // reconexión = sesión nueva: la condición de guardián hay que revalidarla
         if (w.esAdmin) { w.esAdmin = false; if (window.onAdminCambia) window.onAdminCambia(false); }
         Game.startRun(m.semilla); // jugador, HUD y tarjeta de presentación
@@ -130,20 +160,21 @@
       }
       case 'entra': if (listo) Otros.entra(m); break;
       case 'sale': if (listo) Otros.sale(m.id); break;
-      case 'mueve': // teleports: spawn, respawn, corrección dura
+      case 'mueve': // teleports: spawn, respawn, corrección (informe ilegal)
         if (!listo) return;
         if (m.id === miId) {
           w.player.x = m.x; w.player.y = m.y;
           w.player.rx = m.x; w.player.ry = m.y;
-          historia.length = 0;
+          if (m.sec !== undefined) sec = m.sec;
+          repX = m.x; repY = m.y; // el próximo informe parte de aquí
           fov(w);
         } else Otros.mueve(m.id, m.x, m.y);
         break;
       case 'pos': // v22: lote de posiciones del tick (jugadores y entidades)
         if (!listo) return;
-        for (const [id, x, y] of m.j || []) {
-          if (id === miId) reconciliar(w, x, y);
-          else Otros.pos(id, x, y);
+        for (const [id, x, y, rot] of m.j || []) {
+          // v24: la posición propia es NUESTRA — el eco del servidor se ignora
+          if (id !== miId) Otros.pos(id, x, y, rot);
         }
         for (const [uid, x, y] of m.e || []) {
           const e = entidadDe(uid);
@@ -218,8 +249,8 @@
         if (document.getElementById('backpack-panel').style.display !== 'none')
           w.ui.toggleBackpack(true); // repintar el panel abierto
         break;
-      case 'itemSuelto': {
-        w.map.items[m.idx] = { x: m.x, y: m.y, id: m.id, taken: false };
+      case 'itemSuelto': { // tu objeto tirado/arrojado (mundo de botín individual)
+        w.map.items.push({ x: m.x, y: m.y, id: m.id, taken: false, recien: !!m.recien });
         w.itemsVersion = (w.itemsVersion || 0) + 1;
         break;
       }
@@ -235,17 +266,6 @@
         break;
 
       // ---------- objetos y salidas ----------
-      case 'itemCogido': {
-        const it = w.map.items[m.idx];
-        if (it) it.taken = true;
-        w.itemsVersion = (w.itemsVersion || 0) + 1;
-        if (m.por === miId) {
-          const def = w.data.objects[m.id];
-          w.log(`Recoges: ${def ? def.nombre : m.id}.`, 'good');
-          if (window.Sfx) Sfx.play('recoger');
-        }
-        break;
-      }
       case 'dado': {
         const p = posDe(m.id);
         if (p && window.Effects)
@@ -292,13 +312,6 @@
           if (window.Sfx) Sfx.play('ui');
         } else Otros.luz(m.id, m.si);
         break;
-      case 'registrado': { // un contenedor de la sala queda registrado
-        const pr = (w.map.props || [])[m.i];
-        if (!pr) return;
-        pr.registrado = true;
-        if (cerca(w, pr.x, pr.y, 10) && window.Sfx) Sfx.play('registrar');
-        break;
-      }
       case 'admin': // respuesta a la contraseña de guardián (Ajustes)
         w.esAdmin = !!m.si;
         if (window.onAdminCambia) window.onAdminCambia(w.esAdmin);
@@ -344,7 +357,10 @@
       }
 
       case 'aviso': w.log(m.txt, 'event'); break;
-      case 'error': w.log(m.txt, 'danger'); break;
+      case 'error':
+        ultimoError = m.txt; // visible en el título si aún no hay partida
+        w.log(m.txt, 'danger');
+        break;
     }
   }
 
@@ -379,8 +395,15 @@
         },
       });
     }
-    for (const i of m.itemsTomados || []) if (w.map.items[i]) w.map.items[i].taken = true;
     for (const i of m.abiertas || []) if (w.map.exits[i]) w.map.exits[i].def._abierta = true;
+    // v25: botín INDIVIDUAL — las cajas que TÚ ya registraste en esta sala
+    // (persistido en el navegador: reconectar no rellena los muebles)
+    w._semillaSala = m.semilla;
+    try {
+      const hechas = new Set(JSON.parse(localStorage.getItem('mmo-cajas::' + m.semilla) || '[]'));
+      for (const pr of w.map.props || [])
+        if (pr.contenedor && hechas.has(pr.x + ',' + pr.y)) pr.registrado = true;
+    } catch (e) {}
     w.entities = (m.ents || []).map((e) => ({
       uid: e.uid, id: e.id, def: w.data.entities[e.id],
       x: e.x, y: e.y, rx: e.x, ry: e.y,
@@ -402,10 +425,11 @@
     try { Game.Profiles.registrarEntrada(m.nivel); } catch (e) {}
     w.itemsVersion = (w.itemsVersion || 0) + 1;
     w.mapaVersion = (w.mapaVersion || 0) + 1;
-    historia.length = 0;
-    // el servidor frena tu input al cambiar de sala: el cliente refleja lo mismo
+    // cambio de sala = teleport: sec nuevo y el próximo informe parte de aquí
+    sec = m.sec ?? 0;
+    repX = m.x; repY = m.y; repRot = m.rot ?? 0; repT = 0;
     input.dx = 0; input.dy = 0;
-    inputEnviado = { dx: 0, dy: 0 };
+    mov.av = 0; mov.giro = 0;
     const g = w.map.grid;
     w.explored = new Uint8Array(g.w * g.h);
     w.light = new Float32Array(g.w * g.h);
@@ -423,74 +447,138 @@
     for (let i = 0; i < w.light.length; i++) if (w.light[i] > 0) w.explored[i] = 1;
   }
 
-  // ---------- movimiento libre (v22): input vectorial + predicción local ----------
+  // ---------- movimiento (v24): TODO local — solo se reporta la posición ----------
   function setInput(dx, dy) {
+    modoMov = false;
     input.dx = Math.max(-1, Math.min(1, dx || 0));
     input.dy = Math.max(-1, Math.min(1, dy || 0));
-    // se envía solo al CAMBIAR (el servidor mantiene el último estado)
-    if (Math.abs(input.dx - inputEnviado.dx) > 0.01 || Math.abs(input.dy - inputEnviado.dy) > 0.01) {
-      inputEnviado = { dx: input.dx, dy: input.dy };
-      enviar({ t: 'input', dx: input.dx, dy: input.dy });
-    }
+  }
+
+  // 3ª persona: intención local (avance ±1, giro ±1); frame() integra el rumbo
+  function setMov(av, giro) {
+    modoMov = true;
+    mov.av = Math.sign(av || 0);
+    mov.giro = Math.sign(giro || 0);
+    input.dx = 0; input.dy = 0;
   }
 
   function setRot(th) {
-    const w = Game.world;
-    w.player.rot = th;
-    const ahora = performance.now();
-    if (Math.abs(th - rotEnviada) > 0.03 && ahora - rotUltEnvio > 80) {
-      rotEnviada = th; rotUltEnvio = ahora;
-      enviar({ t: 'rot', th: Math.round(th * 100) / 100 });
-    }
+    Game.world.player.rot = th; // viaja con el próximo informe de posición
   }
 
-  // predicción: el cliente integra su propio movimiento con LA MISMA física
-  // que el servidor — la reconciliación casi nunca tiene que corregir
+  // física LOCAL (la compartida de sim/fisica.js) + informe {t:'p'} ~15/s.
+  // Lo que ves es donde estás: sin reconciliación, sin saltos. El servidor
+  // valida cada informe (velocidad/paredes/teleport) y solo responde 'mueve'
+  // si es imposible — p. ej. un cliente trucado.
   function frame(dt) {
     const w = Game.world;
     if (!listo) return;
-    if (!w.escondido && (input.dx || input.dy)) {
-      const [nx, ny] = Fisica.mover(w.map.grid, w.player.x, w.player.y, input.dx, input.dy, dt, Fisica.VEL_JUGADOR);
-      w.player.x = nx; w.player.y = ny;
-      const tx = Fisica.tileDe(nx), ty = Fisica.tileDe(ny);
-      if (!tileFov || tileFov[0] !== tx || tileFov[1] !== ty) {
-        tileFov = [tx, ty];
-        fov(w);
+    let idx = input.dx, idy = input.dy;
+    if (modoMov) {
+      if (mov.giro) {
+        w.player.rot = Fisica.normAng((w.player.rot || 0) + mov.giro * Fisica.GIRO_JUGADOR * dt);
       }
+      idx = mov.av ? Math.sin(w.player.rot || 0) * mov.av : 0;
+      idy = mov.av ? -Math.cos(w.player.rot || 0) * mov.av : 0;
     }
-    // historial para la reconciliación (también parado: el tiempo sigue)
+    if (!w.escondido && (idx || idy)) {
+      const [nx, ny] = Fisica.mover(w.map.grid, w.player.x, w.player.y, idx, idy, dt, Fisica.VEL_JUGADOR);
+      // pasos: sonido 100% local, uno cada ~0.75 tiles recorridos
+      pasoAcum += Fisica.dist(w.player.x, w.player.y, nx, ny);
+      if (pasoAcum > 0.75) {
+        pasoAcum = 0;
+        if (window.Sfx) Sfx.play('paso', w.level?.estilo?.suelo);
+      }
+      w.player.x = nx; w.player.y = ny;
+      recogerSuelo(w); // botín del suelo: proximidad local
+    }
+    const tx = Fisica.tileDe(w.player.x), ty = Fisica.tileDe(w.player.y);
+    if (!tileFov || tileFov[0] !== tx || tileFov[1] !== ty) {
+      tileFov = [tx, ty];
+      fov(w);
+    }
+    // informe de posición: al moverte/girar (mín. 60 ms entre informes) — los
+    // tramos cortos mantienen legal el chequeo de paredes del servidor
     const ahora = performance.now();
-    historia.push({ t: ahora, x: w.player.x, y: w.player.y });
-    while (historia.length && historia[0].t < ahora - 1200) historia.shift();
+    const dMov = Math.abs(w.player.x - repX) + Math.abs(w.player.y - repY);
+    const dRot = Math.abs(Fisica.normAng((w.player.rot || 0) - repRot));
+    if ((dMov > 0.03 || dRot > 0.05) && ahora - repT > 60 && !w.escondido) {
+      repX = w.player.x; repY = w.player.y; repRot = w.player.rot || 0; repT = ahora;
+      enviar({ t: 'p', x: r2(repX), y: r2(repY), rot: r2(repRot), sec });
+    }
   }
 
-  // Posición autoritativa propia (v23): se compara contra DÓNDE ESTABAS hace
-  // ~RTT/2+medio tick — comparar contra el presente convertía la latencia en
-  // tirones de goma hacia atrás cada tick mientras corrías (los «lagazos»).
-  function reconciliar(w, sx, sy) {
-    const objetivo = performance.now() - (rtt / 2 + 60);
-    let ref = null;
-    for (let i = historia.length - 1; i >= 0; i--) {
-      if (historia[i].t <= objetivo) { ref = historia[i]; break; }
+  // ---------- botín INDIVIDUAL (v25): cajas, dado y suelo en TU navegador ----------
+  const POOL_CAJAS = ['agua_almendras', 'agua_almendras', 'botiquin', 'amuleto', 'linterna',
+    'chaqueta', 'mascara_gas', 'botas_reforzadas', 'tuberia', 'fuego_griego', 'guante_paralisis', 'trebol'];
+
+  function guardarCaja(w, pr) {
+    try {
+      const k = 'mmo-cajas::' + (w._semillaSala || '');
+      const lista = JSON.parse(localStorage.getItem(k) || '[]');
+      lista.push(pr.x + ',' + pr.y);
+      localStorage.setItem(k, JSON.stringify(lista.slice(-400)));
+    } catch (e) {}
+  }
+
+  // ESPACIO sobre un contenedor sin registrar: TODO local (dado, botín,
+  // sonido); al servidor solo viaja el alta del objeto encontrado
+  function registrarLocal(w) {
+    const pr = (w.map.props || []).find((p) => p.contenedor && !p.registrado &&
+      Fisica.dist(p.x, p.y, w.player.x, w.player.y) <= 1.2);
+    if (!pr) return false;
+    pr.registrado = true;
+    guardarCaja(w, pr);
+    if (window.Sfx) Sfx.play('registrar');
+    w.rollDice('Registras el contenedor…', (d) => {
+      if (d >= 14) {
+        const id = POOL_CAJAS[Math.min(POOL_CAJAS.length - 1,
+          Math.floor((d - 14) / 7 * POOL_CAJAS.length + Math.floor(Math.random() * 3)))];
+        if ((w.player.inv || []).length >= 6) {
+          w.log(`Dado: ${d}. Hay algo útil… pero no te cabe nada más.`, 'event');
+        } else {
+          w.log(`Dado: ${d}. Encuentras: ${w.data.objects[id].nombre}.`, 'good');
+          if (window.Effects) Effects.flash(w.player.x, w.player.y, '#ffe9a0');
+          enviar({ t: 'loot', id }); // el server valida cadencia y hueco
+        }
+      } else if (d >= 7) {
+        w.log(`Dado: ${d}. Vacío. Solo polvo y papel amarillento.`, 'event');
+      } else {
+        w.log(`Dado: ${d}. Algo se escurre entre tus dedos. Retrocedes de golpe.`, 'danger');
+      }
+    });
+    return true;
+  }
+
+  // objetos del suelo: recogida local por proximidad (cada errante ve y
+  // recoge SU copia del mundo — nada de peleas por la tubería)
+  let sueloT = 0;
+  function recogerSuelo(w) {
+    const ahora = performance.now();
+    if (ahora - sueloT < 150) return;
+    sueloT = ahora;
+    for (const it of w.map.items || []) {
+      if (it.taken) continue;
+      const d = Fisica.dist(it.x, it.y, w.player.x, w.player.y);
+      if (it.recien) { if (d > 0.8) it.recien = false; continue; }
+      if (d >= 0.5) continue;
+      if ((w.player.inv || []).length >= 6) continue; // sin hueco: se queda
+      it.taken = true;
+      w.itemsVersion = (w.itemsVersion || 0) + 1;
+      const def = w.data.objects[it.id];
+      w.log(`Recoges: ${def ? def.nombre : it.id}.`, 'good');
+      if (window.Sfx) Sfx.play('recoger');
+      enviar({ t: 'loot', id: it.id });
+      break; // uno por vez (la cadencia del server manda)
     }
-    if (!ref) ref = historia[0] || { x: w.player.x, y: w.player.y };
-    const ex = sx - ref.x, ey = sy - ref.y;
-    const d = Math.hypot(ex, ey);
-    if (d < 0.06) return; // dentro del margen: la predicción va bien
-    if (d > 1.4) {
-      // desincronización real (empujón, colisión que no vimos): snap limpio
-      w.player.x = sx; w.player.y = sy;
-      historia.length = 0;
-      fov(w);
-      return;
-    }
-    // corrección suave: se APLICA EL ERROR (no se tira hacia la pos vieja)
-    const nx = w.player.x + ex * 0.25, ny = w.player.y + ey * 0.25;
-    if (!Fisica.choca(w.map.grid, nx, ny)) { w.player.x = nx; w.player.y = ny; }
   }
 
   // ---------- acciones ----------
-  function accion() { enviar({ t: 'accion' }); }           // ESPACIO
+  function accion() { // ESPACIO contextual
+    const w = Game.world;
+    if (!w.escondido && registrarLocal(w)) return; // cajas: asunto tuyo
+    enviar({ t: 'accion' });                       // esconderse/romper/salidas: del server
+  }
   function usar(mano) { enviar({ t: 'usar', mano }); }     // Q/E
   function mochila(que, datos) { enviar({ t: 'mochila', que, ...datos }); }
   function adminTeleport(nivel) { enviar({ t: 'chat', txt: `/tp ${nivel}` }); }
@@ -526,9 +614,15 @@
     });
   }
 
+  // frena cualquier movimiento en curso (chat, blur, modales)
+  function parar() {
+    if (modoMov) { mov.av = 0; mov.giro = 0; }
+    else { input.dx = 0; input.dy = 0; }
+  }
+
   function abrirChat() {
     if (!inputChat) return;
-    setInput(0, 0); // escribir no es caminar: frena antes de abrir el teclado
+    parar(); // escribir no es caminar: frena antes de abrir el teclado
     inputChat.style.display = 'block';
     inputChat.value = '';
     inputChat.focus();
@@ -545,11 +639,12 @@
   }
 
   window.Net = {
-    iniciar, cerrar, setInput, setRot, frame,
+    iniciar, cerrar, setInput, setMov, setRot, parar, frame,
     accion, usar, luzToggle, mochila, admin, tp,
     abrirChat, chatAbierto,
     get activo() { return listo; },
     get id() { return miId; },
     get rtt() { return rtt; },
+    get ultimoError() { return ultimoError; },
   };
 })();

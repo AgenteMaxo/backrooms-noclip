@@ -52,7 +52,14 @@ const servidor = http.createServer((req, res) => {
   if (!ruta.startsWith(RAIZ)) { res.writeHead(403); res.end(); return; }
   fs.readFile(ruta, (err, datos) => {
     if (err) { res.writeHead(404); res.end('no existe'); return; }
-    res.writeHead(200, { 'content-type': MIME[path.extname(ruta).toLowerCase()] || 'application/octet-stream' });
+    const ext = path.extname(ruta).toLowerCase();
+    const cab = { 'content-type': MIME[ext] || 'application/octet-stream' };
+    // el CÓDIGO no se cachea: tras un deploy, F5 normal basta para jugar la
+    // versión nueva (un cliente viejo cacheado jugaba con bugs ya arreglados);
+    // los assets pesados (audio/imagen/fuentes) sí pueden cachear un rato
+    if (ext === '.html' || ext === '.js' || ext === '.css') cab['cache-control'] = 'no-cache';
+    else cab['cache-control'] = 'public, max-age=3600';
+    res.writeHead(200, cab);
     res.end(datos);
   });
 });
@@ -118,8 +125,8 @@ wss.on('connection', (ws, req) => {
       return;
     }
     if (!jug) return; // todo lo demás exige estar dentro
-    if (m.t === 'input') sala.input(jug, m.dx, m.dy);
-    else if (m.t === 'rot') sala.girar(jug, m.th);
+    if (m.t === 'p') sala.posicion(jug, m);
+    else if (m.t === 'loot') sala.loot(jug, m.id);
     else if (m.t === 'accion') sala.accion(jug);
     else if (m.t === 'cruzar') sala.cruzar(jug, m.si);
     else if (m.t === 'usar') sala.usar(jug, m.mano);
@@ -127,9 +134,9 @@ wss.on('connection', (ws, req) => {
     else if (m.t === 'mochila') sala.mochila(jug, m);
     else if (m.t === 'admin') {
       // contraseña de guardián desde Ajustes: desbloquea debug y barras
-      jug.esAdmin = m.clave === ADMIN_CLAVE ? true : jug.esAdmin;
+      intentarAdmin(jug, sala, m.clave);
       sala.enviar(ws, { t: 'admin', si: !!jug.esAdmin });
-      if (m.clave !== ADMIN_CLAVE)
+      if (!jug.esAdmin)
         sala.enviar(ws, { t: 'aviso', txt: 'La clave no abre nada.' });
     }
     else if (m.t === 'chat') {
@@ -209,13 +216,16 @@ function cambiarDeSala(jug, salaVieja, defSalida, opts) {
   }
   jug.x = x; jug.y = y;
   jug.canal = null; jug.escondido = null;
-  jug.input = { dx: 0, dy: 0 }; // que la tarjeta del nivel no te vea andando solo
+  // teleport de sala: caducan los informes de posición en vuelo (v24)
+  jug.sec = (jug.sec || 0) + 1;
+  jug._posT = Date.now();
+  jug._margen = 0.8;
   nueva.prepararCaminata(jug);
   const id = jug.id;
   nueva.jugadores.set(id, jug);
   nueva.enviar(jug.ws, {
     t: 'nivel', nivel: nueva.nivelId, inst: nueva.inst, semilla: nueva.semilla, privada: nueva.privada,
-    x, y, rot: jug.rot, via: defSalida.texto,
+    x, y, rot: jug.rot, sec: jug.sec, via: defSalida.texto,
     sinTarjeta: !!(opts && opts.sinTarjeta),
     salud: jug.salud, inv: jug.inv, manos: jug.manos,
     retorno: jug.retorno,
@@ -233,6 +243,24 @@ function cambiarDeSala(jug, salaVieja, defSalida, opts) {
 // ---------- comandos de chat (moderación del streamer) ----------
 const { todas: salasVivas } = require('./sala');
 
+// intento de clave de guardián con FRENO anti fuerza bruta: los espectadores
+// PRUEBAN claves en directo — 5 fallos en 10 min silencian los intentos
+function intentarAdmin(jug, sala, clave) {
+  const ahora = Date.now();
+  jug._admFallos = (jug._admFallos || []).filter((t) => ahora - t < 600000);
+  if (jug._admFallos.length >= 5) {
+    sala.enviar(jug.ws, { t: 'aviso', txt: 'Demasiados intentos: las paredes desconfían de ti un buen rato.' });
+    return false;
+  }
+  if (clave === ADMIN_CLAVE) {
+    jug.esAdmin = true;
+    return true;
+  }
+  jug._admFallos.push(ahora);
+  console.log(`[admin] intento fallido de ${jug.nombre}#${jug.id} (${jug._admFallos.length}/5)`);
+  return false;
+}
+
 function buscarJugador(nombre) {
   const objetivo = nombre.toLowerCase();
   for (const sala2 of salasVivas())
@@ -245,8 +273,7 @@ function comando(jug, sala, linea) {
   const [cmd, ...resto] = linea.trim().split(/\s+/);
   const arg = resto.join(' ');
   if (cmd === '/admin') {
-    if (arg === ADMIN_CLAVE) {
-      jug.esAdmin = true;
+    if (intentarAdmin(jug, sala, arg)) {
       sala.enviar(jug.ws, { t: 'admin', si: true }); // desbloquea la UI de debug
       sala.enviar(jug.ws, { t: 'aviso', txt: 'Las Backrooms te reconocen como su guardián.' });
     } else sala.enviar(jug.ws, { t: 'aviso', txt: 'La clave no abre nada.' });
@@ -283,8 +310,10 @@ function comando(jug, sala, linea) {
   }
 }
 
-// simulación: 10 Hz para todas las salas con gente dentro
-setInterval(() => tickTodas(Date.now()), 100);
+// simulación: 20 Hz para todas las salas con gente dentro (v23.8 — a 10 Hz
+// las cuantizaciones del tick se notaban en las maniobras; el coste medido
+// con 500 bots a 10 Hz era 7.45 ms/tick: hay margen de sobra)
+setInterval(() => tickTodas(Date.now()), 50);
 
 // latido: conexiones muertas fuera cada 30 s
 setInterval(() => {

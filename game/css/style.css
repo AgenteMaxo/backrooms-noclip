@@ -252,8 +252,17 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
   color: var(--amarillo); font-family: inherit; font-size: 14px; padding: 5px 8px;
   min-width: 0; outline: none; }
 #admin-clave:focus { border-color: var(--amarillo-osc); }
+#admin-msg { margin: 2px 0 0 142px; color: #e88a7a; font-size: 12px; min-height: 14px; }
+/* v25: cámara libre con el ratón (mantener y arrastrar) */
+#game-wrap.orbitando { cursor: grabbing; }
+#game-wrap canvas { cursor: grab; }
+/* v25: pantalla completa real — el lienzo llena el monitor, sin bordes */
+body.fs #game-canvas, body.fs #gl-canvas { border: none; box-shadow: none; }
 #ajustes-version { margin-top: 10px; text-align: right; color: var(--gris);
   font-size: 12px; opacity: .8; }
+/* v23.3: motivo visible cuando el título no puede conectar */
+#title-net { margin: 8px auto 0; max-width: 440px; color: #e88a7a;
+  font-size: 14px; line-height: 1.4; }
 /* v23: barras de guardián (salud/comida/bebida/cordura) — abajo-izquierda */
 #debug-stats { position: absolute; left: 14px; bottom: 14px; display: flex;
   flex-direction: column; gap: 4px; background: rgba(10,9,6,.72);

@@ -11,6 +11,7 @@
 
   const RADIO = 0.35;          // radio del cuerpo (en tiles)
   const VEL_JUGADOR = 4.6;     // tiles/segundo
+  const GIRO_JUGADOR = 3.1;    // rad/s manteniendo A/D (cliente Y servidor: misma curva)
   const SUBPASO = 0.2;         // integración por tramos: nada atraviesa esquinas
 
   // transitable según los valores de MapGen.T (0 suelo, 1 pared, 2 vacío,
@@ -63,7 +64,14 @@
   // tile lógico que pisa una posición continua (el centro manda)
   function tileDe(v) { return Math.floor(v + 0.5); }
 
-  const Fisica = { RADIO, VEL_JUGADOR, transitable, mover, dist, tileDe,
+  // normaliza un ángulo a (-π, π] (los rot integrados crecen sin límite)
+  function normAng(a) {
+    while (a > Math.PI) a -= Math.PI * 2;
+    while (a <= -Math.PI) a += Math.PI * 2;
+    return a;
+  }
+
+  const Fisica = { RADIO, VEL_JUGADOR, GIRO_JUGADOR, SUBPASO, transitable, mover, dist, tileDe, normAng,
     choca: (grid, x, y, r) => chocaCentro(grid, x + 0.5, y + 0.5, r ?? RADIO) };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = Fisica;

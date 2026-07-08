@@ -37,7 +37,7 @@
   // producía tirones (rápido al llegar el paquete, frenazo después). Ahora se
   // guardan con su hora de llegada y se dibuja ~RETARDO ms EN EL PASADO,
   // interpolando entre dos instantáneas reales: velocidad constante.
-  const RETARDO_INTERP = 150; // ms (~1.5 ticks: siempre hay un par que rodear)
+  const RETARDO_INTERP = 200; // ms (2 ticks: aguanta el jitter de red sin quedarse sin par)
 
   function pushSnap(o, x, y) {
     const buf = o._snaps || (o._snaps = []);
@@ -91,21 +91,26 @@
     o._snaps = [{ t: performance.now(), x, y }]; // nada que interpolar tras un salto
   }
 
-  // v22: actualización continua de posición (batched); el facing se deriva
-  // del propio movimiento salvo que llegue un 'gira' explícito reciente
-  function pos(id, x, y) {
+  // v22: actualización continua de posición (batched). v23.7: el lote trae el
+  // rumbo AUTORITATIVO (el servidor lo integra); si falta, se deriva del
+  // movimiento salvo que llegue un 'gira' explícito reciente
+  function pos(id, x, y, rot) {
     const o = porId.get(id);
     if (!o) return;
-    const dx = x - o.x, dy = y - o.y;
-    if ((dx || dy) && performance.now() - (o.giroT || 0) > 400)
-      o.rot = Math.atan2(dx, -dy);
+    if (rot !== undefined) {
+      o.rotObj = rot;
+    } else {
+      const dx = x - o.x, dy = y - o.y;
+      if ((dx || dy) && performance.now() - (o.giroT || 0) > 400)
+        o.rotObj = Math.atan2(dx, -dy);
+    }
     o.x = x; o.y = y;
     pushSnap(o, x, y);
   }
 
   function gira(id, rot) {
     const o = porId.get(id);
-    if (o) { o.rot = rot; o.giroT = performance.now(); }
+    if (o) { o.rot = rot; o.rotObj = rot; o.giroT = performance.now(); }
   }
 
   // cuantiza un ángulo θ a las 4 direcciones de sprite (0 N, 1 E, 2 S, 3 O)
@@ -127,13 +132,28 @@
   }
   let propio = null; // tu último mensaje: también flota sobre tu cabeza
 
-  // posición visual por frame: muestreo del búfer (lerp solo de respaldo)
+  // posición visual por frame: muestreo del búfer (lerp solo de respaldo);
+  // el rumbo llega a 20 Hz y aquí se suaviza (sin escalones al girar)
   function frame() {
     const ahora = performance.now();
+    const w = window.Game && Game.world;
     for (const o of porId.values()) {
+      const ax = o.rx, ay = o.ry;
       if (!muestrear(o, ahora)) {
         o.rx += (o.x - o.rx) * 0.22;
         o.ry += (o.y - o.ry) * 0.22;
+      }
+      if (o.rotObj !== undefined && window.Fisica) {
+        o.rot = Fisica.normAng((o.rot || 0) + Fisica.normAng(o.rotObj - (o.rot || 0)) * 0.35);
+      }
+      // pasos de los DEMÁS: sonido local si caminan cerca de ti (v25)
+      if (w && w.player && !o.escondido) {
+        o._paso = (o._paso || 0) + Math.hypot(o.rx - ax, o.ry - ay);
+        if (o._paso > 0.8) {
+          o._paso = 0;
+          if (window.Sfx && Math.hypot(o.rx - w.player.rx, o.ry - w.player.ry) < 8)
+            Sfx.play('paso', w.level?.estilo?.suelo);
+        }
       }
     }
   }

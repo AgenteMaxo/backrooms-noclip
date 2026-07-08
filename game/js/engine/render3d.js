@@ -15,6 +15,7 @@
   const TP = { fov: 56, alto: 1.5, dist: 2.6, lookY: 0.95, lookAhead: 2.2, suavidad: 0.1, bob: 0.012 };
   let camRot = 0;          // rotación de cámara en pasos de 90° (0-3), tecla Q (modo alta)
   let camYaw = 0;          // yaw animado (radianes)
+  let yawLibre = null;     // v25 online: cámara LIBRE (ratón, estilo Roblox); null = aún sin tocar
   // altura de muros: en 3ª persona son de altura real (la cámara va a 1.5 y JAMÁS
   // ve por encima → nunca se rompe la sensación de interior)
   const WALL_H = CAM_MODO === 'tercera' ? 2.3 : 1.2;
@@ -1099,6 +1100,15 @@
   function centrarCamara(world) {
     const p = world.player;
     if (CAM_MODO === 'tercera') {
+      if (world.online) {
+        // online p.rot es θ continuo; la cámara arranca a la espalda y de
+        // ahí en adelante la mueve el RATÓN (yawLibre)
+        camYaw = -(p.rot || 0);
+        yawLibre = null;
+        camera.position.set(p.rx + 0.5 + Math.sin(camYaw) * TP.dist, TP.alto, p.ry + 0.5 + Math.cos(camYaw) * TP.dist);
+        frame._look = new THREE.Vector3(p.rx + 0.5, TP.lookY, p.ry + 0.5);
+        return;
+      }
       const [fx0, fz0] = ROT_VEC[p.rot ?? 2];
       camYaw = Math.atan2(-fx0, -fz0);
       camera.position.set(p.rx + 0.5 - fx0 * TP.dist, TP.alto, p.ry + 0.5 - fz0 * TP.dist);
@@ -1274,8 +1284,16 @@
     // jugador: orientación del sprite RELATIVA a la cámara
     let sid, sflip = false;
     if (CAM_MODO === 'tercera') {
-      // la cámara va siempre a su espalda: le vemos la espalda
-      sid = 'player_up';
+      if (world.online) {
+        // v25: cámara libre — el sprite muestra la cara que toque
+        const rel = ((Math.round(((p.rot || 0) - (-camYaw)) / (Math.PI / 2)) % 4) + 4) % 4;
+        if (rel === 0) sid = 'player_up';
+        else if (rel === 2) sid = 'player_down';
+        else { sid = 'player_side'; sflip = rel === 3; }
+      } else {
+        // solo: la cámara va siempre a su espalda — le vemos la espalda
+        sid = 'player_up';
+      }
     } else {
       const dir = p.dir || 'down';
       let wx = 0, wy = 0;
@@ -1354,9 +1372,10 @@
     // sprite del jugador orientado según su rotación relativa a la cámara
     if (world.otros && window.Otros) {
       const vivos = new Set();
-      // ángulo de cámara en radianes (v22): la orientación relativa decide el sprite
+      // ángulo de cámara en radianes: la orientación relativa decide el sprite
+      // (v25 online: la cámara es libre — su dirección real es −camYaw)
       const camDir = CAM_MODO === 'tercera'
-        ? (world.online ? p.rot : p.rot * Math.PI / 2)
+        ? (world.online ? -camYaw : p.rot * Math.PI / 2)
         : ((4 - camRot) % 4) * Math.PI / 2;
       for (const o of world.otros) {
         vivos.add(o.id);
@@ -1466,16 +1485,16 @@
       const rot = p.rot ?? 2;
       if (world.moving) camBobT += 0.13;
       const bob = Math.sin(camBobT) * TP.bob * (world.moving ? 1 : 0.12);
-      // el yaw viaja por el camino angular más corto hasta quedar tras el jugador.
-      // v22 online: p.rot ya es un ángulo continuo θ (0=N); el facing es
-      // (sinθ,-cosθ) → yaw = atan2(-sinθ, cosθ) = -θ
+      // v25 online: cámara LIBRE estilo Roblox — el ratón fija el yaw
+      // (yawLibre) y el personaje se mueve relativo a la cámara; sin arrastrar
+      // aún, la cámara se queda donde está. Solo (offline): sigue a la espalda.
       let yawObjetivo;
-      if (world.online) yawObjetivo = -rot;
+      if (world.online) yawObjetivo = yawLibre === null ? camYaw : yawLibre;
       else { const [fx3, fz3] = ROT_VEC[rot]; yawObjetivo = Math.atan2(-fx3, -fz3); }
       let dyaw = yawObjetivo - camYaw;
       while (dyaw > Math.PI) dyaw -= Math.PI * 2;
       while (dyaw < -Math.PI) dyaw += Math.PI * 2;
-      camYaw += dyaw * 0.12;
+      camYaw += dyaw * (world.online ? 0.55 : 0.12); // el ratón pide respuesta directa
       const ox = Math.sin(camYaw) * TP.dist;
       const oz = Math.cos(camYaw) * TP.dist;
       let target = new THREE.Vector3(px + ox, TP.alto + bob, pz + oz);
@@ -1628,5 +1647,17 @@
     modo: CAM_MODO,
     rotar(dir = 1) { camRot = (camRot + dir + 4) % 4; },
     get rot() { return camRot; },
+    // v25 — cámara libre (online): el ratón orbita; el movimiento es relativo a ella
+    get yaw() { return camYaw; },
+    orbita(d) { yawLibre = (yawLibre === null ? camYaw : yawLibre) + d; },
+    // v25 — pantalla completa real: relanza el render a la resolución nueva
+    resize(w, h) {
+      if (!renderer) return;
+      W = w; H = h;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      if (composer) composer.setSize(w, h);
+    },
   };
 })();

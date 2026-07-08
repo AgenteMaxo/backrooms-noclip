@@ -56,7 +56,7 @@ class Cliente {
     return new Promise((res, rej) => {
       this.ws = new WebSocket(`ws://127.0.0.1:${PUERTO}/ws`);
       this.ws.on('open', () => {
-        this.enviar({ t: 'hola', nombre: this.nombre, token: 'arnes-' + this.nombre, v: 3, nivel: this.nivelPedido });
+        this.enviar({ t: 'hola', nombre: this.nombre, token: 'arnes-' + this.nombre, v: 7, nivel: this.nivelPedido });
         res();
       });
       this.ws.on('message', (raw) => {
@@ -65,13 +65,22 @@ class Cliente {
           this.id = m.id ?? this.id;
           this.nivel = m.nivel;
           this.x = m.x; this.y = m.y;
+          this.sec = m.sec ?? 0;
           this.map = generarMapa(m.nivel, m.semilla).map;
           for (const i of m.abiertas || []) if (this.map.exits[i]) this.map.exits[i].def._abierta = true;
         }
         if (m.t === 'pos') {
-          for (const [id, x, y] of m.j || []) if (id === this.id) { this.x = x; this.y = y; }
+          // el ECO del servidor: posiciones ACEPTADAS (mide el validador)
+          for (const [id, x, y] of m.j || []) if (id === this.id) {
+            if (this.ecoX !== undefined)
+              this.aceptado = (this.aceptado || 0) + Math.hypot(x - this.ecoX, y - this.ecoY);
+            this.ecoX = x; this.ecoY = y;
+          }
         }
-        if (m.t === 'mueve' && m.id === this.id) { this.x = m.x; this.y = m.y; }
+        if (m.t === 'mueve' && m.id === this.id) {
+          this.x = m.x; this.y = m.y;
+          if (m.sec !== undefined) { this.sec = m.sec; this.rechazos = (this.rechazos || 0) + 1; }
+        }
         this.buzon.push({ m, t: Date.now() });
       });
       this.ws.on('error', rej);
@@ -90,23 +99,19 @@ class Cliente {
       mira();
     });
   }
-  // navega con el input vectorial hasta quedar a ≤radio del tile (tx,ty)
+  // v24: navega INTEGRANDO la física local y reportando posiciones {t:'p'}
+  // (exactamente lo que hace el cliente real)
   irA(tx, ty, radio = 0.55) {
     return new Promise((res, rej) => {
       const g = this.map.grid;
       const dist = MapGen.bfsDist(g, tx, ty);
       const t0 = Date.now();
-      let ultimo = null;
+      let tAnt = Date.now();
       const paso = setInterval(() => {
         const d = Fisica.dist(this.x, this.y, tx, ty);
-        if (d <= radio) {
-          clearInterval(paso);
-          this.enviar({ t: 'input', dx: 0, dy: 0 });
-          return res();
-        }
+        if (d <= radio) { clearInterval(paso); return res(); }
         if (Date.now() - t0 > 60000) {
           clearInterval(paso);
-          this.enviar({ t: 'input', dx: 0, dy: 0 });
           return rej(new Error(`atascado navegando a ${tx},${ty} (estoy en ${this.x.toFixed(1)},${this.y.toFixed(1)})`));
         }
         const cx = Fisica.tileDe(this.x), cy = Fisica.tileDe(this.y);
@@ -120,14 +125,16 @@ class Cliente {
             if (v >= 0 && v < aqui) { destino = [nx, ny]; break; }
           }
         }
+        const ahora = Date.now();
+        const dt = Math.min(0.2, (ahora - tAnt) / 1000);
+        tAnt = ahora;
         const vx = destino[0] - this.x, vy = destino[1] - this.y;
-        const m = Math.hypot(vx, vy) || 1;
-        const clave = `${Math.round(vx / m * 20)},${Math.round(vy / m * 20)}`;
-        if (clave !== ultimo) { // solo al cambiar (como el cliente real)
-          ultimo = clave;
-          this.enviar({ t: 'input', dx: vx / m, dy: vy / m });
-        }
-      }, 90);
+        [this.x, this.y] = Fisica.mover(g, this.x, this.y, vx, vy, dt, Fisica.VEL_JUGADOR);
+        this.enviar({
+          t: 'p', x: Math.round(this.x * 100) / 100, y: Math.round(this.y * 100) / 100,
+          rot: Math.round(Math.atan2(vx, -vy) * 100) / 100, sec: this.sec || 0,
+        });
+      }, 70);
     });
   }
 }
@@ -172,26 +179,71 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(!luzDe, 'sin linterna en mano NO se difunde luzDe');
     ok(!!avisoLuz, 'sin linterna en mano llega el aviso explicativo');
 
-    // --- registrar un contenedor con ESPACIO ---
+    // --- v24, el VALIDADOR: (a) informes más rápidos que la física legal se
+    // rechazan (anti-speedhack) — lo aceptado nunca supera vel×t ---
+    {
+      c.aceptado = 0; c.rechazos = 0;
+      c.ecoX = undefined; c.ecoY = undefined;
+      const t0 = Date.now();
+      let fx = c.x, fy = c.y;
+      const g = c.map.grid;
+      for (let i = 0; i < 30; i++) { // intenta avanzar a ~10 tiles/s (>2× legal)
+        const th = i * 0.15;
+        [fx, fy] = Fisica.mover(g, fx, fy, Math.sin(th), -Math.cos(th), 0.04 * 2.3, 10);
+        c.enviar({ t: 'p', x: fx, y: fy, rot: 0, sec: c.sec || 0 });
+        await espera(40);
+      }
+      await espera(400);
+      const dur = (Date.now() - t0) / 1000;
+      const tope = 4.6 * dur * 1.2 + 1.4; // margen de cubeta inicial incluido
+      ok((c.aceptado || 0) <= tope,
+        `speedhack rechazado: acepta ${(c.aceptado || 0).toFixed(1)} tiles en ${dur.toFixed(1)} s (tope ${tope.toFixed(1)}, ${c.rechazos} rechazos)`);
+      c.x = c.ecoX ?? c.x; c.y = c.ecoY ?? c.y; // re-sincroniza con lo aceptado
+    }
+
+    // --- v24, el VALIDADOR: (b) un salto imposible (2.5 tiles de golpe) se
+    // rechaza y el servidor devuelve la última posición válida con sec ---
+    {
+      const n0r = c.rechazos || 0;
+      const nb = c.buzon.length;
+      c.enviar({ t: 'p', x: c.x + 2.5, y: c.y, rot: 0, sec: c.sec || 0 });
+      await c.espera((m) => m.t === 'mueve' && m.id === c.id, 3000, nb).catch(() => {});
+      ok((c.rechazos || 0) > n0r, 'teleport de 2.5 tiles → rechazado con corrección y sec nuevo');
+    }
+
+    // --- v25: el botín es INDIVIDUAL — el server solo da de alta con cadencia ---
     const g = c.map.grid;
     const alcanz = (x, y) => MapGen.bfsDist(g, Fisica.tileDe(c.x), Fisica.tileDe(c.y))[y * g.w + x] >= 0;
-    const cont = (c.map.props || [])
-      .filter((p) => p.contenedor && !p.registrado && alcanz(p.x, p.y))
-      .sort((a, b) => (Math.abs(a.x - c.x) + Math.abs(a.y - c.y)) - (Math.abs(b.x - c.x) + Math.abs(b.y - c.y)))[0];
-    ok(!!cont, 'hay un contenedor alcanzable en el mapa');
-    if (cont) {
-      await c.irA(cont.x, cont.y, 0.9);
+    {
       n0 = c.buzon.length;
-      c.enviar({ t: 'accion' });
-      const reg = await c.espera((m) => m.t === 'registrado', 3000, n0);
-      const dado = await c.espera((m) => m.t === 'dado' && m.id === c.id, 3000, n0);
-      ok(reg && typeof reg.i === 'number', `ESPACIO registra el contenedor (índice ${reg.i})`);
-      ok(dado && dado.valor >= 1 && dado.valor <= 20, `tirada difundida: d20 → ${dado.valor}`);
-      // segunda vez: ya registrado, no debe repetirse
+      c.enviar({ t: 'loot', id: 'botiquin' });
+      const inv = await c.espera((m) => m.t === 'inv', 3000, n0);
+      ok(inv.inv.includes('botiquin'), 'loot da de alta el objeto en el inventario');
       n0 = c.buzon.length;
-      c.enviar({ t: 'accion' });
-      await espera(400);
-      ok(!c.buzon.slice(n0).some((e) => e.m.t === 'registrado'), 'registrar no se repite en el mismo mueble');
+      c.enviar({ t: 'loot', id: 'trebol' }); // inmediato: la cadencia lo frena
+      c.enviar({ t: 'loot', id: 'noexiste' }); // inexistente: ignorado
+      await espera(500);
+      ok(!c.buzon.slice(n0).some((e) => e.m.t === 'inv'),
+        'cadencia de loot: el spam y los ids falsos no cuelan');
+    }
+
+    // --- ESPACIO junto a una taquilla te esconde (y otro te saca) ---
+    {
+      const esc = (c.map.props || [])
+        .filter((p) => ['taquilla', 'nevera', 'archivador'].includes(p.id) && alcanz(p.x, p.y))
+        .sort((a, b) => (Math.abs(a.x - c.x) + Math.abs(a.y - c.y)) - (Math.abs(b.x - c.x) + Math.abs(b.y - c.y)))[0];
+      if (esc) {
+        await c.irA(esc.x, esc.y, 0.9);
+        n0 = c.buzon.length;
+        c.enviar({ t: 'accion' });
+        await c.espera((m) => m.t === 'esconde' && m.id === c.id && m.si, 3000, n0);
+        ok(true, 'ESPACIO junto a la taquilla te esconde');
+        c.enviar({ t: 'accion' });
+        await c.espera((m) => m.t === 'esconde' && m.id === c.id && m.si === false, 3000, n0);
+        ok(true, 'ESPACIO dentro del mueble te saca');
+      } else {
+        ok(true, '(sin escondite alcanzable en este mapa: chequeo omitido)');
+      }
     }
 
     // --- cruzar una salida y comprobar la puerta de RETORNO ---
@@ -224,10 +276,17 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
       // --- volver por ella ---
       const objetivo = puertaVuelta || niv.retorno;
       if (objetivo) {
-        // alejarse primero (histéresis) y volver a la puerta
+        // alejarse primero (histéresis: >1 tile de TODA salida) y volver
         await espera(300);
-        const lejos = { x: Fisica.tileDe(niv.x) + 3, y: Fisica.tileDe(niv.y) };
-        try { await c.irA(lejos.x, lejos.y, 1.2); } catch (e) { /* puede chocar: da igual */ }
+        const g2 = c.map.grid;
+        const dist2 = MapGen.bfsDist(g2, Fisica.tileDe(c.x), Fisica.tileDe(c.y));
+        let lejos = null;
+        for (let i = 0; i < dist2.length && !lejos; i++) {
+          if (dist2[i] < 3 || dist2[i] > 14) continue;
+          const lx = i % g2.w, ly = (i / g2.w) | 0;
+          if (c.map.exits.every((e) => Math.hypot(e.x - lx, e.y - ly) > 1.8)) lejos = [lx, ly];
+        }
+        if (lejos) { try { await c.irA(lejos[0], lejos[1], 0.6); } catch (e) {} }
         await c.irA(objetivo.x, objetivo.y, 0.5);
         const oferta2 = await c.espera((m) => m.t === 'oferta', 5000, c.buzon.length - 4);
         n0 = c.buzon.length;

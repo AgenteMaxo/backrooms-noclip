@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v23';
+  window.VERSION_JUEGO = 'v25';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -135,10 +135,46 @@
     if (document.fullscreenElement) document.exitFullscreen();
     else document.documentElement.requestFullscreen().catch(() => {});
   };
+  // v25: pantalla completa DE VERDAD — el lienzo se re-renderiza a la
+  // resolución del monitor (nada de cuadro de 960×600 sobre fondo negro)
+  function ajustarLienzo() {
+    const fs = !!document.fullscreenElement;
+    const w = fs ? window.innerWidth : 960;
+    const h = fs ? window.innerHeight : 600;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w; canvas.height = h;
+      if (use3D && Render3D.resize) Render3D.resize(w, h);
+    }
+    document.body.classList.toggle('fs', fs);
+  }
   document.addEventListener('fullscreenchange', () => {
     btnFs.textContent = document.fullscreenElement
       ? 'Salir de pantalla completa' : 'Pantalla completa';
+    ajustarLienzo();
   });
+  window.addEventListener('resize', () => { if (document.fullscreenElement) ajustarLienzo(); });
+
+  // ---------- cámara libre con el RATÓN (v25, online 3ªP): mantener y arrastrar ----------
+  {
+    const wrap = document.getElementById('game-wrap');
+    let arrastre = null;
+    wrap.addEventListener('contextmenu', (ev) => ev.preventDefault());
+    wrap.addEventListener('mousedown', (ev) => {
+      if (!world.online || !use3D || Render3D.modo !== 'tercera') return;
+      if (ev.target.closest('button, input, select, #backpack-panel, #log-panel')) return;
+      arrastre = ev.clientX;
+      wrap.classList.add('orbitando');
+    });
+    window.addEventListener('mousemove', (ev) => {
+      if (arrastre === null) return;
+      Render3D.orbita((ev.clientX - arrastre) * 0.0085);
+      arrastre = ev.clientX;
+    });
+    window.addEventListener('mouseup', () => {
+      arrastre = null;
+      wrap.classList.remove('orbitando');
+    });
+  }
 
   // contraseña de guardián: valida contra el servidor (online) y desbloquea
   // el teleport de debug + las barras de salud/comida/bebida/cordura
@@ -151,9 +187,14 @@
     if (admin) world.ui.updateHUD();
   }
   window.onAdminCambia = (si) => {
+    const msg = document.getElementById('admin-msg');
     if (si) {
       world.log('Las Backrooms te reconocen como su guardián.', 'good');
       document.getElementById('admin-clave').value = '';
+      if (msg) msg.textContent = '';
+    } else if (msg) {
+      // feedback EN el panel (el registro pequeño pasaba desapercibido)
+      msg.textContent = '✗ Clave incorrecta (5 fallos = 10 min de bloqueo)';
     }
     actualizarAdminUI();
   };
@@ -245,7 +286,7 @@
   document.addEventListener('keyup', (ev) => teclas.delete(ev.code));
   window.addEventListener('blur', () => {
     teclas.clear();
-    if (world.online && window.Net) Net.setInput(0, 0);
+    if (world.online && window.Net) Net.parar();
   });
 
   let lastStepT = 0; // mantener pulsado = velocidad CONSTANTE (v16)
@@ -351,12 +392,18 @@
   // ---------- bucle de animación (y, online, también el input continuo) ----------
   function lerp(a, b, f) { return a + (b - a) * f; }
 
-  const GIRO_RAD_S = 3.1; // velocidad de giro manteniendo A/D en tercera persona
+  // (la velocidad de giro online vive en Fisica.GIRO_JUGADOR: cliente y
+  // servidor DEBEN integrar el rumbo con la misma constante)
   let lastFrameT = 0;
 
   function loop(t) {
     requestAnimationFrame(loop);
-    const dtF = Math.min(0.1, (t - lastFrameT) / 1000 || 0);
+    const dtBruto = (t - lastFrameT) / 1000 || 0;
+    const dtF = Math.min(0.1, dtBruto);
+    // la PREDICCIÓN de red integra el tiempo REAL (los microparones del
+    // navegador no pueden «perder» camino respecto al servidor → snaps);
+    // la física trocea en subpasos, así que un dt grande es seguro
+    const dtNet = Math.min(0.6, dtBruto);
     lastFrameT = t;
     if (!world.level || !world.player) return;
     Game.tickRealTime(t);
@@ -375,11 +422,19 @@
       sx = Math.sign(sx); sy = Math.sign(sy);
       const tercera = use3D && Render3D.modo === 'tercera';
       if (tercera) {
-        // A/D giran suave; W/S avanzan según el ángulo θ
-        if (sx) Net.setRot((p.rot || 0) + sx * GIRO_RAD_S * dtF);
-        const s = -sy; // W (pantalla arriba) = avanzar
-        if (s) Net.setInput(Math.sin(p.rot || 0) * s, -Math.cos(p.rot || 0) * s);
-        else Net.setInput(0, 0);
+        // v25 — estilo Roblox: WASD mueve RELATIVO A LA CÁMARA (adelante/
+        // atrás/izquierda/derecha); la cámara solo la mueve el ratón.
+        const yaw = Render3D.yaw;
+        const Lx = -Math.sin(yaw), Lz = -Math.cos(yaw);  // «adelante» de la cámara
+        const Rx = Math.cos(yaw), Rz = -Math.sin(yaw);   // «derecha» de la cámara
+        const dx = Lx * -sy + Rx * sx;
+        const dy = Lz * -sy + Rz * sx;
+        Net.setInput(dx, dy);
+        if (dx || dy) {
+          p.rot = Math.atan2(dx, -dy); // el personaje ENCARA hacia donde anda
+          if (Math.abs(dy) >= Math.abs(dx)) p.dir = dy > 0 ? 'down' : 'up';
+          else { p.dir = 'side'; p.flip = dx < 0; }
+        }
       } else {
         // 2D / cámara alta: 8 direcciones relativas a la pantalla
         let dx = sx, dy = sy;
@@ -397,7 +452,7 @@
           Net.setRot(Math.atan2(dx, -dy));
         }
       }
-      Net.frame(dtF); // predicción local con la misma física del servidor
+      Net.frame(dtNet); // predicción local con la misma física del servidor
     }
 
     // desliza la posición visual hacia la lógica
@@ -446,6 +501,7 @@
   const params = new URLSearchParams(location.search);
   if (params.get('nofx')) window.NOFX = true;
   if (params.get('debug3d')) window.DEBUG3D_ON = true;
+  if (params.get('netdebug')) window.NETDEBUG = true; // consola: derivas de red y rtt
   if ((params.get('autostart') || params.get('selftest') || params.get('online')) && !Game.Profiles.activeName())
     Game.Profiles.create(params.get('nombre') || 'Errante');
   // ---------- BACKROOMS MMO: ?online=1 conecta al mundo compartido ----------
@@ -733,14 +789,26 @@
     }
     // BACKROOMS MMO: el botón del título conecta al mundo compartido
     const btn = $id('btn-start');
+    const errNet = $id('title-net');
     btn.disabled = true;
     btn.textContent = 'CRUZANDO LA REALIDAD…';
+    errNet.style.display = 'none';
     Net.iniciar(P.activeName(), salaPrivada || undefined);
+    const t0 = Date.now();
     const espera = setInterval(() => {
       if (Net.activo) {
         clearInterval(espera);
         btn.disabled = false;
         btn.textContent = 'DESPERTAR EN LEVEL 0';
+        errNet.style.display = 'none';
+      } else if (Net.ultimoError || Date.now() - t0 > 10000) {
+        // conexión rechazada o muerta: que el streamer VEA el porqué
+        clearInterval(espera);
+        btn.disabled = false;
+        btn.textContent = 'DESPERTAR EN LEVEL 0';
+        errNet.textContent = Net.ultimoError ||
+          'No se pudo conectar con las Backrooms. ¿El servidor está despierto?';
+        errNet.style.display = 'block';
       }
     }, 200);
   };

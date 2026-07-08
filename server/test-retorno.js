@@ -28,7 +28,7 @@ class Cliente {
     return new Promise((res, rej) => {
       this.ws = new WebSocket(`ws://127.0.0.1:${PUERTO}/ws`);
       this.ws.on('open', () => {
-        this.enviar({ t: 'hola', nombre: this.nombre, token: 'arnes2-' + this.nombre, v: 3, nivel: this.nivelPedido });
+        this.enviar({ t: 'hola', nombre: this.nombre, token: 'arnes2-' + this.nombre, v: 7, nivel: this.nivelPedido });
         res();
       });
       this.ws.on('message', (raw) => {
@@ -37,10 +37,13 @@ class Cliente {
           this.id = m.id ?? this.id;
           this.nivel = m.nivel;
           this.x = m.x; this.y = m.y;
+          this.sec = m.sec ?? 0;
           this.map = generarMapa(m.nivel, m.semilla).map;
         }
-        if (m.t === 'pos') for (const [id, x, y] of m.j || []) if (id === this.id) { this.x = x; this.y = y; }
-        if (m.t === 'mueve' && m.id === this.id) { this.x = m.x; this.y = m.y; }
+        if (m.t === 'mueve' && m.id === this.id) {
+          this.x = m.x; this.y = m.y;
+          if (m.sec !== undefined) this.sec = m.sec;
+        }
         this.buzon.push({ m });
       });
       this.ws.on('error', rej);
@@ -58,17 +61,18 @@ class Cliente {
       mira();
     });
   }
+  // v24: navega INTEGRANDO la física local y reportando posiciones {t:'p'}
   irA(tx, ty, radio = 0.55) {
     return new Promise((res, rej) => {
       const g = this.map.grid;
       const dist = MapGen.bfsDist(g, tx, ty);
       const t0 = Date.now();
-      let ultimo = null;
+      let tAnt = Date.now();
       const paso = setInterval(() => {
         const d = Fisica.dist(this.x, this.y, tx, ty);
-        if (d <= radio) { clearInterval(paso); this.enviar({ t: 'input', dx: 0, dy: 0 }); return res(); }
+        if (d <= radio) { clearInterval(paso); return res(); }
         if (Date.now() - t0 > 90000) {
-          clearInterval(paso); this.enviar({ t: 'input', dx: 0, dy: 0 });
+          clearInterval(paso);
           return rej(new Error(`atascado hacia ${tx},${ty} en ${this.x.toFixed(1)},${this.y.toFixed(1)}`));
         }
         const cx = Fisica.tileDe(this.x), cy = Fisica.tileDe(this.y);
@@ -82,11 +86,16 @@ class Cliente {
             if (v >= 0 && v < aqui) { destino = [nx, ny]; break; }
           }
         }
+        const ahora = Date.now();
+        const dt = Math.min(0.2, (ahora - tAnt) / 1000);
+        tAnt = ahora;
         const vx = destino[0] - this.x, vy = destino[1] - this.y;
-        const m = Math.hypot(vx, vy) || 1;
-        const clave = `${Math.round(vx / m * 20)},${Math.round(vy / m * 20)}`;
-        if (clave !== ultimo) { ultimo = clave; this.enviar({ t: 'input', dx: vx / m, dy: vy / m }); }
-      }, 90);
+        [this.x, this.y] = Fisica.mover(g, this.x, this.y, vx, vy, dt, Fisica.VEL_JUGADOR);
+        this.enviar({
+          t: 'p', x: Math.round(this.x * 100) / 100, y: Math.round(this.y * 100) / 100,
+          rot: Math.round(Math.atan2(vx, -vy) * 100) / 100, sec: this.sec || 0,
+        });
+      }, 70);
     });
   }
 }
@@ -118,14 +127,17 @@ class Cliente {
     if (niv.retorno) {
       ok(Math.hypot(niv.retorno.x - niv.x, niv.retorno.y - niv.y) <= 2,
         'la puerta personal está donde apareces');
-      // alejarse (histéresis) y volver a cruzarla
+      // alejarse (histéresis: >1 tile de TODA salida, alcanzable) y volver
       const g = c.map.grid;
+      const dist2 = MapGen.bfsDist(g, Fisica.tileDe(c.x), Fisica.tileDe(c.y));
       let lejos = null;
-      for (const [dx, dy] of [[4, 0], [-4, 0], [0, 4], [0, -4], [3, 3], [-3, -3]]) {
-        const nx = Fisica.tileDe(niv.x) + dx, ny = Fisica.tileDe(niv.y) + dy;
-        if (nx > 0 && ny > 0 && nx < g.w && ny < g.h && MapGen.walkable(MapGen.at(g, nx, ny))) { lejos = [nx, ny]; break; }
+      for (let i = 0; i < dist2.length && !lejos; i++) {
+        if (dist2[i] < 3 || dist2[i] > 14) continue;
+        const lx = i % g.w, ly = (i / g.w) | 0;
+        if (c.map.exits.every((e) => Math.hypot(e.x - lx, e.y - ly) > 1.8) &&
+            Math.hypot(niv.retorno.x - lx, niv.retorno.y - ly) > 1.8) lejos = [lx, ly];
       }
-      if (lejos) { try { await c.irA(lejos[0], lejos[1], 1.0); } catch (e) {} }
+      if (lejos) { try { await c.irA(lejos[0], lejos[1], 0.6); } catch (e) {} }
       await c.irA(niv.retorno.x, niv.retorno.y, 0.5);
       await c.esperaMsg((m) => m.t === 'oferta' && /llegaste/.test(m.texto || ''), 6000, n0);
       n0 = c.buzon.length;

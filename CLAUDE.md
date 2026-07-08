@@ -220,11 +220,87 @@ Movimiento LIBRE (input vectorial, θ continuo en `player.rot` online); el modo 
 turnos sigue con `?autostart=1` (sin `?online`).
 
 **v23 — red suave, retorno online y Ajustes de guardián**: interpolación por INSTANTÁNEAS
-(`Otros.pushSnap/muestrear`, retardo 150 ms) para jugadores remotos Y entidades (main.js
-salta el lerp si hay `_snaps`); reconciliación contra HISTORIAL local (`historia` en
-cliente.js, RTT medido con ping/pong con eco `ts`) — comparar contra el presente causaba
-tirones de goma al correr; el input se frena al abrir chat y al cambiar de sala (ambos
-lados). Puerta de RETORNO online (paridad con el modo solo): `cambiarDeSala` busca en el
+(`Otros.pushSnap/muestrear`, retardo 200 ms) para jugadores remotos Y entidades (main.js
+salta el lerp si hay `_snaps`); reconciliación por RASTRO (`historia` en cliente.js): la
+posición del servidor corresponde a ~rtt+tick ATRÁS en tu trayectoria — si coincide con
+CUALQUIER punto del rastro (≤0.35) no se corrige nada; si se desvía de todos, el error se
+mide desde el punto MÁS CERCANO y se aplica como desplazamiento. LECCIÓN v23.1: NO usar el
+reloj (rtt/2+X) como referencia — el jitter de red hace imposible clavar el instante y
+cada foto aplica un micro-tirón a 10 Hz (verificado con simulación: ~1.8 tiles/12 s de
+tirones por reloj vs 0 por rastro; ping local ≈0 NO reproduce el bug — probar con
+latencia). RTT medido con ping/pong eco `ts` (telemetría en Net.rtt). El input se frena al
+abrir chat y al cambiar de sala (ambos lados). **v23.2** (seguía vibrando en giros y
+frenadas): el servidor integraba el input SOLO en el tick de 100 ms (±0.46 tiles de desvío
+en cada maniobra → correcciones) — ahora `input()` en sala.js integra el TRAMO PARCIAL con
+el input viejo al llegar el mensaje (`_integradoHasta`, `_movidosExtra`, dedupe en la
+difusión); la corrección del cliente queda PENDIENTE en `corr` y frame() la aplica
+exponencial ~6/s (jamás un salto a 10 Hz); umbral 0.4 en movimiento / 0.15 parado
+(convergencia). Estáticos html/js/css con `Cache-Control: no-cache` (un cliente cacheado
+con código viejo jugaba con bugs ya arreglados — protocolo v4 expulsó a los de v23);
+`?netdebug=1` loguea derivas y rtt en consola. Simulador de los algoritmos con
+giros/frenadas/tick: corrMaxFrame 0.137 (v23.1) → 0.017 (v23.2). **v23.3**: producción va
+tras CLOUDFLARE (tunnel) y su edge cachea `.js/.css` POR DEFECTO ignorando Ctrl+F5 del
+usuario → tras subir protocolo a v4 los clientes recibían JS viejo del edge y el título se
+quedaba mudo en «CRUZANDO LA REALIDAD…». Fix triple: (1) TODAS las URLs de script/css en
+index.html llevan `?v=NNN` — SUBIRLO en cada versión junto con `VERSION_JUEGO` (el HTML no
+se cachea → HTML nuevo = URLs nuevas = edge bypass); (2) `#title-net` muestra
+`Net.ultimoError` o timeout de 10 s en el título (nunca más un botón colgado sin motivo);
+(3) cierre con reason 'version' → `autoActualizar()` (fetch cache:'reload' de todos los
+scripts + location.reload, guarda anti-bucle en sessionStorage, se limpia en bienvenida).
+**v23.4** (saltos hacia delante al girar andando): la integración sub-tick de v23.2 medía
+el tramo desde `_ultTick` en vez de desde la última integración DEL JUGADOR — girar
+andando manda ~60 inputs/s (el vector cambia con θ cada frame) y cada mensaje re-integraba
+el mismo tramo → velocidad ×2-3 en el servidor → la reconciliación saltaba hacia delante.
+Fix: `desde = max(_ultTick, jug._integradoHasta)` (invariante: Σdt ≤ tiempo real =
+anti-speedhack) + throttle de setInput en cliente (~11/s para deriva fina; arrancar/parar
+inmediato con cambio >0.6). Test de regresión «sin speedhack por spam de input» en
+test-integracion.js (verificado que FALLA sin el fix). **v23.6** («atravesamos paredes»,
+hipótesis DEL USUARIO confirmada): la remodelación no euclidiana online desincronizaba los
+MAPAS — quien entra a una sala tras una remodelación regenera el mapa desde la semilla SIN
+los chunks cambiados (estadoDinamico no los reenvía) → cliente y servidor con grids
+distintos → física imposible, snaps a través de muros. `REMODEL_ONLINE = false` en sala.js
+(decisión del usuario; el modo solo la conserva) — para REACTIVARLA hay que guardar los
+chunks remodelados en la sala y reenviarlos en estadoDinamico(). Además: la predicción de
+red integra dt REAL (`dtNet` cap 0.6 s en main.js; el clamp visual de 0.1 s hacía que
+cualquier microparón del navegador perdiera camino → snap) y la corrección pendiente
+acelera con el tamaño del error. Banda sonora de The Hub:
+`game/assets/sounds/niveles/the-hub.mp3` (assets/sounds/niveles/<id>.* se carga solo, con
+prioridad sobre la receta `sonido` de la ficha). **v24 — AUTORIDAD DEL CLIENTE CON VALIDACIÓN (protocolo v6) — la solución DEFINITIVA al
+lag**: toda la saga v23.x (reconciliación por rastro, sub-tick, intención de giro v23.7 con
+arco fino) demostró que simular al jugador en el servidor pelea contra la latencia — cerca
+de ESQUINAS el resultado es caótico (60 ms deciden de qué lado de un pilar sales; simulado:
+2.3 tiles de desviación máx, irreducible). En un cooperativo la autoridad correcta es el
+CLIENTE: integra su física local (input vectorial o intención av/giro con
+`Fisica.GIRO_JUGADOR`) y reporta `{t:'p', x, y, rot, sec}` ~15/s; `sala.posicion()` VALIDA:
+cubeta de velocidad (anti-speedhack, Σdist ≤ vel·Σt·1.12, techo 1.3), `caminoLegal()`
+(anti-noclip: muestreo cada 0.2 tiles con radio 0.22 — atrapa cualquier muro de 1 tile) y
+`sec` (nº de teleport del servidor: esconder/cruzar/rechazo lo suben y los informes en
+vuelo caducan; el cliente lo ecoa). Informe ilegal → 'mueve' con la última posición válida
++ sec nuevo. SIN reconciliación en el cliente (lo que ves es donde estás); el eco 'pos'
+propio se ignora. El servidor ya NO integra jugadores (sí entidades); tick a 20 Hz.
+Escondido = el servidor ignora informes (salir con ESPACIO). bots.js genera el mapa desde
+la semilla y camina con la física real (30 bots → 0 rechazos: sin falsos positivos).
+Tests del validador en test-integracion.js: speedhack ~23 t/s → 0.9 tiles aceptados,
+teleport 2.5 → rechazo+sec, escondite funcional. OJO arneses: ESPACIO junto a una taquilla
+te ESCONDE (los informes se ignoran) — salir antes de navegar; y para re-ofertar una
+salida hay que alejarse >1 tile de TODAS (histéresis).
+
+**v25 — mundo de botín INDIVIDUAL + cámara libre (protocolo v7)**: cajas/dados/objetos del
+suelo se resuelven EN EL CLIENTE (Net.accion→registrarLocal: dado con rollDice, pool
+POOL_CAJAS, persistencia localStorage `mmo-cajas::<semilla>`; recogerSuelo por proximidad
+local; tirar/arrojar → 'itemSuelto' PERSONAL) — al servidor solo viaja `{t:'loot', id}` y
+sala.loot() valida cadencia 1.2s + hueco + id∈DATA.objects. Fuera del server: registrarCont,
+itemsTomados, itemCogido, dado difundido (el de romper va solo al actor). Detección de
+entidades ×1.7 (OLFATO en entidades.js, cap 16, contacto sin escalar) y rastro 4.2s.
+CÁMARA LIBRE estilo Roblox (online 3ªP): WASD mueve RELATIVO A LA CÁMARA (main.js:
+adelante=(-sin yaw,-cos yaw), derecha=(cos yaw,-sin yaw); p.rot=atan2 del movimiento),
+ratón mantener+arrastrar orbita (Render3D.orbita/yaw, yawLibre; colisión de cámara ya
+existía); el sprite propio muestra la cara según rot−(−camYaw). Pasos SONORO local
+(pasoAcum 0.75 en cliente.js; otros a <8 tiles en otros.js). Pantalla completa REAL:
+ajustarLienzo() re-renderiza a resolución del monitor (Render3D.resize actualiza W/H que
+usan proj/overlay). Feedback de admin EN el panel (#admin-msg). Al tocar el HUD/red,
+recordar: el server ya solo conoce posición validada, inventario, salud, salidas, grietas,
+escondites, chat y entidades. Puerta de RETORNO online (paridad con el modo solo): `cambiarDeSala` busca en el
 destino una salida con `destino === origen` y te hace spawn PEGADO a ella, o crea
 `jug.retorno` — puerta PERSONAL (índice `'R'` en `salidaCerca`/`ofrecer`; el cliente la
 añade a `map.exits` solo en su lado vía `m.retorno`); sin retorno si `esSinRetorno`

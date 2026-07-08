@@ -10,7 +10,9 @@ const Fisica = require('../../game/js/sim/fisica');
 
 const PERIODO_CEREBRO = 260; // ms entre decisiones (elegir waypoint, atacar)
 const TELEGRAPH_MS = 600;    // aviso ⚠ antes del golpe: alejarse >1.1 lo esquiva
-const RASTRO_MS = 2600;      // tiempo sin detectar a nadie antes de abandonar la caza
+const RASTRO_MS = 4200;      // tiempo sin detectar a nadie antes de abandonar la caza
+const OLFATO = 1.7;          // v25: multiplica el radio de detección de la ficha
+                             // (cap 16) — antes apenas te olían a 6 casillas
 const RADIO_ENT = 0.3;       // cuerpo físico de las entidades
 
 // velocidad continua (tiles/s): el jugador va a 4.6 — que se sienta la diferencia
@@ -153,9 +155,11 @@ function detecta(sala, e) {
   let objetivo = null, mejorDist = Infinity;
   for (const j of sala.jugadores.values()) {
     if (j.escondido || j.muerto) continue;
-    // botas reforzadas (−1): te detectan más tarde
+    // botas reforzadas (−1): te detectan más tarde. El radio de la ficha se
+    // amplifica con OLFATO: cada entidad conserva su alcance RELATIVO (las
+    // de radio corto siguen siendo miopes; las cazadoras huelen de lejos)
     const rMod = (j.equipo && j.equipo.pies === 'botas_reforzadas' ? -1 : 0);
-    const radio = Math.max(1, (d.radio ?? 6) + rMod);
+    const radio = Math.max(1, Math.min(16, Math.round((d.radio ?? 6) * OLFATO)) + rMod);
     const dd = Math.hypot(e.x - j.x, e.y - j.y);
     if (dd >= mejorDist) continue;
     // el LOS de Bresenham exige TILES enteros (con floats nunca converge y
