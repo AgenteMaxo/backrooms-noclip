@@ -1,134 +1,1031 @@
 {
- "agua_almendras": {
-  "id": "agua_almendras",
-  "nombre": "Agua de almendras",
-  "descripcion": "El recurso más preciado de las Backrooms. Sacia la sed y calma la mente.",
-  "efecto": {
-   "sed": 45,
-   "cordura": 15
+  "agua_almendras": {
+    "id": "agua_almendras",
+    "nombre": "Agua de almendras",
+    "descripcion": "Bebida basica de supervivencia. Hidrata, estabiliza la mente y ayuda a resistir crisis psicologicas.",
+    "efecto": {
+      "sed": 45,
+      "cordura": 15
+    },
+    "color": "#e8d8a0",
+    "url": "https://backrooms.fandom.com/wiki/Object_1",
+    "wikiTitle": "Object 1: \"Almond Water\""
   },
-  "color": "#e8d8a0",
-  "url": "https://backrooms.fandom.com/wiki/Object_1"
- },
- "botiquin": {
-  "id": "botiquin",
-  "nombre": "Botiquín",
-  "descripcion": "Vendas, antiséptico y suerte. Restaura la salud.",
-  "efecto": {
-   "salud": 40
+  "agua_anacardo": {
+    "id": "agua_anacardo",
+    "nombre": "Agua de anacardo",
+    "descripcion": "Liquido similar al agua de almendras, pero nocivo. Beberlo es peligroso.",
+    "efecto": {
+      "salud": -32,
+      "sed": 12,
+      "cordura": -8
+    },
+    "color": "#d7bd79",
+    "url": "https://backrooms.fandom.com/wiki/Object_44",
+    "wikiTitle": "Object 44"
   },
-  "color": "#d05050"
- },
- "linterna": {
-  "id": "linterna",
-  "nombre": "Linterna",
-  "descripcion": "Amplía tu radio de visión mientras está encendida. Debes llevarla EN LA MANO. Su luz atrae a las Deathmoths.",
-  "manos": 1,
-  "efecto": {
-   "toggle": "luz"
+  "amuleto": {
+    "id": "amuleto",
+    "nombre": "Recuerdo del hogar",
+    "descripcion": "Una foto, unas llaves, un tique de compra. Un ancla a la realidad que restaura la cordura.",
+    "efecto": {
+      "cordura": 55
+    },
+    "color": "#c0a0e0"
   },
-  "color": "#ffe060"
- },
- "chaqueta": {
-  "id": "chaqueta",
-  "nombre": "Chaqueta térmica",
-  "descripcion": "Anula el daño por frío de los niveles helados. Hay que llevarla PUESTA (ranura de cuerpo, en la mochila).",
-  "equipo": "cuerpo",
-  "efecto": {
-   "pasivo": "abrigo"
+  "anarkm12": {
+    "id": "anarkm12",
+    "nombre": "ANARKM-12",
+    "descripcion": "Rifle de asalto automatico. Arma pesada y ruidosa para defensa extrema.",
+    "manos": 2,
+    "efecto": {
+      "activo": "disparo",
+      "dano": 48,
+      "radio": 13
+    },
+    "color": "#4f4638",
+    "url": "https://backrooms.fandom.com/wiki/ANARKM-12",
+    "wikiTitle": "ANARKM-12"
   },
-  "color": "#6090c0"
- },
- "mascara_gas": {
-  "id": "mascara_gas",
-  "nombre": "Máscara de gas",
-  "descripcion": "Filtra el aire viciado de las Backrooms. PUESTA (ranura de cara), reduce a la mitad el desgaste mental ambiental: zumbidos, esporas, miradas…",
-  "equipo": "cara",
-  "efecto": {
-   "pasivo": "aire"
+  "archivo_clasificado": {
+    "id": "archivo_clasificado",
+    "nombre": "Archivo clasificado",
+    "descripcion": "Informacion de acceso restringido. Consultarla aumenta conocimiento, pero no deberia tocarse sin autorizacion.",
+    "efecto": {
+      "activo": "claridad",
+      "cordura": -15
+    },
+    "color": "#b8b8b8",
+    "url": "https://backrooms.fandom.com/wiki/Object_300",
+    "wikiTitle": "Object 300"
   },
-  "color": "#5a6a58"
- },
- "botas_reforzadas": {
-  "id": "botas_reforzadas",
-  "nombre": "Botas reforzadas",
-  "descripcion": "Botas de trabajo con suela firme. PUESTAS (ranura de pies): pisas seguro junto al agua traicionera y tus pasos alertan menos (detección −1).",
-  "equipo": "pies",
-  "efecto": {
-   "pasivo": "pisada"
+  "ascensor": {
+    "id": "ascensor",
+    "nombre": "Ascensor",
+    "descripcion": "Ascensor anomalo que puede desplazar entre niveles. Activarlo fuerza una salida de nivel si existe ruta viable.",
+    "efecto": {
+      "activo": "salida"
+    },
+    "color": "#9098a0",
+    "url": "https://backrooms.fandom.com/wiki/Object_34",
+    "wikiTitle": "Object 34: Elevators"
   },
-  "color": "#7a5c38"
- },
- "amuleto": {
-  "id": "amuleto",
-  "nombre": "Recuerdo del hogar",
-  "descripcion": "Una foto, unas llaves, un tique de compra. Un ancla a la realidad que restaura la cordura.",
-  "efecto": {
-   "cordura": 55
+  "avmh": {
+    "id": "avmh",
+    "nombre": "ETD-8 AVMH",
+    "descripcion": "Uniforme de combate para entorno hostil. Equipado protege contra gases, frio y corrosion moderada.",
+    "equipo": "cuerpo",
+    "efecto": {
+      "pasivo": "traje_hostil"
+    },
+    "color": "#566454",
+    "url": "https://backrooms.fandom.com/wiki/ETD-8_AVMH",
+    "wikiTitle": "ETD-8 AVMH"
   },
-  "color": "#c0a0e0"
- },
- "llave_nivel": {
-  "id": "llave_nivel",
-  "nombre": "Llave de Nivel (Object 2)",
-  "descripcion": "Abre las puertas de acero de The Hub. Un solo uso: elige bien tu destino.",
-  "efecto": {
-   "pasivo": "llave"
+  "backshrooms": {
+    "id": "backshrooms",
+    "nombre": "Backshrooms",
+    "descripcion": "Hongos anomalos de efectos biologicos variables. Comerlos puede salvarte o castigarte.",
+    "efecto": {
+      "salud": 15,
+      "cordura": -12
+    },
+    "color": "#b0c86a",
+    "url": "https://backrooms.fandom.com/wiki/Object_10",
+    "wikiTitle": "Object 10: \"Backshrooms\""
   },
-  "color": "#e0b040",
-  "url": "https://backrooms.fandom.com/wiki/Object_2"
- },
- "tuberia": {
-  "id": "tuberia",
-  "nombre": "Tubería oxidada",
-  "descripcion": "Un tramo de tubería arrancado de Level 2. Con ella EN LA MANO, muévete HACIA una entidad adyacente para golpearla.",
-  "manos": 1,
-  "efecto": {
-   "pasivo": "arma",
-   "dano": 18
+  "basilisk": {
+    "id": "basilisk",
+    "nombre": "BASILISK",
+    "descripcion": "Malware sin archivos tipo herramienta multiuso. Ejecutarlo contra sistemas anomalo-digitales genera una disrupcion.",
+    "efecto": {
+      "activo": "glitch",
+      "cordura": -12
+    },
+    "color": "#69ff9a",
+    "url": "https://backrooms.fandom.com/wiki/BASILISK",
+    "wikiTitle": "𝙱 𝙰 𝚂 𝙸 𝙻 𝙸 𝚂 𝙺"
   },
-  "color": "#8a6a50"
- },
- "fuego_griego": {
-  "id": "fuego_griego",
-  "nombre": "Fuego griego (Object 5)",
-  "descripcion": "Sustancia incendiaria legendaria de las Backrooms. Se empuña con LAS DOS MANOS y se lanza con Q (o clic en la mano). Un solo uso: quema y ahuyenta a todas las entidades cercanas.",
-  "manos": 2,
-  "efecto": {
-   "activo": "fuego"
+  "bolas_festivas": {
+    "id": "bolas_festivas",
+    "nombre": "Holiday Baubles",
+    "descripcion": "Adornos de cristal con nieve interna. Romper uno genera luz breve y calma incomoda.",
+    "efecto": {
+      "activo": "flash",
+      "cordura": 8,
+      "radio": 4
+    },
+    "color": "#d94d56",
+    "url": "https://backrooms.fandom.com/wiki/Object_80",
+    "wikiTitle": "Object 80: \"Holiday Baubles\""
   },
-  "color": "#ff8a30",
-  "url": "https://backrooms.fandom.com/wiki/Object_5"
- },
- "guante_paralisis": {
-  "id": "guante_paralisis",
-  "nombre": "Guante de parálisis (Object 69)",
-  "descripcion": "Un guante que paraliza lo que toca. Se empuña en una mano y se descarga con su tecla (Q/E) o con un clic en ella. Un solo uso: inmoviliza durante 6 turnos a las entidades adyacentes.",
-  "manos": 1,
-  "efecto": {
-   "activo": "paralisis"
+  "botas_reforzadas": {
+    "id": "botas_reforzadas",
+    "nombre": "Botas reforzadas",
+    "descripcion": "Botas de trabajo con suela firme. PUESTAS (ranura de pies): pisas seguro junto al agua traicionera y tus pasos alertan menos (detección −1).",
+    "equipo": "pies",
+    "efecto": {
+      "pasivo": "pisada"
+    },
+    "color": "#7a5c38"
   },
-  "color": "#60c8e8",
-  "url": "https://backrooms.fandom.com/wiki/Object_69"
- },
- "detector": {
-  "id": "detector",
-  "nombre": "Detector de entidades (Object 30)",
-  "descripcion": "Detector retráctil del M.E.G. Mientras lo lleves, las entidades cercanas aparecen en tu minimapa.",
-  "efecto": {
-   "pasivo": "detector"
+  "botella_vacio": {
+    "id": "botella_vacio",
+    "nombre": "Bottle 'o Void",
+    "descripcion": "Liquido purpura con brillo anomalo. Beberlo roza el Vacío y puede destruirte.",
+    "efecto": {
+      "activo": "riesgo",
+      "salud": -50,
+      "cordura": -35
+    },
+    "color": "#7b45ff",
+    "url": "https://backrooms.fandom.com/wiki/Object_92",
+    "wikiTitle": "Object 92: \"BOTTLE 'O VOID\""
   },
-  "color": "#50e8a0",
-  "url": "https://backrooms.fandom.com/wiki/Object_30"
- },
- "trebol": {
-  "id": "trebol",
-  "nombre": "Trébol de la suerte (Object 13)",
-  "descripcion": "Un Luck Clover auténtico. Mientras lo lleves, +2 a todas tus tiradas de dado.",
-  "efecto": {
-   "pasivo": "suerte"
+  "botiquin": {
+    "id": "botiquin",
+    "nombre": "Botiquín",
+    "descripcion": "Vendas, antiséptico y suerte. Restaura la salud.",
+    "efecto": {
+      "salud": 40
+    },
+    "color": "#d05050"
   },
-  "color": "#68d868",
-  "url": "https://backrooms.fandom.com/wiki/Object_13"
- }
+  "brc_sfc": {
+    "id": "brc_sfc",
+    "nombre": "BRC-SFC",
+    "descripcion": "Arma sincronizada de pequeno formato. Disparo controlado con ruido medio.",
+    "manos": 2,
+    "efecto": {
+      "activo": "disparo",
+      "dano": 32,
+      "radio": 9
+    },
+    "color": "#5f5f58",
+    "url": "https://backrooms.fandom.com/wiki/BRC-SFC",
+    "wikiTitle": "BRC-SFC"
+  },
+  "brc_tz": {
+    "id": "brc_tz",
+    "nombre": "BRC-TZ",
+    "descripcion": "Rifle Aurielleno 5.56. Disparo potente, util contra entidades pero nada discreto.",
+    "manos": 2,
+    "efecto": {
+      "activo": "disparo",
+      "dano": 44,
+      "radio": 12
+    },
+    "color": "#445047",
+    "url": "https://backrooms.fandom.com/wiki/BRC-TZ",
+    "wikiTitle": "BRC-TZ"
+  },
+  "burbujas_corrosivas": {
+    "id": "burbujas_corrosivas",
+    "nombre": "Burbujas corrosivas",
+    "descripcion": "Burbujas monocromas corrosivas de entornos acuaticos. Manipularlas dana, pero puede disolver amenazas cercanas.",
+    "efecto": {
+      "activo": "toxina",
+      "salud": -30,
+      "dano": 30,
+      "radio": 1
+    },
+    "color": "#c8f8ff",
+    "url": "https://backrooms.fandom.com/wiki/Object_40",
+    "wikiTitle": "ㅤ"
+  },
+  "buzon": {
+    "id": "buzon",
+    "nombre": "Buzon",
+    "descripcion": "Contenedor postal anomalo. Al usarlo envia ruido lejos de ti y puede distraer entidades.",
+    "efecto": {
+      "activo": "ruido",
+      "radio": 9
+    },
+    "color": "#b84f42",
+    "url": "https://backrooms.fandom.com/wiki/Object_54",
+    "wikiTitle": "Object 54: \"Mailboxes\""
+  },
+  "cadaver_asada": {
+    "id": "cadaver_asada",
+    "nombre": "Cadaver Asada",
+    "descripcion": "Receta carnica del recetario anomalo. Nutritiva, desagradable y mentalmente costosa.",
+    "efecto": {
+      "salud": 30,
+      "cordura": -22
+    },
+    "color": "#c24b2f",
+    "url": "https://backrooms.fandom.com/wiki/Cadaver_Asada",
+    "wikiTitle": "Cadaver Asada"
+  },
+  "capillum": {
+    "id": "capillum",
+    "nombre": "Capillum Aethertemptor",
+    "descripcion": "Hebras parecidas a cabello humano que cuelgan en niveles. Tocarlas puede herir y desorientar.",
+    "efecto": {
+      "activo": "riesgo",
+      "salud": -18,
+      "cordura": -10
+    },
+    "color": "#31241d",
+    "url": "https://backrooms.fandom.com/wiki/Object_50",
+    "wikiTitle": "Object 50: Capillum Aethertemptor"
+  },
+  "caramelo_papel": {
+    "id": "caramelo_papel",
+    "nombre": "Paper Candy",
+    "descripcion": "Tiras de papel comestible de colores extraños. Recuperan cordura de forma ligera.",
+    "efecto": {
+      "cordura": 14
+    },
+    "color": "#f6d56d",
+    "url": "https://backrooms.fandom.com/wiki/Object_93",
+    "wikiTitle": "Paper Candy"
+  },
+  "caramelos_sensibles": {
+    "id": "caramelos_sensibles",
+    "nombre": "Caramelos sensibles",
+    "descripcion": "Dulces pequenos de olor mentolado. Aumentan alerta y estabilizan sed y cordura.",
+    "efecto": {
+      "sed": 8,
+      "cordura": 20
+    },
+    "color": "#ffb8d8",
+    "url": "https://backrooms.fandom.com/wiki/Object_46",
+    "wikiTitle": "Object 46: Sensitive Candies"
+  },
+  "carne_fundida": {
+    "id": "carne_fundida",
+    "nombre": "Carne fundida",
+    "descripcion": "Fluido carnico viscoso. Nutritivo de emergencia, pero mentalmente repulsivo.",
+    "efecto": {
+      "salud": 24,
+      "cordura": -20
+    },
+    "color": "#b3322d",
+    "url": "https://backrooms.fandom.com/wiki/Object_67",
+    "wikiTitle": "the meat is beautiful, right?"
+  },
+  "chaqueta": {
+    "id": "chaqueta",
+    "nombre": "Chaqueta térmica",
+    "descripcion": "Anula el daño por frío de los niveles helados. Hay que llevarla PUESTA (ranura de cuerpo, en la mochila).",
+    "equipo": "cuerpo",
+    "efecto": {
+      "pasivo": "abrigo"
+    },
+    "color": "#6090c0"
+  },
+  "chill_weeds": {
+    "id": "chill_weeds",
+    "nombre": "Chill Weeds",
+    "descripcion": "Enredadera invasiva de aspecto decorativo. Sirve como abrigo improvisado, pero puede asfixiar.",
+    "efecto": {
+      "salud": -8,
+      "cordura": 10
+    },
+    "color": "#71b96a",
+    "url": "https://backrooms.fandom.com/wiki/Object_52",
+    "wikiTitle": "Object 52"
+  },
+  "cinta_asombrosa": {
+    "id": "cinta_asombrosa",
+    "nombre": "Amazing Tape",
+    "descripcion": "Cinta adhesiva anomala. Repara cortes, sujeta equipo y recupera una pequena cantidad de salud.",
+    "efecto": {
+      "salud": 18
+    },
+    "color": "#d9d09a",
+    "url": "https://backrooms.fandom.com/wiki/Amazing_Tape",
+    "wikiTitle": "Object 21: \"Amazing Tape\""
+  },
+  "cobertizo_enigmatico": {
+    "id": "cobertizo_enigmatico",
+    "nombre": "Cobertizo enigmatico",
+    "descripcion": "Cobertizo exterior infrecuente. Registrarlo puede otorgar refugio breve y recuperar cordura.",
+    "efecto": {
+      "cordura": 25
+    },
+    "color": "#8f6b42",
+    "url": "https://backrooms.fandom.com/wiki/Object_51",
+    "wikiTitle": "Object 51"
+  },
+  "corruptium": {
+    "id": "corruptium",
+    "nombre": "Corruptium",
+    "descripcion": "Material digital/fisico corruptor. Usarlo distorsiona la zona y dania la cordura.",
+    "efecto": {
+      "activo": "glitch",
+      "cordura": -28
+    },
+    "color": "#5f39d8",
+    "url": "https://backrooms.fandom.com/wiki/Object_32",
+    "wikiTitle": "Object 32: \"Corruptium\""
+  },
+  "cristal_emocional": {
+    "id": "cristal_emocional",
+    "nombre": "Cristal emocional",
+    "descripcion": "Copa que produce Liquid Emotion. Beberlo altera la emocion dominante y estabiliza la cordura.",
+    "efecto": {
+      "cordura": 28
+    },
+    "color": "#f0a6ff",
+    "url": "https://backrooms.fandom.com/wiki/Object_43",
+    "wikiTitle": "Object 43: Emotional Glass"
+  },
+  "cruz_anomala": {
+    "id": "cruz_anomala",
+    "nombre": "Cruz anomala",
+    "descripcion": "Dispositivo de tres patas parcialmente desclasificado. Activarlo estabiliza el area y calma la persecucion.",
+    "manos": 1,
+    "efecto": {
+      "activo": "repeler",
+      "radio": 5
+    },
+    "color": "#343840",
+    "url": "https://backrooms.fandom.com/wiki/Object_22",
+    "wikiTitle": "Object 22"
+  },
+  "cubo_lubik": {
+    "id": "cubo_lubik",
+    "nombre": "Cubo de Lubik",
+    "descripcion": "Cubo tipo Rubik con propiedades anomalas. Resolverlo altera la orientacion espacial y despeja la mente.",
+    "efecto": {
+      "cordura": 18,
+      "activo": "claridad"
+    },
+    "color": "#f4d34f",
+    "url": "https://backrooms.fandom.com/wiki/Object_17",
+    "wikiTitle": "Object 17"
+  },
+  "cubo_transporte": {
+    "id": "cubo_transporte",
+    "nombre": "Cubo de transporte",
+    "descripcion": "Cubo blanco pesado que altera la posicion del usuario. Se activa para reposicionarse cerca.",
+    "manos": 1,
+    "efecto": {
+      "activo": "blink",
+      "cordura": -8
+    },
+    "color": "#e6e6ee",
+    "url": "https://backrooms.fandom.com/wiki/Object_39",
+    "wikiTitle": "Object 39: \"Cube of Transportation\""
+  },
+  "delicia_mixologo": {
+    "id": "delicia_mixologo",
+    "nombre": "Delicia del mixologo",
+    "descripcion": "Coctel alcoholico anomalo. Reduce panico y sed, pero deteriora la precision mental.",
+    "efecto": {
+      "sed": 22,
+      "cordura": 12
+    },
+    "color": "#ff76a6",
+    "url": "https://backrooms.fandom.com/wiki/Object_27",
+    "wikiTitle": "Object 27: \"Mixologist's Delight\""
+  },
+  "desestabilizador": {
+    "id": "desestabilizador",
+    "nombre": "Destabilizer",
+    "descripcion": "Walkie-talkie modificado que altera estabilidad local. Activarlo interrumpe persecuciones con coste mental.",
+    "manos": 1,
+    "efecto": {
+      "activo": "glitch",
+      "cordura": -18
+    },
+    "color": "#ff5b91",
+    "url": "https://backrooms.fandom.com/wiki/Object_99",
+    "wikiTitle": "Object 99: \"Destabilizer\""
+  },
+  "detector": {
+    "id": "detector",
+    "nombre": "Detector de entidades",
+    "descripcion": "R.E.D. retractil. Mientras lo llevas, marca entidades cercanas en el minimapa.",
+    "efecto": {
+      "pasivo": "detector"
+    },
+    "color": "#50e8a0",
+    "url": "https://backrooms.fandom.com/wiki/Object_30",
+    "wikiTitle": "Object 30: \"Retractable Entity Detectors\""
+  },
+  "diario": {
+    "id": "diario",
+    "nombre": "El Diario",
+    "descripcion": "Diario custodiado por sus efectos cognitivos. Leerlo recupera informacion, pero castiga la cordura.",
+    "efecto": {
+      "activo": "claridad",
+      "cordura": -20
+    },
+    "color": "#7b513f",
+    "url": "https://backrooms.fandom.com/wiki/Object_35",
+    "wikiTitle": "Object 35"
+  },
+  "dolor_liquido": {
+    "id": "dolor_liquido",
+    "nombre": "Dolor liquido",
+    "descripcion": "Liquido corrosivo extremadamente peligroso. Puede lanzarse como arma, con riesgo severo para quien lo transporta.",
+    "efecto": {
+      "activo": "toxina",
+      "salud": -45,
+      "cordura": -20,
+      "dano": 45,
+      "radio": 2
+    },
+    "color": "#8b1832",
+    "url": "https://backrooms.fandom.com/wiki/Object_12",
+    "wikiTitle": "Object 12: \"Liquid Pain\""
+  },
+  "doom_locks": {
+    "id": "doom_locks",
+    "nombre": "Doom Locks",
+    "descripcion": "Cerraduras electronicas anomalas. Al activarlas intentan sellar la persecucion inmediata.",
+    "efecto": {
+      "activo": "sellar",
+      "radio": 3
+    },
+    "color": "#535a66",
+    "url": "https://backrooms.fandom.com/wiki/Object_38",
+    "wikiTitle": "Object 38"
+  },
+  "energia_kharthic": {
+    "id": "energia_kharthic",
+    "nombre": "Kharthic Energy",
+    "descripcion": "Energia transmitida por ruido psiquico. Usarla perturba la mente y repele amenazas.",
+    "efecto": {
+      "activo": "repeler",
+      "cordura": -22,
+      "radio": 6
+    },
+    "color": "#b26cff",
+    "url": "https://backrooms.fandom.com/wiki/Object_499",
+    "wikiTitle": "Object 499: \"Kharthic Energy\""
+  },
+  "everbulb": {
+    "id": "everbulb",
+    "nombre": "Everbulb",
+    "descripcion": "Bombilla vintage anomala. En mano funciona como luz estable y pequena fuente de calma.",
+    "manos": 1,
+    "efecto": {
+      "toggle": "luz"
+    },
+    "color": "#fff2a0",
+    "url": "https://backrooms.fandom.com/wiki/Object_61",
+    "wikiTitle": "Object 61: \"Everbulbs\""
+  },
+  "fax_dispositivo": {
+    "id": "fax_dispositivo",
+    "nombre": "Dispositive FAX",
+    "descripcion": "Maquina FAX creada para enviar informacion y asistir exploradores. Consultarla revela entorno a coste de ruido.",
+    "efecto": {
+      "activo": "claridad",
+      "ruido": 6
+    },
+    "color": "#d8d8cc",
+    "url": "https://backrooms.fandom.com/wiki/Object_45",
+    "wikiTitle": "Object 45: \"Dispositive FAX\""
+  },
+  "fiolgine": {
+    "id": "fiolgine",
+    "nombre": "Fiolgine",
+    "descripcion": "Elemento quimico anomalo descubierto en Bezdna. Usarlo reacciona con el entorno y puede danar.",
+    "efecto": {
+      "activo": "riesgo",
+      "salud": -18,
+      "cordura": -8
+    },
+    "color": "#a7d4ff",
+    "url": "https://backrooms.fandom.com/wiki/Object_150",
+    "wikiTitle": "Fiolgine"
+  },
+  "firesalt": {
+    "id": "firesalt",
+    "nombre": "Firesalt",
+    "descripcion": "Cristal incandescente util como luz y fuente de calor. En mano ilumina y puede quemar a corta distancia.",
+    "manos": 1,
+    "efecto": {
+      "activo": "fuego_menor",
+      "dano": 16,
+      "radio": 1
+    },
+    "color": "#ffbe46",
+    "url": "https://backrooms.fandom.com/wiki/Object_15",
+    "wikiTitle": "Object 15"
+  },
+  "flashies": {
+    "id": "flashies",
+    "nombre": "Flashies",
+    "descripcion": "Linternas tacticas verdes. En mano producen un destello que revela y aturde entidades cercanas.",
+    "manos": 1,
+    "efecto": {
+      "activo": "flash",
+      "radio": 5
+    },
+    "color": "#91ff72",
+    "url": "https://backrooms.fandom.com/wiki/Object_25",
+    "wikiTitle": "Object 25: Flashies"
+  },
+  "fuego_griego": {
+    "id": "fuego_griego",
+    "nombre": "Fuego griego",
+    "descripcion": "Sustancia incendiaria usada como arma. Se empuna con dos manos y quema a las entidades cercanas.",
+    "manos": 2,
+    "efecto": {
+      "activo": "fuego",
+      "dano": 30,
+      "radio": 3
+    },
+    "color": "#ff8a30",
+    "url": "https://backrooms.fandom.com/wiki/Object_5",
+    "wikiTitle": "Object 5: \"Greek Fire\""
+  },
+  "gas_wentworth": {
+    "id": "gas_wentworth",
+    "nombre": "Gas Wentworth",
+    "descripcion": "Gas peligroso que deteriora la salud. Usarlo libera una nube que hace huir a entidades y dana al portador sin mascara.",
+    "efecto": {
+      "activo": "gas",
+      "salud": -25,
+      "dano": 18,
+      "radio": 2
+    },
+    "color": "#9fb6b0",
+    "url": "https://backrooms.fandom.com/wiki/Object_11",
+    "wikiTitle": "Object 11: Wentworth Gas"
+  },
+  "guante_paralisis": {
+    "id": "guante_paralisis",
+    "nombre": "Guante de paralisis",
+    "descripcion": "Guante raro que paraliza lo que toca. Se empuna en una mano y descarga sobre entidades adyacentes.",
+    "manos": 1,
+    "efecto": {
+      "activo": "paralisis",
+      "radio": 1
+    },
+    "color": "#60c8e8",
+    "url": "https://backrooms.fandom.com/wiki/Object_69",
+    "wikiTitle": "Object 69: Paralysis Glove"
+  },
+  "guantes_mimicos": {
+    "id": "guantes_mimicos",
+    "nombre": "Guantes mimicos",
+    "descripcion": "Guantes de trabajo con exoesqueleto mecanico. Mejoran el contacto fisico y los golpes mientras los llevas.",
+    "efecto": {
+      "pasivo": "fuerza"
+    },
+    "color": "#6c5a42",
+    "url": "https://backrooms.fandom.com/wiki/Object_63",
+    "wikiTitle": "Object 63: Mimic Gloves"
+  },
+  "hipervinculo": {
+    "id": "hipervinculo",
+    "nombre": "Interlevel Hyperlink",
+    "descripcion": "Estructura que permite transporte entre niveles. Activarlo intenta abrir una transicion.",
+    "efecto": {
+      "activo": "salida"
+    },
+    "color": "#65c7ff",
+    "url": "https://backrooms.fandom.com/wiki/Object_55",
+    "wikiTitle": "Object 55: Interlevel Hyperlink"
+  },
+  "holystone": {
+    "id": "holystone",
+    "nombre": "Holystone",
+    "descripcion": "Contraparte creadora del Voidstone. Estabiliza al errante de forma intensa.",
+    "efecto": {
+      "salud": 35,
+      "cordura": 35
+    },
+    "color": "#faf7df",
+    "url": "https://backrooms.fandom.com/wiki/Object_101-A",
+    "wikiTitle": "Object 101-A: \"The Holystone\""
+  },
+  "idi_antivirus": {
+    "id": "idi_antivirus",
+    "nombre": "I.D.I.O.T. Antivirus",
+    "descripcion": "Herramienta antivirus asociada a amenazas digitales. Estabiliza efectos corruptos y BACK-NET.",
+    "efecto": {
+      "activo": "glitch",
+      "cordura": 10
+    },
+    "color": "#9bd7ff",
+    "url": "https://backrooms.fandom.com/wiki/IDI%2FI.D.I.O.T.",
+    "wikiTitle": "I.D.I.O.T. Antivirus"
+  },
+  "infeccion_nuclear": {
+    "id": "infeccion_nuclear",
+    "nombre": "Infeccion nuclear",
+    "descripcion": "Sustancia verde corrosiva y toxica. Manipularla es peligroso; usarla quema al portador y ahuyenta entidades cercanas.",
+    "efecto": {
+      "activo": "toxina",
+      "salud": -35,
+      "cordura": -10,
+      "dano": 35,
+      "radio": 2
+    },
+    "color": "#73d64b",
+    "url": "https://backrooms.fandom.com/wiki/Object_3",
+    "wikiTitle": "Object 3: \"Nuclear Infection\""
+  },
+  "jalea_polilla": {
+    "id": "jalea_polilla",
+    "nombre": "Jalea de polilla",
+    "descripcion": "Sustancia nutritiva producida por Deathmoths. Alimenta y calma, pero su olor puede atraer peligro.",
+    "efecto": {
+      "salud": 12,
+      "sed": 12,
+      "cordura": 8,
+      "ruido": 4
+    },
+    "color": "#b78cff",
+    "url": "https://backrooms.fandom.com/wiki/Object_6",
+    "wikiTitle": "Object 6: \"Moth Jelly\""
+  },
+  "kaboom_box": {
+    "id": "kaboom_box",
+    "nombre": "Kaboom-Box",
+    "descripcion": "Boombox retro que emite sonido anomalo. Actuarlo genera una distraccion potente para entidades cercanas.",
+    "manos": 1,
+    "efecto": {
+      "activo": "ruido",
+      "radio": 14
+    },
+    "color": "#b0b0c8",
+    "url": "https://backrooms.fandom.com/wiki/Object_18",
+    "wikiTitle": "Object 18: \"Kaboom-Box\""
+  },
+  "linterna": {
+    "id": "linterna",
+    "nombre": "Linterna",
+    "descripcion": "Amplía tu radio de visión mientras está encendida. Debes llevarla EN LA MANO. Su luz atrae a las Deathmoths.",
+    "manos": 1,
+    "efecto": {
+      "toggle": "luz"
+    },
+    "color": "#ffe060"
+  },
+  "llama_memoria": {
+    "id": "llama_memoria",
+    "nombre": "Memory Flame",
+    "descripcion": "Elemento negro radiactivo ligado a recuerdos. Produce energia peligrosa y afecta la mente.",
+    "manos": 1,
+    "efecto": {
+      "activo": "fuego_menor",
+      "salud": -18,
+      "cordura": -18,
+      "dano": 24,
+      "radio": 2
+    },
+    "color": "#222028",
+    "url": "https://backrooms.fandom.com/wiki/Object_33",
+    "wikiTitle": "Object 33: \"Memory Flame\""
+  },
+  "llave_nivel": {
+    "id": "llave_nivel",
+    "nombre": "Llave de Nivel",
+    "descripcion": "Llave anomala ligada a niveles concretos. Abre rutas selladas de The Hub cuando la llevas encima.",
+    "efecto": {
+      "pasivo": "llave"
+    },
+    "color": "#e0b040",
+    "url": "https://backrooms.fandom.com/wiki/Object_2",
+    "wikiTitle": "Object 2: “Level Keys”"
+  },
+  "luz_estelar_embotellada": {
+    "id": "luz_estelar_embotellada",
+    "nombre": "Luz estelar embotellada",
+    "descripcion": "Recurso rarissimo e irreplicable. Usarlo ilumina, calma y recupera al errante.",
+    "efecto": {
+      "salud": 25,
+      "sed": 20,
+      "cordura": 35
+    },
+    "color": "#dff8ff",
+    "url": "https://backrooms.fandom.com/wiki/Object_56",
+    "wikiTitle": "Bottled Starlight‌"
+  },
+  "malvaviscos_papel": {
+    "id": "malvaviscos_papel",
+    "nombre": "Wallpaper Marshmallows",
+    "descripcion": "Dulces con olor a vainilla y sabor desagradable. Comestibles, pero inquietantes.",
+    "efecto": {
+      "salud": 8,
+      "cordura": -6
+    },
+    "color": "#f5e3d0",
+    "url": "https://backrooms.fandom.com/wiki/Object_49",
+    "wikiTitle": "Object 49: Wallpaper Marshmallows"
+  },
+  "mariposas_estomago": {
+    "id": "mariposas_estomago",
+    "nombre": "Butterflies in my stomach",
+    "descripcion": "Objeto/experiencia emocional peligrosa. Provoca ansiedad intensa y recupera poca cordura por catarsis.",
+    "efecto": {
+      "cordura": 8,
+      "salud": -10
+    },
+    "color": "#ff9fc8",
+    "url": "https://backrooms.fandom.com/wiki/Object_155",
+    "wikiTitle": "‎"
+  },
+  "mascara_gas": {
+    "id": "mascara_gas",
+    "nombre": "Máscara de gas",
+    "descripcion": "Filtra el aire viciado de las Backrooms. PUESTA (ranura de cara), reduce a la mitad el desgaste mental ambiental: zumbidos, esporas, miradas…",
+    "equipo": "cara",
+    "efecto": {
+      "pasivo": "aire"
+    },
+    "color": "#5a6a58"
+  },
+  "moonlantern": {
+    "id": "moonlantern",
+    "nombre": "Moonlantern",
+    "descripcion": "Linterna avanzada con moonstone. Ilumina como una linterna potente y resiste mejor niveles oscuros.",
+    "manos": 1,
+    "efecto": {
+      "toggle": "luz"
+    },
+    "color": "#d8f4ff",
+    "url": "https://backrooms.fandom.com/wiki/Object_26",
+    "wikiTitle": "Moonlantern"
+  },
+  "neon_velocity": {
+    "id": "neon_velocity",
+    "nombre": "Neon Velocity",
+    "descripcion": "Liquido que altera la velocidad. Beberlo da impulso a costa de estabilidad mental.",
+    "efecto": {
+      "sed": 12,
+      "cordura": -12,
+      "activo": "celeridad"
+    },
+    "color": "#39f0d6",
+    "url": "https://backrooms.fandom.com/wiki/Object_65",
+    "wikiTitle": "Object 65 \"Neon Velocity\""
+  },
+  "niraloka_black": {
+    "id": "niraloka_black",
+    "nombre": "Niraloka Black",
+    "descripcion": "Pintura negra que absorbe toda la luz. Aplicarla apaga el area y puede ocultarte.",
+    "efecto": {
+      "activo": "ocultar",
+      "cordura": -10
+    },
+    "color": "#020202",
+    "url": "https://backrooms.fandom.com/wiki/Object_200",
+    "wikiTitle": "Object 200: \"Niraloka Black\""
+  },
+  "ocelot_1": {
+    "id": "ocelot_1",
+    "nombre": "Ocelot 1",
+    "descripcion": "Vehiculo blindado de combate. No cabe en la mochila; como hallazgo actua como refugio y disuasor pesado.",
+    "efecto": {
+      "activo": "refugio",
+      "salud": 30,
+      "cordura": 20
+    },
+    "color": "#5b624d",
+    "url": "https://backrooms.fandom.com/wiki/Ocelot_1",
+    "wikiTitle": "Ocelot 1"
+  },
+  "organo_limo": {
+    "id": "organo_limo",
+    "nombre": "Organo de limo",
+    "descripcion": "Sustancia organica gelatinosa. Puede ingerirse como recurso biologico, con leve riesgo mental.",
+    "efecto": {
+      "salud": 20,
+      "cordura": -8
+    },
+    "color": "#75d18a",
+    "url": "https://backrooms.fandom.com/wiki/Object_36",
+    "wikiTitle": "Object 36: \"Slime Organ\""
+  },
+  "paperstone": {
+    "id": "paperstone",
+    "nombre": "Paperstone",
+    "descripcion": "Piedra blanca anomala asociada a niveles acuaticos. Sirve como ancla y reduce el panico al usarla.",
+    "efecto": {
+      "cordura": 22
+    },
+    "color": "#f1f1df",
+    "url": "https://backrooms.fandom.com/wiki/Object_14",
+    "wikiTitle": "Object 14: \"Paperstone\""
+  },
+  "pomos_magicos": {
+    "id": "pomos_magicos",
+    "nombre": "Pomos magicos",
+    "descripcion": "Par de pomos que pueden convertir una puerta normal en una via de transicion impredecible.",
+    "efecto": {
+      "activo": "salida",
+      "cordura": -8
+    },
+    "color": "#c8a86a",
+    "url": "https://backrooms.fandom.com/wiki/Object_8",
+    "wikiTitle": "Object 8: \"Magic Door Knobs\""
+  },
+  "repelente_corrosion": {
+    "id": "repelente_corrosion",
+    "nombre": "Repelente de corrosion",
+    "descripcion": "Sustancia industrial valiosa. Protege temporalmente de corrosion, toxinas y agua peligrosa.",
+    "efecto": {
+      "pasivo": "proteccion_quimica"
+    },
+    "color": "#9ed9c0",
+    "url": "https://backrooms.fandom.com/wiki/Object_60",
+    "wikiTitle": "Object 60: \"Corrosion Repellent\""
+  },
+  "rice_automatic": {
+    "id": "rice_automatic",
+    "nombre": "Rice Automatic",
+    "descripcion": "Subfusil automatico de cerrojo abierto. Dispara rapido, hiere fuerte y hace ruido.",
+    "manos": 2,
+    "efecto": {
+      "activo": "disparo",
+      "dano": 36,
+      "radio": 11
+    },
+    "color": "#5a5a52",
+    "url": "https://backrooms.fandom.com/wiki/Object_305",
+    "wikiTitle": "Object 305"
+  },
+  "rifle_kalthoff": {
+    "id": "rifle_kalthoff",
+    "nombre": "Rifle Kalthoff",
+    "descripcion": "Arma de fuego barata de origen Aurielleno. Dispara en linea frontal y hace mucho ruido.",
+    "manos": 2,
+    "efecto": {
+      "activo": "disparo",
+      "dano": 42,
+      "radio": 10
+    },
+    "color": "#7f6a4d",
+    "url": "https://backrooms.fandom.com/wiki/Object_29",
+    "wikiTitle": "Object 29"
+  },
+  "servidores_supercluster": {
+    "id": "servidores_supercluster",
+    "nombre": "Supercluster Servers",
+    "descripcion": "Servidores conectados a la infraestructura de BACK-NET. Consultarlos concede informacion y hace ruido digital.",
+    "efecto": {
+      "activo": "claridad",
+      "ruido": 8
+    },
+    "color": "#76a7ff",
+    "url": "https://backrooms.fandom.com/wiki/Object_100",
+    "wikiTitle": "Supercluster Servers"
+  },
+  "silicato_ferronix": {
+    "id": "silicato_ferronix",
+    "nombre": "Ferronix Silicate",
+    "descripcion": "Compuesto mineral anomalo. Refuerza temporalmente el cuerpo y reduce dano ambiental.",
+    "efecto": {
+      "salud": 16,
+      "cordura": 6
+    },
+    "color": "#a88f72",
+    "url": "https://backrooms.fandom.com/wiki/Object_70",
+    "wikiTitle": "Object 70 - ”Ferronix Silicate”"
+  },
+  "sopa_abisal": {
+    "id": "sopa_abisal",
+    "nombre": "Sopa abisal",
+    "descripcion": "Liquido negro e inodoro de propiedades variables. Puede curar y perturbar al mismo tiempo.",
+    "efecto": {
+      "salud": 28,
+      "cordura": -18
+    },
+    "color": "#121214",
+    "url": "https://backrooms.fandom.com/wiki/Object_66",
+    "wikiTitle": "Object 66: Abyssal Soup"
+  },
+  "spice_of_life": {
+    "id": "spice_of_life",
+    "nombre": "Spice of Life",
+    "descripcion": "Polvo verde brillante que intensifica el cuerpo. Recupera vitalidad y enfoque durante un momento.",
+    "efecto": {
+      "salud": 18,
+      "cordura": 12
+    },
+    "color": "#7cff62",
+    "url": "https://backrooms.fandom.com/wiki/Object_42",
+    "wikiTitle": "Object 42"
+  },
+  "talking_box": {
+    "id": "talking_box",
+    "nombre": "Talking Box",
+    "descripcion": "Caja metalica parlante de bolsillo. Da informacion util con coste de ruido e inquietud.",
+    "efecto": {
+      "activo": "claridad",
+      "cordura": -6,
+      "ruido": 5
+    },
+    "color": "#3b4c6a",
+    "url": "https://backrooms.fandom.com/wiki/The_Talking_Box",
+    "wikiTitle": "The Talking Box"
+  },
+  "talking_heads": {
+    "id": "talking_heads",
+    "nombre": "Talking Heads",
+    "descripcion": "Estatuas de sal parlantes instaladas en varios niveles. Escucharlas aporta pistas y tension.",
+    "efecto": {
+      "activo": "claridad",
+      "cordura": -8
+    },
+    "color": "#d9d2c0",
+    "url": "https://backrooms.fandom.com/wiki/Talking_Heads",
+    "wikiTitle": "Talking Heads"
+  },
+  "tallador_portales": {
+    "id": "tallador_portales",
+    "nombre": "Tallador de portales",
+    "descripcion": "Dispositivo capaz de abrir aperturas temporales entre superficies y rutas de nivel.",
+    "manos": 2,
+    "efecto": {
+      "activo": "salida",
+      "cordura": -12
+    },
+    "color": "#70d0ff",
+    "url": "https://backrooms.fandom.com/wiki/Object_9",
+    "wikiTitle": "Object 9: Gate Carvers"
+  },
+  "telefono_tela": {
+    "id": "telefono_tela",
+    "nombre": "Telefono de tela",
+    "descripcion": "Telefono blando clasificado como peligro mental. Consultarlo puede dar orientacion a costa de cordura.",
+    "efecto": {
+      "activo": "claridad",
+      "cordura": -18
+    },
+    "color": "#d4b4a4",
+    "url": "https://backrooms.fandom.com/wiki/Object_20",
+    "wikiTitle": "Object 20: The Cloth Phone"
+  },
+  "trebol": {
+    "id": "trebol",
+    "nombre": "Trebol de la suerte",
+    "descripcion": "Luck Clover autentico. Mientras lo llevas, mejora tus tiradas de dado y los hallazgos de botin.",
+    "efecto": {
+      "pasivo": "suerte"
+    },
+    "color": "#68d868",
+    "url": "https://backrooms.fandom.com/wiki/Object_13",
+    "wikiTitle": "Object 13: Luck Clover"
+  },
+  "tuberia": {
+    "id": "tuberia",
+    "nombre": "Tubería oxidada",
+    "descripcion": "Un tramo de tubería arrancado de Level 2. Con ella EN LA MANO, muévete HACIA una entidad adyacente para golpearla.",
+    "manos": 1,
+    "efecto": {
+      "pasivo": "arma",
+      "dano": 18
+    },
+    "color": "#8a6a50"
+  },
+  "vending_frutal": {
+    "id": "vending_frutal",
+    "nombre": "Maquina expendedora frutal",
+    "descripcion": "Expendedora de fruta anomala. Usarla concede bebida/comida aleatoria segura.",
+    "efecto": {
+      "salud": 10,
+      "sed": 20
+    },
+    "color": "#ff9f5c",
+    "url": "https://backrooms.fandom.com/wiki/Object_53",
+    "wikiTitle": "Object 53: \"Fruity Vending Machines\""
+  },
+  "voidstone": {
+    "id": "voidstone",
+    "nombre": "Voidstone",
+    "descripcion": "Piedra vinculada al Vacío y a los recursos de las Backrooms. Usarla es muy peligroso.",
+    "efecto": {
+      "activo": "riesgo",
+      "salud": -35,
+      "cordura": -35
+    },
+    "color": "#08080c",
+    "url": "https://backrooms.fandom.com/wiki/Object_101",
+    "wikiTitle": "Object 101: \"The Voidstone\""
+  },
+  "work_juice": {
+    "id": "work_juice",
+    "nombre": "Work Juice",
+    "descripcion": "Taza de liquido oscuro similar a cafe. Recupera enfoque y permite aguantar mas.",
+    "efecto": {
+      "cordura": 18,
+      "sed": 8
+    },
+    "color": "#3a271f",
+    "url": "https://backrooms.fandom.com/wiki/Object_400",
+    "wikiTitle": "Object 400: \"Work Juice\""
+  },
+  "yatozten_zedkviati": {
+    "id": "yatozten_zedkviati",
+    "nombre": "Yatozten Zedkviati",
+    "descripcion": "Documento/objeto narrativo anomalo de origen incierto. Leerlo afecta la percepcion.",
+    "efecto": {
+      "activo": "claridad",
+      "cordura": -10
+    },
+    "color": "#d6c48f",
+    "url": "https://backrooms.fandom.com/wiki/Yatozten_Zedkviati",
+    "wikiTitle": "Yatozten Zedkviati"
+  }
 }

@@ -119,7 +119,7 @@ class Sala {
     const jug = {
       id, ws, nombre, token, x, y, rot: Math.PI, // θ continuo (π = mirando al sur)
       distSala: 0,
-      salud: 100, luz: false, escondido: null, muerto: false,
+      salud: 100, sed: 100, cordura: 100, luz: false, escondido: null, muerto: false,
       inv: [], manos: [null, null], equipo: { cara: null, cuerpo: null, pies: null },
       esAdmin: false, muteadoHasta: 0,
       ultMov: 0, ultChat: 0, canal: null, ofertaEn: null,
@@ -133,7 +133,7 @@ class Sala {
     this.enviar(ws, {
       t: 'bienvenida', id, nivel: this.nivelId, inst: this.inst,
       semilla: this.semilla, privada: this.privada, x, y, rot: jug.rot, sec: 0,
-      salud: jug.salud, inv: jug.inv, manos: jug.manos,
+      salud: jug.salud, sed: jug.sed, cordura: jug.cordura, inv: jug.inv, manos: jug.manos, equipo: jug.equipo,
       caminata: jug.caminataObjetivo ? { pasos: 0, objetivo: jug.caminataObjetivo } : null,
       jugadores: this.censo(), ...this.estadoDinamico(),
     });
@@ -158,6 +158,48 @@ class Sala {
     this.enviar(jug.ws, {
       t: 'inv', inv: jug.inv, manos: jug.manos, equipo: jug.equipo,
     });
+  }
+
+  enviarEstado(jug) {
+    this.enviar(jug.ws, { t: 'estado', salud: jug.salud, sed: jug.sed, cordura: jug.cordura });
+  }
+
+  herir(jug, cantidad, causa) {
+    jug.salud = Math.max(0, jug.salud - cantidad);
+    this.enviarEstado(jug);
+    if (jug.salud <= 0) this.morir(jug, causa);
+  }
+
+  supervivencia(jug, distancia) {
+    if (distancia <= 0 || jug.muerto) return;
+    jug._supervivencia = (jug._supervivencia || 0) + distancia;
+    const pasos = Math.floor(jug._supervivencia / 4);
+    if (!pasos) return;
+    jug._supervivencia -= pasos * 4;
+    const reglas = this.def.reglas || [];
+    const posesion = new Set([...(jug.inv || []), ...(jug.manos || []), ...Object.values(jug.equipo || {})].filter(Boolean));
+    const trajeHostil = posesion.has('avmh');
+    const proteccionQuimica = trajeHostil || posesion.has('repelente_corrosion');
+    const mascara = jug.equipo.cara === 'mascara_gas' || trajeHostil || proteccionQuimica;
+    const chaqueta = jug.equipo.cuerpo === 'chaqueta' || trajeHostil;
+    const botas = jug.equipo.pies === 'botas_reforzadas';
+    let cambioSed = -pasos;
+    let cambioCordura = 0;
+    if (reglas.includes('calor')) cambioSed -= pasos;
+    if (reglas.some((r) => ['zumbido', 'alucinaciones', 'aislamiento', 'vigilado'].includes(r)))
+      cambioCordura -= Math.ceil(pasos / (mascara ? 8 : 4));
+    jug.sed = Math.max(0, jug.sed + cambioSed);
+    jug.cordura = Math.max(0, jug.cordura + cambioCordura);
+    if (reglas.includes('frio') && !chaqueta) this.herir(jug, pasos, 'el frío');
+    // Los charcos sirena son una amenaza física del terreno: las botas
+    // anulan el arrastre cuando el jugador pisa una casilla de agua.
+    const tx = Fisica.tileDe(jug.x), ty = Fisica.tileDe(jug.y);
+    if (!jug.muerto && reglas.includes('agua_traicionera') && !botas &&
+        this.map.grid.t[ty * this.map.grid.w + tx] === 3)
+      this.herir(jug, pasos * 2, 'un charco sirena');
+    if (!jug.muerto && jug.sed === 0) this.herir(jug, pasos, 'la deshidratación');
+    if (!jug.muerto && jug.cordura === 0) this.morir(jug, 'perdiste la cordura');
+    if (!jug.muerto) this.enviarEstado(jug);
   }
 
   salir(jug) {
@@ -197,6 +239,7 @@ class Sala {
     if (jug.canal && Fisica.dist(m.x, m.y, jug.canal.origen[0], jug.canal.origen[1]) > 0.3)
       this.cancelarCanal(jug, 'Te apartas: dejas lo que estabas haciendo.');
     this.proximidad(jug);
+    this.supervivencia(jug, d);
     this.caminataAvanza(jug, d);
   }
 
@@ -304,7 +347,7 @@ class Sala {
     jug.inv.push(id);
     // tubería o linterna a una mano libre: lista para usar
     const m = jug.manos.indexOf(null);
-    if (m >= 0 && (id === 'tuberia' || id === 'linterna')) {
+    if (m >= 0 && (def.manos || def.efecto?.toggle === 'luz')) {
       jug.manos[m] = id;
       jug.inv.pop();
     }
@@ -344,7 +387,9 @@ class Sala {
     jug.canal = null;
     const ex = this.map.exits[c.i];
     if (!ex || ex.def._abierta) return;
-    const d = this.rng.int(1, 20);
+    let d = this.rng.int(1, 20);
+    if (jug.inv.includes('trebol') || jug.manos.includes('trebol') || Object.values(jug.equipo).includes('trebol'))
+      d = Math.min(20, d + 2);
     const esSuelo = ex.def._mec === 'romper_suelo';
     const umbral = c.herramienta ? 7 : (esSuelo ? 11 : 12);
     const exito = d >= umbral;
@@ -378,10 +423,148 @@ class Sala {
   }
 
   // ---------- manos: tubería (golpe hacia donde miras) y linterna ----------
+  aplicarNumericos(jug, def) {
+    const ef = def.efecto || {};
+    if (ef.salud) {
+      if (ef.salud < 0) this.herir(jug, Math.abs(ef.salud), def.nombre);
+      else jug.salud = Math.min(100, jug.salud + ef.salud);
+    }
+    if (ef.sed) jug.sed = Math.max(0, Math.min(100, jug.sed + ef.sed));
+    if (ef.cordura) jug.cordura = Math.max(0, Math.min(100, jug.cordura + ef.cordura));
+    if (ef.ruido) this.hacerRuido(jug.x, jug.y, ef.ruido);
+    this.enviarEstado(jug);
+    if (!jug.muerto && (jug.salud <= 0 || jug.sed <= 0 || jug.cordura <= 0))
+      this.morir(jug, def.nombre);
+  }
+
+  entidadesEnRadio(jug, radio) {
+    return this.entidades.filter((e) => e.viva && Fisica.dist(e.x, e.y, jug.x, jug.y) <= radio);
+  }
+
+  entidadFrontal(jug, rango) {
+    const [fx, fy] = cardinalDe(jug.rot ?? Math.PI);
+    let mejor = null, mejorD = Infinity;
+    for (const e of this.entidades) {
+      if (!e.viva) continue;
+      const dx = Math.round(e.x - jug.x), dy = Math.round(e.y - jug.y);
+      const delante = fx ? (Math.abs(dy) <= 1 && Math.sign(dx) === fx) : (Math.abs(dx) <= 1 && Math.sign(dy) === fy);
+      const d = Math.abs(dx) + Math.abs(dy);
+      if (delante && d <= rango && d < mejorD) { mejor = e; mejorD = d; }
+    }
+    return mejor;
+  }
+
+  danarEntidad(e, dano) {
+    e.vida -= dano;
+    e.revelada = true;
+    if (e.vida <= 0) { e.viva = false; this.difundir({ t: 'entMuere', uid: e.uid }); }
+    else this.difundir({ t: 'entHit', uid: e.uid });
+  }
+
+  usarActivoCatalogo(jug, def) {
+    const ef = def.efecto || {};
+    const radio = ef.radio || 3;
+    this.aplicarNumericos(jug, def);
+    if (jug.muerto) return true;
+    switch (ef.activo) {
+      case 'fuego':
+      case 'fuego_menor':
+      case 'toxina':
+      case 'gas':
+        for (const e of this.entidadesEnRadio(jug, radio)) {
+          this.danarEntidad(e, ef.dano || (ef.activo === 'fuego' ? 30 : 20));
+          if (ef.activo !== 'fuego_menor') e.huyendoHasta = Date.now() + 4000;
+        }
+        this.hacerRuido(jug.x, jug.y, ef.activo === 'fuego' ? 12 : 8);
+        this.difundir({ t: 'golpe', id: jug.id, x: jug.x, y: jug.y });
+        return true;
+      case 'paralisis':
+        for (const e of this.entidadesEnRadio(jug, radio || 1)) {
+          e.paralizadaHasta = Date.now() + 90000;
+          this.difundir({ t: 'entHit', uid: e.uid });
+        }
+        return true;
+      case 'disparo': {
+        const e = this.entidadFrontal(jug, 7);
+        this.hacerRuido(jug.x, jug.y, ef.radio || 10);
+        const [fx, fy] = cardinalDe(jug.rot ?? Math.PI);
+        this.difundir({ t: 'golpe', id: jug.id, x: jug.x + fx, y: jug.y + fy });
+        if (e) this.danarEntidad(e, ef.dano || 34);
+        return true;
+      }
+      case 'flash':
+        for (const e of this.entidadesEnRadio(jug, radio)) {
+          e.revelada = true;
+          e.paralizadaHasta = Date.now() + 1800;
+          this.difundir({ t: 'entHit', uid: e.uid });
+        }
+        return true;
+      case 'ruido':
+        this.hacerRuido(jug.x, jug.y, radio);
+        return true;
+      case 'repeler':
+      case 'sellar':
+        for (const e of this.entidadesEnRadio(jug, radio)) e.huyendoHasta = Date.now() + 5000;
+        return true;
+      case 'salida': {
+        const salidas = this.def.salidas.filter((s) => s.destino && DATA.levels[s.destino] && s.tipo !== 'sellada');
+        const salida = salidas.length ? this.rng.pick(salidas) : null;
+        if (!salida || !this.alCruzar) {
+          this.enviar(jug.ws, { t: 'aviso', txt: `${def.nombre} vibra, pero no encuentra ruta estable.` });
+          return true;
+        }
+        this.alCruzar(jug, this, salida);
+        return true;
+      }
+      case 'blink': {
+        const [fx, fy] = cardinalDe(jug.rot ?? Math.PI);
+        for (let d = 5; d >= 2; d--) {
+          const tx = Math.round(jug.x) + fx * d, ty = Math.round(jug.y) + fy * d;
+          if (!esTransitable(this.map, tx, ty)) continue;
+          jug.x = tx; jug.y = ty;
+          this.enviar(jug.ws, { t: 'tp', x: jug.x, y: jug.y });
+          return true;
+        }
+        this.enviar(jug.ws, { t: 'aviso', txt: `${def.nombre} no encuentra hueco.` });
+        return true;
+      }
+      case 'claridad':
+        this.enviar(jug.ws, { t: 'aviso', txt: `${def.nombre}: entiendes un poco mejor este sitio.` });
+        return true;
+      case 'glitch':
+        for (const e of this.entidadesEnRadio(jug, radio)) {
+          e.revelada = true;
+          this.difundir({ t: 'entHit', uid: e.uid });
+        }
+        return true;
+      case 'celeridad':
+      case 'ocultar':
+      case 'refugio':
+        jug.escondido = { temporal: true };
+        this.difundir({ t: 'esconde', id: jug.id, si: true });
+        return true;
+      case 'riesgo':
+        this.enviar(jug.ws, { t: 'aviso', txt: `${def.nombre} reacciona de forma peligrosa.` });
+        return true;
+      default:
+        return false;
+    }
+  }
+
   usar(jug, mano) {
     if (jug.muerto || jug.escondido) return;
     const id = jug.manos[mano];
-    if (id === 'linterna') { this.luz(jug, !jug.luz); return; }
+    const def = DATA.objects[id];
+    if (def?.efecto?.toggle === 'luz') { this.luz(jug, !jug.luz); return; }
+    if (def?.efecto?.activo && this.usarActivoCatalogo(jug, def)) {
+      if (def.efecto.activo !== 'paralisis') {
+        if (def.manos === 2 || jug.manos[1] === '=') jug.manos = [null, null];
+        else jug.manos[mano] = null;
+        this.enviarInv(jug);
+      }
+      return;
+    }
+    if (!def && id === 'linterna') { this.luz(jug, !jug.luz); return; }
     if (id !== 'tuberia') return;
     const ahora = Date.now();
     if (ahora - (jug.ultGolpe || 0) < 400) return;
@@ -398,7 +581,8 @@ class Sala {
       if (d <= mejor) { mejor = d; e = e2; }
     }
     if (!e) return;
-    e.vida -= 12;
+    const fuerte = [...(jug.inv || []), ...(jug.manos || [])].some((oid) => DATA.objects[oid]?.efecto?.pasivo === 'fuerza');
+    e.vida -= fuerte ? 20 : 12;
     e.revelada = true;
     if (e.vida <= 0) {
       e.viva = false;
@@ -411,8 +595,9 @@ class Sala {
   // la linterna solo alumbra EN LA MANO (v23): el servidor manda, el cliente
   // refleja — luzDe llega también al dueño (nada de encender en local)
   luz(jug, si) {
-    if (si && !jug.manos.includes('linterna')) {
-      this.enviar(jug.ws, { t: 'aviso', txt: 'Necesitas la linterna en la mano (B: mochila, arrástrala a una mano).' });
+    const tieneLuzEnMano = (jug.manos || []).some((id) => DATA.objects[id]?.efecto?.toggle === 'luz');
+    if (si && !tieneLuzEnMano) {
+      this.enviar(jug.ws, { t: 'aviso', txt: 'Necesitas una fuente de luz en la mano (B: mochila, arrastrala a una mano).' });
       si = false;
     }
     if (jug.luz === !!si) return;
@@ -457,29 +642,13 @@ class Sala {
         const def = id && OBJ[id];
         if (!def) return;
         const ef = def.efecto || {};
-        if (ef.salud) {
-          jug.salud = Math.min(100, jug.salud + ef.salud);
+        if (ef.activo && this.usarActivoCatalogo(jug, def)) {
+          if (ef.activo !== 'paralisis') jug.inv.splice(m.slot, 1);
+          aviso(`Usas ${def.nombre}.`);
+        } else if (ef.salud || ef.sed || ef.cordura || ef.ruido) {
+          this.aplicarNumericos(jug, def);
           jug.inv.splice(m.slot, 1);
-          this.enviar(jug.ws, { t: 'salud', valor: jug.salud });
-          aviso(`${def.nombre}: recuperas ${ef.salud} de salud.`);
-        } else if (ef.activo === 'fuego') {
-          jug.inv.splice(m.slot, 1);
-          this.hacerRuido(jug.x, jug.y, 10);
-          for (const e of this.entidades) {
-            if (!e.viva || Math.abs(e.x - jug.x) + Math.abs(e.y - jug.y) > 3) continue;
-            e.vida -= 30;
-            e.huyendoHasta = Date.now() + 4000;
-            if (e.vida <= 0) { e.viva = false; this.difundir({ t: 'entMuere', uid: e.uid }); }
-            else this.difundir({ t: 'entHit', uid: e.uid });
-          }
-          this.difundir({ t: 'golpe', id: jug.id, x: jug.x, y: jug.y });
-        } else if (ef.activo === 'paralisis') {
-          jug.inv.splice(m.slot, 1);
-          for (const e of this.entidades) {
-            if (!e.viva || Math.abs(e.x - jug.x) + Math.abs(e.y - jug.y) > 1) continue;
-            e.paralizadaHasta = Date.now() + 2400;
-            this.difundir({ t: 'entHit', uid: e.uid });
-          }
+          aviso(`Usas ${def.nombre}.`);
         } else if (ef.toggle === 'luz') {
           this.luz(jug, !jug.luz);
         } else {
@@ -528,7 +697,7 @@ class Sala {
     }
     this.enviarInv(jug);
     // si la linterna salió de las manos con la luz encendida, se apaga sola
-    if (jug.luz && !jug.manos.includes('linterna')) this.luz(jug, false);
+    if (jug.luz && !(jug.manos || []).some((id) => DATA.objects[id]?.efecto?.toggle === 'luz')) this.luz(jug, false);
   }
 
   hacerRuido(x, y, radio) {
@@ -542,10 +711,11 @@ class Sala {
     jug.canal = null;
     if (jug.luz) this.luz(jug, false); // la linterna se pierde con el resto
     db.sumarMuerte(jug.token);
+    this.enviar(jug.ws, { t: 'botinReset', semilla: this.semilla });
     this.difundir({ t: 'muere', id: jug.id, causa });
     setTimeout(() => {
       if (!this.jugadores.has(jug.id)) return;
-      jug.salud = 100;
+      jug.salud = 100; jug.sed = 100; jug.cordura = 100;
       jug.muerto = false;
       jug.inv = []; jug.manos = [null, null];
       if (this.alMorir) this.alMorir(jug, this, causa);
