@@ -179,6 +179,16 @@
     world.player.equipo = { ...sane.equipo };
   }
 
+  function limpiarInventario() {
+    if (!world.player) return;
+    const v = Inventario.vacio();
+    world.player.inv = [...v.inv];
+    world.player.manos = [...v.manos];
+    world.player.equipo = { ...v.equipo };
+    if (!world.online) Profiles.guardarInventario(v.inv, v.manos, v.equipo);
+    world.ui?.updateHUD();
+  }
+
   // ---------- utilidades de estado ----------
   world.log = (msg, cls) => world.ui.log(msg, cls);
 
@@ -1565,7 +1575,7 @@
       salida: '☠ ' + causa,
     });
     Profiles.registrarFin(false, world.journal, world.turnTotal, world.runSeed, world.level.id);
-    persistirInventario();
+    limpiarInventario();
     localStorage.removeItem(saveKey());
     if (window.Sfx) { Sfx.stopAmbient(); Sfx.play('muerte'); }
     world.ui.showEnd(false, causa);

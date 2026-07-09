@@ -24,4 +24,12 @@ function guardar(jug) {
   return sane;
 }
 
-module.exports = { sanitizar, desdeExpediente, guardar, vacio: Inv.vacio };
+function vaciar(jug) {
+  const v = Inv.vacio();
+  jug.inv = [...v.inv];
+  jug.manos = [...v.manos];
+  jug.equipo = { ...v.equipo };
+  return v;
+}
+
+module.exports = { sanitizar, desdeExpediente, guardar, vaciar, vacio: Inv.vacio };

@@ -519,20 +519,20 @@ class Sala {
     this.ruido = { x, y, radio, hasta: Date.now() + 3200 };
   }
 
-  // ---------- muerte: despiertas en Level 0, pero conservas tu equipo ----------
+  // ---------- muerte: despiertas en Level 0 sin nada — el inventario se pierde ----------
   morir(jug, causa) {
     jug.muerto = true;
     jug.escondido = null;
     jug.canal = null;
     if (jug.luz) this.luz(jug, false);
+    PersistInv.vaciar(jug);
+    this.enviarInv(jug);
     db.sumarMuerte(jug.token);
     this.difundir({ t: 'muere', id: jug.id, causa });
     setTimeout(() => {
       if (!this.jugadores.has(jug.id)) return;
       jug.salud = 100;
       jug.muerto = false;
-      PersistInv.guardar(jug);
-      db.guardarInventario(jug.token, jug.inv, jug.manos, jug.equipo);
       if (this.alMorir) this.alMorir(jug, this, causa);
     }, 2500);
   }
