@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v25';
+  window.VERSION_JUEGO = 'v26';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -55,15 +55,37 @@
   }
 
   // ---------- opciones persistentes (v16) ----------
-  window.OPTS = { dado: true };
+  // controles: 'raton' (por defecto) = arrastrar el ratón gira la cámara y Q/E
+  // usan las manos;  'teclas' = Q/E giran la cámara y clic izq./der. usan las
+  // manos (online, 3ª persona). v26.
+  window.OPTS = { dado: true, controles: 'raton' };
   try { Object.assign(window.OPTS, JSON.parse(localStorage.getItem('backrooms-opts')) || {}); }
   catch (e) { /* opciones corruptas: valores por defecto */ }
+  function guardarOpts() {
+    try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
+  }
   const optDado = document.getElementById('opt-dado');
   optDado.checked = OPTS.dado;
-  optDado.onchange = () => {
-    OPTS.dado = optDado.checked;
-    try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
-  };
+  optDado.onchange = () => { OPTS.dado = optDado.checked; guardarOpts(); };
+  // ¿esquema de teclas (Q/E cámara, clic manos)? y ¿jugando sin ningún menú?
+  const controlesTeclas = () => OPTS.controles === 'teclas';
+  // en modo 'teclas' el ratón NO arrastra la cámara: es puntero (clic = manos)
+  function aplicarModoControles() {
+    document.body.classList.toggle('ctrl-teclas', controlesTeclas());
+    if (world.ui && world.level && !world.over) world.ui.updateHUD(); // reetiqueta manos
+  }
+  const optControles = document.getElementById('opt-controles');
+  if (optControles) {
+    optControles.value = OPTS.controles;
+    optControles.onchange = () => {
+      OPTS.controles = optControles.value; guardarOpts(); aplicarModoControles();
+    };
+  }
+  aplicarModoControles();
+  const enJuegoLibre = () =>
+    world.level && !world.over && !world.busy &&
+    document.getElementById('screen-card').style.display === 'none' &&
+    !(window.Net && Net.chatAbierto && Net.chatAbierto());
 
   // ---------- menú de ajustes de sonido ----------
   const sndMenu = document.getElementById('sound-menu');
@@ -150,6 +172,16 @@
     wrap.addEventListener('mousedown', (ev) => {
       if (!world.online || !use3D || Render3D.modo !== 'tercera') return;
       if (ev.target.closest('button, input, select, #backpack-panel, #log-panel')) return;
+      // modo 'teclas': clic izq/der = manos (solo jugando, sin menús); la
+      // cámara la giran Q/E, así que el arrastre queda desactivado
+      if (controlesTeclas()) {
+        if (!enJuegoLibre()) return;
+        ev.preventDefault();
+        const m = ev.button === 2 ? 1 : 0;
+        Net.usar(m);
+        world.ui.pulsarMano(m);
+        return;
+      }
       arrastre = ev.clientX;
       wrap.classList.add('orbitando');
     });
@@ -269,8 +301,16 @@
         ev.preventDefault();
         Net.accion(); // contextual: esconderse, romper, reabrir la oferta de salida
       } else if (ev.code === 'KeyQ' || ev.code === 'KeyE') {
-        if (tercera || !use3D) Net.usar(ev.code === 'KeyQ' ? 0 : 1);
-        else Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
+        if (tercera && controlesTeclas()) {
+          // modo 'teclas': cada pulsación gira la cámara 90° (dos = te das la
+          // vuelta); ignoramos el auto-repeat para que mantener NO gire en bucle
+          ev.preventDefault();
+          if (!ev.repeat) Render3D.orbita(ev.code === 'KeyQ' ? Math.PI / 2 : -Math.PI / 2);
+        } else if (tercera || !use3D) {
+          const m = ev.code === 'KeyQ' ? 0 : 1;
+          Net.usar(m);
+          world.ui.pulsarMano(m);
+        } else Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
       } else if (ev.code === 'KeyF') Net.luzToggle();
       else if (/^Digit[1-6]$/.test(ev.code)) Game.useItem(parseInt(ev.code.slice(5), 10) - 1);
       else if (ev.code === 'KeyB') world.ui.toggleBackpack();
@@ -327,8 +367,11 @@
       }
     } else if (ev.code === 'KeyQ' || ev.code === 'KeyE') {
       // v19: Q usa la mano izquierda, E la derecha (en ?cam=alta rotan la cámara)
-      if (tercera || !use3D) Game.usarMano(ev.code === 'KeyQ' ? 0 : 1);
-      else Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
+      if (tercera || !use3D) {
+        const m = ev.code === 'KeyQ' ? 0 : 1;
+        Game.usarMano(m);
+        world.ui.pulsarMano(m);
+      } else Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
     } else if (ev.code === 'Space') {
       ev.preventDefault();
       Game.interact();

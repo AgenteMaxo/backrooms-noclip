@@ -91,12 +91,12 @@
           <div id="backpack-layout">
             <div class="bp-mano-col">
               <div class="mano-slot bp-mano" id="bp-mano-0" title="Mano izquierda"></div>
-              <span class="bp-label">mano izq.<br>(tecla Q)</span>
+              <span class="bp-label">mano izq.</span>
             </div>
             <div id="backpack-slots"></div>
             <div class="bp-mano-col">
               <div class="mano-slot bp-mano" id="bp-mano-1" title="Mano derecha"></div>
-              <span class="bp-label">mano der.<br>(tecla E)</span>
+              <span class="bp-label">mano der.</span>
             </div>
           </div>
           <div id="bp-equipo">
@@ -106,7 +106,7 @@
             <div class="eq-slot" id="eq-pies" data-tipo="pies"><span class="eq-ph">pies</span></div>
             <div id="bp-efectos"></div>
           </div>
-          <p class="warn" id="bp-hint">Arrastra a una mano para empuñar, a una ranura de ropa para vestirte (clic: quitar).<br>Clic en un objeto: su ficha. En juego: clic en una mano (o Q/E) la usa.</p>
+          <p class="warn" id="bp-hint">Arrastra a una mano para empuñar, a una ranura de ropa para vestirte (clic: quitar).<br>Clic en un objeto: su ficha. En juego: clic en una mano la usa.</p>
           <button id="btn-backpack-close" class="btn-small">Cerrar (B)</button>
         </div>
       </div>
@@ -171,6 +171,12 @@
       <div class="sound-row"><label>Efectos</label><input type="range" id="snd-fx" min="0" max="100"><span id="snd-fx-v"></span></div>
       <div class="sound-row"><label>Ambiente / música</label><input type="range" id="snd-amb" min="0" max="100"><span id="snd-amb-v"></span></div>
       <div class="sound-row"><label>Tirada de dado</label><label class="chk-row"><input type="checkbox" id="opt-dado"> mostrar animación</label></div>
+      <div class="sound-row"><label>Controles</label>
+        <select id="opt-controles">
+          <option value="raton">Ratón gira la cámara · Q/E manos</option>
+          <option value="teclas">Q/E giran la cámara · clic manos</option>
+        </select>
+      </div>
       <div class="sound-row"><label>Pantalla</label><button id="btn-fullscreen" class="btn-small" style="margin-top:0">Pantalla completa</button></div>
       <div class="sound-row" id="admin-row"><label>🔑 Guardián</label>
         <input type="password" id="admin-clave" placeholder="contraseña de admin…" maxlength="64" autocomplete="off">
@@ -182,11 +188,11 @@
         <button id="btn-debug-tp" class="btn-small" style="margin-top:0">Teleport</button>
       </div>
       <div id="ctrl-list">
-        <b>Controles</b><br>
-        W/A/S/D moverte (relativo a la cámara) · RATÓN (mantener y arrastrar) girar la cámara<br>
-        ESPACIO interactuar<br>
-        Q/E (o clic en la mano) usar mano izq./der. · X esperar · F linterna<br>
-        B mochila · 1-6 usar objeto · M mapa · L registro · J diario · C códice · ESC ajustes
+        <b>Controles</b> (esquema configurable arriba)<br>
+        W/A/S/D moverte (relativo a la cámara) · ESPACIO interactuar<br>
+        <i>Ratón:</i> arrastrar gira la cámara · Q/E (o clic en la mano) usar mano izq./der.<br>
+        <i>Teclas:</i> Q/E giran la cámara · clic izq./der. usar mano izq./der.<br>
+        X esperar · F linterna · B mochila · 1-6 usar objeto · M mapa · L registro · J diario · C códice · ESC ajustes
       </div>
       <div class="modal-btns">
         <button id="btn-snd-mute" class="btn-small"></button>

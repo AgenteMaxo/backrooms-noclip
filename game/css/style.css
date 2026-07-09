@@ -146,6 +146,24 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
 /* v19: atajo de teclado en pequeñito en la esquina de cada mano */
 .k-mano { position: absolute; top: 1px; right: 3px; font-size: 11px;
   color: #6a6455; z-index: 1; text-shadow: 1px 1px 0 #000; }
+/* modo 'teclas': mini ratón en la esquina con el botón (izq/der) resaltado */
+.k-clic { position: absolute; top: 2px; right: 3px; width: 10px; height: 14px;
+  border: 1px solid #6a6455; border-radius: 5px; background: rgba(0,0,0,.55); z-index: 1; }
+.k-clic::before { content: ''; position: absolute; top: 0; width: 4px; height: 6px;
+  background: var(--amarillo); }
+.k-clic.izq::before { left: 0; border-right: 1px solid #6a6455; border-top-left-radius: 4px; }
+.k-clic.der::before { right: 0; border-left: 1px solid #6a6455; border-top-right-radius: 4px; }
+/* feedback de pulsación al usar la mano (clic o tecla) */
+.mano-slot.pulsada { animation: manoPulso .18s ease; }
+@keyframes manoPulso {
+  0%   { transform: translateY(0); border-bottom-width: 3px; }
+  45%  { transform: translateY(2px); border-bottom-width: 1px;
+         background: rgba(217,198,110,.22); box-shadow: 0 0 14px rgba(217,198,110,.6); }
+  100% { transform: translateY(0); border-bottom-width: 3px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mano-slot.pulsada { animation: none; background: rgba(217,198,110,.22); }
+}
 #btn-mochila { width: 52px; height: 52px; background: rgba(16,14,9,.8);
   border: 1px solid var(--amarillo-osc); cursor: pointer; display: flex;
   align-items: center; justify-content: center; margin-left: 6px; }
@@ -221,20 +239,25 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
 .chk-row input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--amarillo);
   cursor: pointer; vertical-align: middle; margin-right: 6px; }
 /* v20.2: fila de debug (teleport a niveles) */
-#debug-nivel { flex: 1; background: #0a0906; border: 1px solid var(--borde);
-  color: var(--amarillo); font-family: inherit; font-size: 14px; padding: 5px 8px;
-  cursor: pointer; min-width: 0; }
+#debug-nivel, #opt-controles { flex: 1; background: #0a0906; border: 1px solid var(--borde);
+  color: var(--amarillo); font-family: inherit; font-size: 16px; padding: 7px 10px;
+  cursor: pointer; min-width: 0; box-sizing: border-box; }
+/* el desplegable de controles va en blanco hueso, como el resto del menú */
+#opt-controles, #opt-controles option { color: var(--hueso); background: #0a0906; }
 #debug-row { border-top: 1px dashed var(--borde); padding-top: 10px; }
 /* v23: contraseña de guardián + versión del juego en Ajustes */
 #admin-row { border-top: 1px dashed var(--borde); padding-top: 10px; }
 #admin-clave { flex: 1; background: #0a0906; border: 1px solid var(--borde);
-  color: var(--amarillo); font-family: inherit; font-size: 14px; padding: 5px 8px;
-  min-width: 0; outline: none; }
+  color: var(--amarillo); font-family: inherit; font-size: 16px; padding: 7px 10px;
+  min-width: 0; outline: none; box-sizing: border-box; }
 #admin-clave:focus { border-color: var(--amarillo-osc); }
 #admin-msg { margin: 2px 0 0 142px; color: #e88a7a; font-size: 12px; min-height: 14px; }
 /* v25: cámara libre con el ratón (mantener y arrastrar) */
 #game-wrap.orbitando { cursor: grabbing; }
 #game-wrap canvas { cursor: grab; }
+/* modo de control 'teclas': el ratón NO arrastra la cámara → puntero, clic = manos */
+body.ctrl-teclas #game-wrap canvas,
+body.ctrl-teclas #game-wrap.orbitando { cursor: pointer; }
 /* v25: pantalla completa real — el lienzo llena el monitor, sin bordes */
 body.fs #game-canvas, body.fs #gl-canvas { border: none; box-shadow: none; }
 #ajustes-version { margin-top: 10px; text-align: right; color: var(--gris);
@@ -320,6 +343,15 @@ body.fs #game-canvas, body.fs #gl-canvas { border: none; box-shadow: none; }
 #profile-select, #profile-name { background: #0a0906; border: 1px solid var(--borde);
   color: var(--amarillo); font-family: inherit; padding: 6px 10px; font-size: 16px; }
 #profile-select { min-width: 140px; }
+/* flecha propia en TODOS los desplegables, separada del borde derecho
+   (con la flecha nativa el navegador la pega al borde y padding-right no la mueve) */
+#opt-controles, #debug-nivel, #profile-select {
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' fill='none' stroke='%23d9c66e' stroke-width='1.6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
 #profile-name { width: 140px; }
 #profile-records { color: #8a8470; font-size: 15px; margin: 4px 0 8px; }
 

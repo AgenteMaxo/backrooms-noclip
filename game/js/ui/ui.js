@@ -148,10 +148,18 @@
     const manos = world.player.manos || [null, null];
     el.innerHTML = '';
     el.classList.remove('activa', 'vacia');
+    // en el modo de control 'teclas' (online) las manos se usan con clic izq/der;
+    // en el resto de modos siguen siendo Q/E
+    const clicManos = world.online && window.OPTS && OPTS.controles === 'teclas';
     if (!enPanel) {
       const k = document.createElement('span');
-      k.className = 'k-mano';
-      k.textContent = m === 0 ? 'Q' : 'E';
+      if (clicManos) {
+        k.className = 'k-clic ' + (m === 0 ? 'izq' : 'der');
+        k.title = m === 0 ? 'clic izquierdo' : 'clic derecho';
+      } else {
+        k.className = 'k-mano';
+        k.textContent = m === 0 ? 'Q' : 'E';
+      }
       el.appendChild(k);
     }
     if (window.Icons) {
@@ -161,7 +169,9 @@
       el.appendChild(hand);
     }
     const id = manos[m];
-    const accion = enPanel ? 'clic: guardar en la mochila' : `clic o ${m === 0 ? 'Q' : 'E'}: usar`;
+    const teclaLbl = clicManos ? (m === 0 ? 'clic izq.' : 'clic der.') : (m === 0 ? 'Q' : 'E');
+    const accion = enPanel ? 'clic: guardar en la mochila'
+      : (clicManos ? `${teclaLbl}: usar` : `clic o ${teclaLbl}: usar`);
     if (id === '=') { el.title = `Ocupada por el objeto a dos manos (${enPanel ? 'clic: guardar' : 'clic o Q: usar'})`; return; }
     if (id) {
       const def = world.data.objects[id];
@@ -186,6 +196,16 @@
       const bp = $('bp-mano-' + m);
       if (bp) pintarMano(bp, m, 40, true);
     }
+  }
+
+  // feedback de «botón pulsado» en la mano del HUD al usarla (clic o tecla)
+  function pulsarMano(m) {
+    const el = $('mano-' + m);
+    if (!el) return;
+    el.classList.remove('pulsada');
+    void el.offsetWidth; // reinicia la animación si se repite rápido
+    el.classList.add('pulsada');
+    setTimeout(() => el.classList.remove('pulsada'), 180);
   }
 
   function renderBackpack() {
@@ -305,7 +325,11 @@
     for (const el of [$('mano-' + m), $('bp-mano-' + m)]) {
       if (!el) continue;
       const enPanel = el.id.startsWith('bp-');
-      el.onclick = () => (enPanel ? Game.desequipar(m) : Game.usarMano(m));
+      el.onclick = () => {
+        if (enPanel) return Game.desequipar(m);
+        pulsarMano(m);
+        return Game.usarMano(m);
+      };
       el.draggable = true;
       el.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', 'mano:' + m));
       el.addEventListener('dragover', (e) => e.preventDefault());
@@ -780,7 +804,7 @@
   world.ui = {
     log, updateHUD, flashDamage, showLevelCard, showDice,
     showExitModal, showLevelPicker, showChoice, toggleJournal, showEnd, show, toggleCodex,
-    toggleBackpack, toggleLog, showInstintos,
+    toggleBackpack, toggleLog, showInstintos, pulsarMano,
     get flashT() { return flashT; },
   };
 })();
