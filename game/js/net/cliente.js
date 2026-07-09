@@ -397,6 +397,7 @@
     w.player.salud = m.salud ?? 100;
     w.player.inv = m.inv || [];
     w.player.manos = m.manos || [null, null];
+    w.player.equipo = m.equipo || { cara: null, cuerpo: null, pies: null };
     w.pasosNivel = m.caminata ? m.caminata.pasos : 0;
     w._caminataObjetivo = m.caminata ? m.caminata.objetivo : 0;
     w._caminataAvisos = {};

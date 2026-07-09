@@ -202,7 +202,7 @@ function cambiarDeSala(jug, salaVieja, defSalida, opts) {
     t: 'nivel', nivel: nueva.nivelId, inst: nueva.inst, semilla: nueva.semilla,
     x, y, rot: jug.rot, sec: jug.sec, via: defSalida.texto,
     sinTarjeta: !!(opts && opts.sinTarjeta),
-    salud: jug.salud, inv: jug.inv, manos: jug.manos,
+    salud: jug.salud, inv: jug.inv, manos: jug.manos, equipo: jug.equipo,
     retorno: jug.retorno,
     caminata: jug.caminataObjetivo ? { pasos: 0, objetivo: jug.caminataObjetivo } : null,
     jugadores: nueva.censo(), ...nueva.estadoDinamico(),

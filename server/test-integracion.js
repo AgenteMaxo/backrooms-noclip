@@ -43,20 +43,22 @@ function elegirNivel() {
 
 // ---------- cliente de prueba ----------
 class Cliente {
-  constructor(nombre, nivel) {
+  constructor(nombre, nivel, token) {
     this.nombre = nombre;
     this.nivelPedido = nivel;
+    this.token = token || ('arnes-' + nombre);
     this.buzon = [];      // mensajes recibidos (para esperas)
     this.x = 0; this.y = 0;
     this.nivel = null;
     this.map = null;
     this.id = null;
+    this.inv = [];
   }
   conectar() {
     return new Promise((res, rej) => {
       this.ws = new WebSocket(`ws://127.0.0.1:${PUERTO}/ws`);
       this.ws.on('open', () => {
-        this.enviar({ t: 'hola', nombre: this.nombre, token: 'arnes-' + this.nombre, v: 7, nivel: this.nivelPedido });
+        this.enviar({ t: 'hola', nombre: this.nombre, token: this.token, v: 7, nivel: this.nivelPedido });
         res();
       });
       this.ws.on('message', (raw) => {
@@ -66,9 +68,11 @@ class Cliente {
           this.nivel = m.nivel;
           this.x = m.x; this.y = m.y;
           this.sec = m.sec ?? 0;
+          this.inv = m.inv || [];
           this.map = generarMapa(m.nivel, m.semilla).map;
           for (const i of m.abiertas || []) if (this.map.exits[i]) this.map.exits[i].def._abierta = true;
         }
+        if (m.t === 'inv') this.inv = m.inv || [];
         if (m.t === 'pos') {
           // el ECO del servidor: posiciones ACEPTADAS (mide el validador)
           for (const [id, x, y] of m.j || []) if (id === this.id) {
@@ -87,6 +91,13 @@ class Cliente {
     });
   }
   enviar(m) { this.ws.send(JSON.stringify(m)); }
+  desconectar() {
+    return new Promise((res) => {
+      if (!this.ws || this.ws.readyState > 1) return res();
+      this.ws.once('close', res);
+      this.ws.close();
+    });
+  }
   // espera un mensaje que cumpla el predicado (mira también lo ya recibido desde `desde`)
   espera(pred, ms, desde = 0) {
     return new Promise((res, rej) => {
@@ -310,6 +321,24 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     c.enviar({ t: 'ping', ts: 12345 });
     const pong = await c.espera((m) => m.t === 'pong', 2000, n0);
     ok(pong.ts === 12345, 'pong devuelve el sello de tiempo (medición de RTT)');
+
+    // --- inventario persistente entre sesiones (SQLite por token) ---
+    {
+      const TOKEN = 'arnes-persist-inv';
+      const c1 = new Cliente('persist', nivelId, TOKEN);
+      await c1.conectar();
+      await c1.espera((m) => m.t === 'bienvenida', 3000);
+      c1.enviar({ t: 'loot', id: 'trebol' });
+      await c1.espera((m) => m.t === 'inv' && (m.inv || []).includes('trebol'), 3000);
+      ok(c1.inv.includes('trebol'), 'loot en la primera sesión');
+      await c1.desconectar();
+      await espera(250);
+      const c2 = new Cliente('persist2', nivelId, TOKEN);
+      await c2.conectar();
+      const bien = await c2.espera((m) => m.t === 'bienvenida', 3000);
+      ok((bien.inv || []).includes('trebol'), 'inventario recuperado al reconectar con el mismo token');
+      await c2.desconectar();
+    }
 
     c.ws.close();
   } catch (e) {
