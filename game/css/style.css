@@ -326,21 +326,36 @@ body.fs #game-canvas, body.fs #gl-canvas { border: none; box-shadow: none; }
 /* ---------- alijo en pantalla de inicio (v26) ---------- */
 .title-inv-box { background: rgba(20,18,13,.65); border: 1px solid var(--borde);
   padding: 14px 16px; margin-bottom: 18px; text-align: left; }
-.title-inv-warn { font-size: 14px; margin: 0 0 12px; text-align: center; }
+.title-inv-bloqueado .title-inv-grid,
+.title-inv-bloqueado .title-inv-btn { pointer-events: none; opacity: .45; }
+.title-inv-lock { font-size: 14px; margin: 0 0 10px; text-align: center; }
 .title-inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 560px) { .title-inv-grid { grid-template-columns: 1fr; } }
 .title-inv-col { min-width: 0; }
 .title-inv-h { color: var(--amarillo); font-size: 15px; margin: 0 0 4px; font-weight: normal; }
 .title-inv-n { color: var(--gris); font-size: 13px; }
 .title-inv-sub { color: #8a8470; font-size: 12.5px; margin: 0 0 8px; line-height: 1.35; }
+.title-inv-warn { font-size: 14px; margin: 0 0 12px; text-align: center; }
 .title-slots { display: grid; grid-template-columns: repeat(6, 40px); gap: 6px;
-  justify-content: center; margin-bottom: 8px; }
+  justify-content: center; }
+.title-drop-wrap { display: block; width: fit-content; max-width: 100%;
+  margin: 0 auto 8px; padding: 4px; border: 1px solid transparent; border-radius: 3px;
+  transition: background .12s, border-color .12s; }
+.title-drop-wrap.sobre { background: rgba(217,198,110,.07); border-color: var(--amarillo-osc); }
 .title-inv-slot { width: 40px; height: 40px; background: #0a0906; border: 1px solid var(--borde);
   cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.title-inv-slot[draggable="true"] { cursor: grab; }
 .title-inv-slot:not(.vacia):hover { border-color: var(--amarillo-osc);
   box-shadow: 0 0 8px rgba(217,198,110,.2); }
-.title-inv-slot.vacia { cursor: default; opacity: .35; }
+.title-inv-slot.vacia { opacity: .35; }
+.title-inv-slot.atado { opacity: .55; border-style: dashed; }
 .title-inv-btn { margin-top: 4px; width: 100%; }
+.title-loadout-wear { margin: 0 auto 8px; display: flex; flex-direction: column; gap: 8px;
+  width: fit-content; max-width: 100%; }
+.title-wear-row { display: flex; align-items: center; gap: 8px; }
+.title-wear-label { color: #8a8470; font-size: 12px; min-width: 52px; flex-shrink: 0; }
+.title-wear-slots { display: flex; gap: 6px; flex-wrap: nowrap; }
+.title-wear-slot .eq-ph { font-size: 9px; color: #5a5548; text-transform: uppercase; }
 
 /* ---------- códice ---------- */
 #codex-panel { position: fixed; inset: 0; background: rgba(3,3,2,.88);

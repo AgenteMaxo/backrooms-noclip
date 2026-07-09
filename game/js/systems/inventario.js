@@ -12,6 +12,7 @@
     return typeof id === 'string' && id && objects && objects[id];
   }
 
+  // Total de objetos llevados (mochila + manos + equipo vestido).
   function cuentaTotal(inv, manos, equipo) {
     let n = Array.isArray(inv) ? inv.length : 0;
     if (Array.isArray(manos)) {
@@ -23,7 +24,16 @@
     return n;
   }
 
-  // Normaliza mochila + manos + equipo: filtra ids desconocidos y recorta a 6.
+  function espacioMochila(inv) {
+    return Math.max(0, CAP_MOCHILA - (Array.isArray(inv) ? inv.length : 0));
+  }
+
+  // Huecos en mochila: NO comparten cupo con manos ni equipo vestido.
+  function espacioLibre(inv) {
+    return espacioMochila(inv);
+  }
+
+  // Normaliza mochila + manos + equipo: cada zona con su propio límite.
   function sanitizar(inv, manos, equipo, objects) {
     if (!objects) return vacio();
     const out = vacio();
@@ -52,13 +62,11 @@
       reservados.add(id);
     }
 
-    let total = cuentaTotal(out.inv, out.manos, out.equipo);
     if (Array.isArray(inv)) {
       for (const id of inv) {
         if (!idValido(id, objects) || reservados.has(id)) continue;
-        if (total >= 6) break;
+        if (out.inv.length >= CAP_MOCHILA) break;
         out.inv.push(id);
-        total++;
       }
     }
     return out;
@@ -76,17 +84,13 @@
     return out;
   }
 
-  function espacioLibre(inv, manos, equipo) {
-    return Math.max(0, CAP_MOCHILA - cuentaTotal(inv, manos, equipo));
-  }
-
   function parseJSON(txt, fallback) {
     try { return JSON.parse(txt); }
     catch (e) { return fallback; }
   }
 
   window.Inventario = {
-    vacio, sanitizar, sanitizarAlijo, espacioLibre, cuentaTotal,
+    vacio, sanitizar, sanitizarAlijo, espacioLibre, espacioMochila, cuentaTotal,
     parseJSON, CAP_MOCHILA, CAP_ALIJO,
   };
 })();

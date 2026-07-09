@@ -31,6 +31,15 @@ ok(eq.equipo.cuerpo === 'chaqueta', 'equipo vestido');
 const alijo = Inv.sanitizarAlijo(['trebol', 'noexiste', 'trebol'], OBJ);
 ok(alijo.length === 2 && alijo[0] === 'trebol', 'alijo filtra y permite duplicados');
 
+const independiente = Inv.sanitizar(
+  ['agua_almendras', 'botiquin', 'trebol', 'linterna', 'detector'],
+  ['tuberia', null], { cuerpo: 'chaqueta' }, OBJ);
+ok(independiente.inv.length === 5 && independiente.manos[0] === 'tuberia', 'mochila no comparte cupo con manos/equipo');
+
+const libre = Inv.espacioLibre(
+  ['agua_almendras', 'botiquin', 'trebol', 'linterna', 'detector']);
+ok(libre === 1, 'espacioLibre solo cuenta mochila');
+
 const corrupto = Inv.sanitizar(['noexiste', 'tuberia'], ['tuberia', null], {}, OBJ);
 ok(!corrupto.inv.includes('noexiste') && corrupto.manos[0] === 'tuberia', 'filtra ids inválidos y duplicados cruzados');
 
