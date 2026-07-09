@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v25';
+  window.VERSION_JUEGO = 'v25.3';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -180,9 +180,23 @@
     document.body.classList.toggle('fs', fs);
   }
   document.addEventListener('fullscreenchange', () => {
-    btnFs.textContent = document.fullscreenElement
+    const isFullscreen = !!document.fullscreenElement;
+    btnFs.textContent = isFullscreen
       ? 'Salir de pantalla completa' : 'Pantalla completa';
     ajustarLienzo();
+
+    // Habilitar Keyboard Lock para capturar la tecla Escape (exige mantener pulsado ESC para salir)
+    if (isFullscreen) {
+      if (navigator.keyboard && navigator.keyboard.lock) {
+        navigator.keyboard.lock(['Escape']).catch((e) => {
+          console.warn('Keyboard lock failed:', e);
+        });
+      }
+    } else {
+      if (navigator.keyboard && navigator.keyboard.unlock) {
+        navigator.keyboard.unlock();
+      }
+    }
   });
   window.addEventListener('resize', () => { if (document.fullscreenElement) ajustarLienzo(); });
 
@@ -357,6 +371,7 @@
         if (document.pointerLockElement) document.exitPointerLock();
         Minimap.toggleBig();
       } else if (ev.code === 'Escape') {
+        if (ev.repeat) return;
         if (document.pointerLockElement) {
           document.exitPointerLock();
           return;
@@ -439,6 +454,7 @@
       Minimap.toggleBig();
     }
     else if (ev.code === 'Escape') {
+      if (ev.repeat) return;
       // ESC: cierra lo que esté abierto; si no hay nada, abre/cierra Ajustes
       if (document.pointerLockElement) {
         document.exitPointerLock();

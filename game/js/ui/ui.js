@@ -96,12 +96,36 @@
   function renderDebugStats() {
     const cont = $('debug-stats');
     if (!cont || cont.style.display === 'none' || !world.esAdmin) return;
+    cont.style.pointerEvents = 'auto'; // Habilitar clics en el contenedor ignorando el CSS
     for (const [id, get, color] of DBG_BARRAS) {
       const v = Math.max(0, Math.min(100, Math.round(get(world.player) ?? 0)));
       const fill = $(id);
       fill.style.width = v + '%';
       fill.style.background = color;
       $(id + '-v').textContent = v;
+
+      // Hacer las barras de debug interactivas al hacer clic
+      const track = fill.parentElement;
+      if (track && !track._clickBound) {
+        track._clickBound = true;
+        track.style.cursor = 'pointer';
+        track.addEventListener('click', (e) => {
+          const rect = track.getBoundingClientRect();
+          const pct = Math.max(0, Math.min(100, Math.round(((e.clientX - rect.left) / rect.width) * 100)));
+          
+          if (id === 'dbg-salud') {
+            world.player.salud = pct;
+          } else if (id === 'dbg-comida') {
+            world.player.hambre = pct;
+          } else if (id === 'dbg-bebida') {
+            world.player.sed = pct;
+          } else if (id === 'dbg-cordura') {
+            const diff = pct - world.player.cordura;
+            world.sanity(diff);
+          }
+          updateHUD();
+        });
+      }
     }
   }
 
