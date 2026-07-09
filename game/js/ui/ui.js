@@ -334,6 +334,17 @@
     }
   }
 
+  // feedback de «botón pulsado» en la mano del HUD al usarla (clic, tecla,
+  // mando o botón táctil — cualquier camino que llame a usarMano/Net.usar)
+  function pulsarMano(m) {
+    const el = $('mano-' + m);
+    if (!el) return;
+    el.classList.remove('pulsada');
+    void el.offsetWidth; // reinicia la animación si se repite rápido
+    el.classList.add('pulsada');
+    setTimeout(() => el.classList.remove('pulsada'), 180);
+  }
+
   // manos: en el HUD el clic USA (v19: como Q/E); en el panel de la mochila
   // el clic GUARDA. Soltar un objeto arrastrado equipa en ambos sitios, y
   // arrastrar una mano hasta la rejilla guarda el objeto en la mochila.
@@ -341,7 +352,11 @@
     for (const el of [$('mano-' + m), $('bp-mano-' + m)]) {
       if (!el) continue;
       const enPanel = el.id.startsWith('bp-');
-      el.onclick = () => (enPanel ? Game.desequipar(m) : Game.usarMano(m));
+      el.onclick = () => {
+        if (enPanel) return Game.desequipar(m);
+        pulsarMano(m);
+        return Game.usarMano(m);
+      };
       el.draggable = true;
       el.addEventListener('dragstart', (e) => e.dataTransfer.setData('text/plain', 'mano:' + m));
       el.addEventListener('dragover', (e) => e.preventDefault());
@@ -829,7 +844,7 @@
   world.ui = {
     log, updateHUD, flashDamage, showLevelCard, showDice,
     showExitModal, showLevelPicker, showChoice, toggleJournal, showEnd, show, toggleCodex,
-    toggleBackpack, toggleLog, showInstintos,
+    toggleBackpack, toggleLog, showInstintos, pulsarMano,
     get flashT() { return flashT; },
   };
 })();

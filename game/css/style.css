@@ -173,6 +173,17 @@ input[type="range"]::-moz-range-thumb {
 /* v19: atajo de teclado en pequeñito en la esquina de cada mano */
 .k-mano { position: absolute; top: 1px; right: 3px; font-size: 11px;
   color: #6a6455; z-index: 1; text-shadow: 1px 1px 0 #000; }
+/* feedback de pulsación al usar la mano (clic o tecla) */
+.mano-slot.pulsada { animation: manoPulso .18s ease; }
+@keyframes manoPulso {
+  0%   { transform: translateY(0); border-bottom-width: 3px; }
+  45%  { transform: translateY(2px); border-bottom-width: 1px;
+         background: rgba(217,198,110,.22); box-shadow: 0 0 14px rgba(217,198,110,.6); }
+  100% { transform: translateY(0); border-bottom-width: 3px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mano-slot.pulsada { animation: none; background: rgba(217,198,110,.22); }
+}
 #btn-mochila { width: 52px; height: 52px; background: rgba(16,14,9,.8);
   border: 1px solid var(--amarillo-osc); cursor: pointer; display: flex;
   align-items: center; justify-content: center; margin-left: 6px; }
@@ -248,9 +259,11 @@ input[type="range"]::-moz-range-thumb {
 .chk-row input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--amarillo);
   cursor: pointer; vertical-align: middle; margin-right: 6px; }
 /* v20.2: fila de debug (teleport a niveles) */
-#debug-nivel { flex: 1; background: #0a0906; border: 1px solid var(--borde);
-  color: var(--amarillo); font-family: inherit; font-size: 14px; padding: 5px 8px;
-  cursor: pointer; min-width: 0; }
+#debug-nivel, #opt-camara-modo { flex: 1; background: #0a0906; border: 1px solid var(--borde);
+  color: var(--amarillo); font-family: inherit; font-size: 16px; padding: 7px 10px;
+  cursor: pointer; min-width: 0; box-sizing: border-box; }
+/* el desplegable de cámara va en blanco hueso, como el resto del menú */
+#opt-camara-modo, #opt-camara-modo option { color: var(--hueso); background: #0a0906; }
 #debug-row { border-top: 1px dashed var(--borde); padding-top: 10px; }
 /* v23: contraseña de guardián + versión del juego en Ajustes */
 #admin-row { border-top: 1px dashed var(--borde); padding-top: 10px; }
@@ -409,6 +422,15 @@ body.fs #game-canvas, body.fs #gl-canvas { border: none; box-shadow: none; }
 #profile-select { min-width: 140px; }
 #profile-name { width: 140px; }
 #profile-records { color: #8a8470; font-size: 15px; margin: 4px 0 8px; }
+/* flecha propia en TODOS los desplegables, separada del borde derecho
+   (con la flecha nativa el navegador la pega al borde y padding-right no la mueve) */
+#opt-camara-modo, #debug-nivel, #profile-select {
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' fill='none' stroke='%23d9c66e' stroke-width='1.6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
 
 /* ---------- códice ---------- */
 #codex-panel { position: fixed; inset: 0; background: rgba(3,3,2,.88);

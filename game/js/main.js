@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v26.2';
+  window.VERSION_JUEGO = 'v26.3';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -542,8 +542,11 @@
         ev.preventDefault();
         Net.accion(); // contextual: esconderse, romper, reabrir la oferta de salida
       } else if (ev.code === 'KeyQ' || ev.code === 'KeyE') {
-        if (tercera || !use3D) Net.usar(ev.code === 'KeyQ' ? 0 : 1);
-        else Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
+        if (tercera || !use3D) {
+          const m = ev.code === 'KeyQ' ? 0 : 1;
+          Net.usar(m);
+          world.ui.pulsarMano(m);
+        } else Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
       } else if (ev.code === 'KeyF') Net.luzToggle();
       else if (/^Digit[1-6]$/.test(ev.code)) Game.useItem(parseInt(ev.code.slice(5), 10) - 1);
       else if (ev.code === 'KeyB') { if (document.pointerLockElement) document.exitPointerLock(); world.ui.toggleBackpack(); }
@@ -602,8 +605,11 @@
       }
     } else if (ev.code === 'KeyQ' || ev.code === 'KeyE') {
       // v19: Q usa la mano izquierda, E la derecha (en ?cam=alta rotan la cámara)
-      if (tercera || !use3D) Game.usarMano(ev.code === 'KeyQ' ? 0 : 1);
-      else Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
+      if (tercera || !use3D) {
+        const m = ev.code === 'KeyQ' ? 0 : 1;
+        Game.usarMano(m);
+        world.ui.pulsarMano(m);
+      } else Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
     } else if (ev.code === 'Space') {
       ev.preventDefault();
       Game.interact();
@@ -880,6 +886,7 @@
         if (third || !use3D) {
           if (world.online && window.Net) Net.usar(0);
           else Game.usarMano(0);
+          world.ui.pulsarMano(0);
         } else {
           Render3D.rotar(1);
         }
@@ -888,6 +895,7 @@
         if (third || !use3D) {
           if (world.online && window.Net) Net.usar(1);
           else Game.usarMano(1);
+          world.ui.pulsarMano(1);
         } else {
           Render3D.rotar(-1);
         }
@@ -1371,8 +1379,8 @@
   };
   const touch = {
     act: () => world.online ? Net.accion() : Game.interact(),
-    q: () => world.online ? Net.usar(0) : Game.usarMano(0),
-    e: () => world.online ? Net.usar(1) : Game.usarMano(1),
+    q: () => { world.online ? Net.usar(0) : Game.usarMano(0); world.ui.pulsarMano(0); },
+    e: () => { world.online ? Net.usar(1) : Game.usarMano(1); world.ui.pulsarMano(1); },
     bag: () => world.ui.toggleBackpack(),
     map: () => Minimap.toggleBig(),
   };
