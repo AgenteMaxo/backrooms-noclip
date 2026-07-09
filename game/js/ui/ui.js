@@ -66,13 +66,7 @@
   if (window.Icons) Icons.set($('btn-log'), 'pergamino', 15);
 
   // ---------- HUD (v15: limpio y contextual — manos + mochila, sin barras) ----------
-  const ICONOS_INV = {
-    agua_almendras: 'refresco', botiquin: 'botiquin', linterna: 'linterna',
-    chaqueta: 'chaqueta', amuleto: 'cuadro', llave_nivel: 'llave',
-    tuberia: 'tuberia', fuego_griego: 'fuego', guante_paralisis: 'guante',
-    detector: 'antena', trebol: 'trebol',
-    mascara_gas: 'mascara', botas_reforzadas: 'bota',
-  };
+  const iconoInv = (id) => (window.Icons ? Icons.iconoObj(id) : 'interrogante');
 
   function updateHUD() {
     if (!world.player || !world.level) return;
@@ -167,7 +161,7 @@
       const def = world.data.objects[id];
       if (window.Icons) {
         const itTam = Math.round(tam * 0.75);
-        const it = Icons.img(ICONOS_INV[id] || 'interrogante', itTam);
+        const it = Icons.img(iconoInv(id), itTam);
         it.classList.add('mano-item');
         it.style.marginLeft = (-itTam / 2) + 'px';
         el.appendChild(it);
@@ -200,7 +194,7 @@
       slot.appendChild(k);
       if (id) {
         const def = world.data.objects[id];
-        const ic = ICONOS_INV[id] || 'interrogante';
+        const ic = iconoInv(id);
         slot.appendChild(window.Icons ? Icons.img(ic, 28) : document.createTextNode('?'));
         const nom = document.createElement('span');
         nom.className = 'nombre';
@@ -225,7 +219,7 @@
       el.classList.toggle('puesto', !!eq[tipo]);
       if (eq[tipo]) {
         const def = world.data.objects[eq[tipo]];
-        if (window.Icons) el.appendChild(Icons.img(ICONOS_INV[eq[tipo]] || 'interrogante', 26));
+        if (window.Icons) el.appendChild(Icons.img(iconoInv(eq[tipo]), 26));
         el.title = `${def.nombre} (clic: quitártelo)`;
       } else {
         const ph = document.createElement('span');
@@ -704,7 +698,7 @@
       const card = document.createElement('div');
       card.className = 'col-card' + (visto ? '' : ' col-locked');
       if (window.Icons)
-        card.appendChild(Icons.img(visto ? (ICONOS_INV[def.id] || 'interrogante') : 'interrogante', 32));
+        card.appendChild(Icons.img(visto ? iconoInv(def.id) : 'interrogante', 32));
       const nom = document.createElement('div');
       nom.textContent = visto ? def.nombre : '???';
       card.appendChild(nom);

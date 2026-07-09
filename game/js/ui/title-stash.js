@@ -1,12 +1,5 @@
 // Pantalla de inicio: alijo seguro ↔ mochila de salida (lo que llevas a la partida).
 (function () {
-  const ICONOS = {
-    agua_almendras: 'gota', botiquin: 'corazon', amuleto: 'estrella', linterna: 'linterna',
-    tuberia: 'tuberia', trebol: 'trebol', detector: 'antena', llave_nivel: 'llave',
-    fuego_griego: 'fuego', guante_paralisis: 'rayo', chaqueta: 'chaqueta',
-    mascara_gas: 'mascara', botas_reforzadas: 'bota',
-  };
-
   function $(id) { return document.getElementById(id); }
   function objeto(id) { return window.GAME_DATA?.objects?.[id]; }
 
@@ -170,7 +163,7 @@
     slot.className = 'title-inv-slot' + (id ? '' : ' vacia') + (extraClass ? ' ' + extraClass : '');
     if (id) {
       const def = objeto(id);
-      const ic = ICONOS[id] || 'interrogante';
+      const ic = window.Icons ? Icons.iconoObj(id) : 'interrogante';
       if (window.Icons) {
         const icEl = Icons.img(ic, 22);
         icEl.draggable = false;

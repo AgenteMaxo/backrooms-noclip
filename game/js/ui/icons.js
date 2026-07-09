@@ -228,6 +228,16 @@
     '..pppppppp..', '..plllllpp..', '..pppppppp..', '..pllllllp..',
     '..pppppppp..', '..plllpppp..', '..PPPPPPPP..', '............'] };
 
+  // objeto del juego (id en objects.es.json) → id de icono pixel-art
+  const ICONOS_OBJ = {
+    agua_almendras: 'refresco', botiquin: 'botiquin', linterna: 'linterna',
+    chaqueta: 'chaqueta', amuleto: 'cuadro', llave_nivel: 'llave',
+    tuberia: 'tuberia', fuego_griego: 'fuego', guante_paralisis: 'guante',
+    detector: 'antena', trebol: 'trebol',
+    mascara_gas: 'mascara', botas_reforzadas: 'bota',
+  };
+  function iconoObj(id) { return ICONOS_OBJ[id] || 'interrogante'; }
+
   // emojis históricos → id de icono (rules.js y textos siguen escribiendo emojis;
   // la UI los traduce aquí; si no hay traducción, se muestra el texto tal cual)
   const EMOJI2ID = {
@@ -305,5 +315,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  window.Icons = { url, img, set, deEmoji, has: (id) => !!D[id] };
+  window.Icons = { url, img, set, deEmoji, has: (id) => !!D[id], iconoObj, ICONOS_OBJ };
 })();
