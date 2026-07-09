@@ -7,7 +7,8 @@
       icono: '〰',
       desc: 'El zumbido constante de las luces erosiona tu cordura. Una máscara de gas filtra la mitad.',
       turno(world, rng) {
-        if (world.turn % (world.equipado('mascara_gas') ? 40 : 20) === 0) world.sanity(-1);
+        const filtrado = world.equipado('mascara_gas') || world.tienePasivo?.('traje_hostil') || world.tienePasivo?.('proteccion_quimica');
+        if (world.turn % (filtrado ? 40 : 20) === 0) world.sanity(-1);
       },
     },
     no_euclidiano: {
@@ -41,7 +42,7 @@
       icono: '❄',
       desc: 'El frío te daña lentamente. Una chaqueta térmica PUESTA lo anula.',
       turno(world) {
-        if (world.turn % 8 === 0 && !world.equipado('chaqueta')) world.hurt(1, 'el frío', true);
+        if (world.turn % 8 === 0 && !world.equipado('chaqueta') && !world.tienePasivo?.('traje_hostil')) world.hurt(1, 'el frío', true);
       },
     },
     oscuridad_total: {
@@ -60,7 +61,8 @@
       turno(world, rng) {
         if (world.turn % 30 === 15) {
           world.log('La lluvia ácida arrecia. Te quema la piel.', 'danger');
-          world.hurt(6, 'la lluvia ácida', true);
+          if (world.tienePasivo?.('traje_hostil') || world.tienePasivo?.('proteccion_quimica')) world.log('La proteccion quimica aguanta la lluvia acida.', 'good');
+          else world.hurt(6, 'la lluvia ácida', true);
         }
       },
     },
@@ -77,7 +79,8 @@
       icono: '👁',
       desc: 'Oyes y ves cosas que no existen. Tu cordura se resiente. Una máscara de gas filtra la mitad.',
       turno(world, rng) {
-        if (world.turn % (world.equipado('mascara_gas') ? 50 : 25) === 0) world.sanity(-1);
+        const filtrado = world.equipado('mascara_gas') || world.tienePasivo?.('traje_hostil') || world.tienePasivo?.('proteccion_quimica');
+        if (world.turn % (filtrado ? 50 : 25) === 0) world.sanity(-1);
         if (rng.chance(0.01)) {
           world.log(rng.pick([
             'Crujidos a tu espalda. No hay nada.',
@@ -94,7 +97,8 @@
       icono: '⌀',
       desc: 'Este nivel te separa de todo ser vivo. La soledad pesa. Una máscara de gas filtra la mitad.',
       turno(world) {
-        if (world.turn % (world.equipado('mascara_gas') ? 50 : 25) === 0) world.sanity(-1);
+        const filtrado = world.equipado('mascara_gas') || world.tienePasivo?.('traje_hostil') || world.tienePasivo?.('proteccion_quimica');
+        if (world.turn % (filtrado ? 50 : 25) === 0) world.sanity(-1);
       },
     },
     tiempo_raro: {

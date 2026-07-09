@@ -73,7 +73,7 @@
     chat: 12
   },
   cursorSpeed: 8, dado: true,
-  camaraModo: 'clic', camaraInvertir: false, camaraSens: 100 };
+  camaraModo: 'libre', camaraInvertir: false, camaraSens: 100 };
   try { 
     const storedOpts = JSON.parse(localStorage.getItem('backrooms-opts')) || {};
     if (storedOpts.gamepadMap) {
@@ -91,7 +91,7 @@
 
   const optCamaraModo = document.getElementById('opt-camara-modo');
   if (optCamaraModo) {
-    optCamaraModo.value = OPTS.camaraModo || 'clic';
+    optCamaraModo.value = OPTS.camaraModo || 'libre';
     optCamaraModo.onchange = () => {
       OPTS.camaraModo = optCamaraModo.value;
       try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
@@ -245,11 +245,11 @@
   ajustarLienzo();
 
   // ---------- cámara libre con el RATÓN (v25, online 3ªP) ----------
-  // Ajustes → OPTS.camaraModo: 'clic' (clic derecho y arrastrar, por
-  // defecto, estilo Roblox) o 'libre' (Pointer Lock: clic izquierdo
-  // engancha el puntero, ESC lo libera — sin chocar con el borde de la
-  // pantalla). Inversión y sensibilidad se aplican a los tres caminos
-  // (clic, libre y arrastre táctil) para que el gesto se sienta igual.
+  // Ajustes → OPTS.camaraModo: 'libre' (Pointer Lock, POR DEFECTO desde
+  // v26.5: clic izquierdo engancha el puntero, ESC lo libera — sin chocar
+  // con el borde de la pantalla) o 'clic' (clic derecho y arrastrar, estilo
+  // Roblox). Inversión y sensibilidad se aplican a los tres caminos (clic,
+  // libre y arrastre táctil) para que el gesto se sienta igual.
   {
     const wrap = document.getElementById('game-wrap');
     let arrastre = null;
@@ -260,7 +260,7 @@
       if (!world.online || !use3D || Render3D.modo !== 'tercera') return;
       if (world.busy) return;
       if (ev.target.closest('button, input, select, #backpack-panel, #log-panel, #journal-panel, #codex-panel, #sound-menu, .choice-modal, .modal-box')) return;
-      const modo = window.OPTS.camaraModo || 'clic';
+      const modo = window.OPTS.camaraModo || 'libre';
       if (modo === 'libre') {
         if (ev.button !== 0) return; // clic izquierdo engancha el puntero
         if (document.pointerLockElement !== wrap) wrap.requestPointerLock();
@@ -271,7 +271,7 @@
       wrap.classList.add('orbitando');
     });
     window.addEventListener('mousemove', (ev) => {
-      const modo = window.OPTS.camaraModo || 'clic';
+      const modo = window.OPTS.camaraModo || 'libre';
       const factor = window.OPTS.camaraInvertir ? 1 : -1;
       const sensMult = (window.OPTS.camaraSens !== undefined ? window.OPTS.camaraSens : 100) / 100;
       if (modo === 'libre' && document.pointerLockElement === wrap) {

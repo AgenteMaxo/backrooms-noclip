@@ -208,7 +208,7 @@
         el.appendChild(it);
       }
       el.title = `${def.nombre} (${accion})`;
-      if (id === 'linterna' && world.player.luz) el.classList.add('activa');
+      if (def.efecto?.toggle === 'luz' && world.player.luz) el.classList.add('activa');
     } else {
       el.classList.add('vacia');
       el.title = (m === 0 ? 'Mano izquierda' : 'Mano derecha') + ' (vacía)';
@@ -450,12 +450,26 @@
   function efectoLegible(def) {
     const e = def.efecto || {};
     const partes = [];
-    if (e.salud) partes.push(`Restaura ${e.salud} ♥ de salud`);
-    if (e.cordura) partes.push(`Restaura ${e.cordura} ☯ de cordura`);
-    if (e.sed) partes.push(`Sacia ${e.sed} 💧 de sed`);
+    if (e.salud) partes.push(e.salud > 0 ? `Restaura ${e.salud} ♥ de salud` : `Daña ${Math.abs(e.salud)} ♥`);
+    if (e.cordura) partes.push(e.cordura > 0 ? `Restaura ${e.cordura} de cordura` : `Reduce ${Math.abs(e.cordura)} de cordura`);
+    if (e.sed) partes.push(e.sed > 0 ? `Sacia ${e.sed} de sed` : `Aumenta la sed ${Math.abs(e.sed)}`);
+    if (e.ruido) partes.push(`Genera ruido ${e.ruido}`);
     if (e.toggle === 'luz') partes.push('Alterna la luz (+4 de visión; atrae Deathmoths)');
-    if (e.activo === 'fuego') partes.push('USO ÚNICO: quema (−30) y ahuyenta todo en radio 3');
-    if (e.activo === 'paralisis') partes.push('USO ÚNICO: paraliza 6 turnos a lo adyacente');
+    if (e.activo === 'fuego') partes.push(`USO: quema y ahuyenta en radio ${e.radio || 3}`);
+    if (e.activo === 'fuego_menor') partes.push(`USO: quema en radio ${e.radio || 1}`);
+    if (e.activo === 'toxina' || e.activo === 'gas') partes.push(`USO: nube peligrosa en radio ${e.radio || 2}`);
+    if (e.activo === 'paralisis') partes.push('USO REUTILIZABLE: paraliza lo adyacente');
+    if (e.activo === 'disparo') partes.push(`USO: disparo frontal, daño ${e.dano || 34}`);
+    if (e.activo === 'flash') partes.push(`USO: revela y aturde en radio ${e.radio || 4}`);
+    if (e.activo === 'ruido') partes.push(`USO: distracción sonora en radio ${e.radio || 9}`);
+    if (e.activo === 'repeler' || e.activo === 'sellar') partes.push(`USO: repele amenazas cercanas`);
+    if (e.activo === 'salida') partes.push('USO: intenta abrir una ruta de nivel');
+    if (e.activo === 'blink') partes.push('USO: desplazamiento espacial corto');
+    if (e.activo === 'claridad') partes.push('USO: aporta información del entorno');
+    if (e.activo === 'glitch') partes.push('USO: distorsiona señales y revela anomalías');
+    if (e.activo === 'celeridad') partes.push('USO: acelera reflejos');
+    if (e.activo === 'ocultar' || e.activo === 'refugio') partes.push('USO: cobertura temporal');
+    if (e.activo === 'riesgo') partes.push('USO PELIGROSO: reacción anómala');
     if (e.pasivo === 'arma') partes.push('PASIVO: muévete HACIA una entidad adyacente para golpearla');
     if (e.pasivo === 'abrigo') partes.push('PUESTA (cuerpo): anula el daño por frío');
     if (e.pasivo === 'aire') partes.push('PUESTA (cara): reduce a la mitad el desgaste mental ambiental');
@@ -463,6 +477,9 @@
     if (e.pasivo === 'detector') partes.push('PASIVO: entidades cercanas visibles en el minimapa');
     if (e.pasivo === 'suerte') partes.push('PASIVO: +2 a todas tus tiradas de dado');
     if (e.pasivo === 'llave') partes.push('Se gasta al abrir una puerta de acero en The Hub');
+    if (e.pasivo === 'proteccion_quimica') partes.push('PASIVO: protección frente a corrosión/toxinas');
+    if (e.pasivo === 'traje_hostil') partes.push('PUESTO: protección de entorno hostil');
+    if (e.pasivo === 'fuerza') partes.push('PASIVO: mejora acciones físicas y golpes');
     return partes.join(' · ') || 'Efecto desconocido.';
   }
 
@@ -485,7 +502,7 @@
     if (def.url) { wiki.style.display = 'inline'; wiki.href = def.url; }
     else wiki.style.display = 'none';
     const usable = def.efecto && (def.efecto.salud || def.efecto.cordura || def.efecto.sed ||
-      def.efecto.toggle || def.efecto.activo);
+      def.efecto.ruido || def.efecto.toggle || def.efecto.activo);
     const btnUse = $('btn-item-use');
     btnUse.style.display = usable ? 'inline-block' : 'none';
     // usar CIERRA también la mochila: si no, world.busy sigue activo y la

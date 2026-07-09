@@ -175,7 +175,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     c.enviar({ t: 'luz', si: true });
     await espera(500);
     const luzDe = c.buzon.slice(n0).find((e) => e.m.t === 'luzDe' && e.m.id === c.id);
-    const avisoLuz = c.buzon.slice(n0).find((e) => e.m.t === 'aviso' && /linterna/i.test(e.m.txt));
+    const avisoLuz = c.buzon.slice(n0).find((e) => e.m.t === 'aviso' && /(linterna|fuente de luz)/i.test(e.m.txt));
     ok(!luzDe, 'sin linterna en mano NO se difunde luzDe');
     ok(!!avisoLuz, 'sin linterna en mano llega el aviso explicativo');
 
