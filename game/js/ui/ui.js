@@ -449,10 +449,13 @@
   }
 
   // ---------- dado ----------
-  function showDice(texto, cb) {
+  function showDice(texto, cb, resultado) {
+    // el resultado llega ya decidido por la lógica (determinista por semilla);
+    // si no llega (dado personal online), se tira aquí
+    const tirar = () => (Number.isInteger(resultado) ? resultado : 1 + Math.floor(Math.random() * 20));
     // la animación puede apagarse en Ajustes (v16): la tirada se resuelve igual
     if (window.OPTS && !window.OPTS.dado) {
-      setTimeout(() => cb(1 + Math.floor(Math.random() * 20)), 120);
+      setTimeout(() => cb(tirar()), 120);
       return;
     }
     const ov = $('dice-overlay'), face = $('dice-face');
@@ -461,10 +464,10 @@
     face.classList.add('rolling');
     let ticks = 0;
     const iv = setInterval(() => {
-      face.textContent = 1 + Math.floor(Math.random() * 20);
+      face.textContent = 1 + Math.floor(Math.random() * 20); // caras al vuelo: solo animación
       if (++ticks > 14) {
         clearInterval(iv);
-        const result = 1 + Math.floor(Math.random() * 20);
+        const result = tirar();
         face.textContent = result;
         face.classList.remove('rolling');
         setTimeout(() => { ov.style.display = 'none'; cb(result); }, 900);

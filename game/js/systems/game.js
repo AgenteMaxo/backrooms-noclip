@@ -336,6 +336,13 @@
   world.rollDice = function (texto, cb) {
     world.busy = true;
     if (window.Sfx) Sfx.play('dado');
+    // el d20 decide lógica de partida (noclip, escapes, botín…): sale de la semilla,
+    // nunca de Math.random(). Contador propio para que el guardado reanude la secuencia.
+    let resultado;
+    if (!world.online) {
+      world.dadosN = (world.dadosN || 0) + 1;
+      resultado = RNG.create(`${world.runSeed}::dado::${world.dadosN}`).int(1, 20);
+    }
     world.ui.showDice(texto, (d) => {
       world.busy = false;
       // el trébol de la suerte (Object 13) mejora toda tirada
@@ -345,7 +352,7 @@
       }
       cb(d);
       world.ui.updateHUD();
-    });
+    }, resultado);
   };
 
   // ---------- inicio de partida ----------
@@ -365,6 +372,7 @@
     world.savedLevels = {};   // niveles visitados, conservados TAL CUAL (v15)
     world.tutorial = {};
     world.turnTotal = 0;
+    world.dadosN = 0;         // nº de tiradas de dado (secuencia determinista por semilla)
     world.over = false;
     // run NUEVA de verdad: si venías de morir, el nivel anterior sigue en
     // world.level y sin esto enterLevel crearía una salida de retorno hacia él
@@ -1568,6 +1576,7 @@
         prevStack: world.prevStack,
         entryCount: world.entryCount,
         turnTotal: world.turnTotal,
+        dadosN: world.dadosN,
         pasosNivel: world.pasosNivel,
         caminataObjetivo: world._caminataObjetivo,
         tutorial: world.tutorial,
@@ -1600,6 +1609,7 @@
     // repite la entrada al nivel guardado sin duplicar el diario
     world.entryCount[s.levelId] = Math.max(0, (world.entryCount[s.levelId] || 1) - 1);
     world.turnTotal = s.turnTotal;
+    world.dadosN = s.dadosN || 0;
     world.tutorial = s.tutorial || (s.turnTotal > 0
       ? { inicio: true, interaccion: true, mochila: true }
       : {});
