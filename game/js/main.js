@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v25';
+  window.VERSION_JUEGO = 'v27';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -698,6 +698,20 @@
       btn.textContent = `Continuar partida (${saveData.levelId}, semilla ${saveData.runSeed})`;
       btn.onclick = () => Game.continueRun(saveData);
     } else btn.style.display = 'none';
+    if (window.TitleStash) TitleStash.pintar();
+  }
+
+  function wireTitleStash() {
+    const bs = $id('btn-stash-all');
+    const bl = $id('btn-loadout-all');
+    if (bs && !bs._wired) {
+      bs._wired = true;
+      bs.onclick = () => { if (window.TitleStash) TitleStash.guardarTodo(); };
+    }
+    if (bl && !bl._wired) {
+      bl._wired = true;
+      bl.onclick = () => { if (window.TitleStash) TitleStash.llevarTodo(); };
+    }
   }
 
   $id('profile-select').onchange = (ev) => { P.select(ev.target.value); refreshTitle(); };
@@ -763,11 +777,17 @@
     }, 200);
   };
   $id('btn-again').onclick = () => {
+    Game.syncLoadoutDesdeJugador();
     refreshTitle();
     world.ui.show('title');
   };
   $id('btn-journal-close').onclick = () => world.ui.toggleJournal();
   $id('btn-end-codex').onclick = () => world.ui.toggleCodex(true);
-  $id('btn-end-title').onclick = () => { world.ui.show('title'); refreshTitle(); };
+  $id('btn-end-title').onclick = () => {
+    Game.syncLoadoutDesdeJugador();
+    world.ui.show('title');
+    refreshTitle();
+  };
+  wireTitleStash();
   refreshTitle();
 })();

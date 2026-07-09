@@ -66,10 +66,13 @@
   function iniciar(nombre) {
     const w = Game.world;
     const params = new URLSearchParams(location.search);
+    const dep = window.TitleStash ? TitleStash.payloadHola() : { alijo: [], loadout: Inventario.vacio() };
     ws = new WebSocket(urlServidor());
     ws.onopen = () => enviar({
-      t: 'hola', nombre, token: token(), v: 7, // debe coincidir con protocolo.js
-      nivel: params.get('nivel') || undefined, // puerta de desarrollo (solo MMO_DEV=1)
+      t: 'hola', nombre, token: token(), v: 8,
+      nivel: params.get('nivel') || undefined,
+      alijo: dep.alijo,
+      loadout: dep.loadout,
     });
     ws.onmessage = (ev) => {
       let m;
@@ -119,9 +122,9 @@
         miId = m.id;
         ultimoError = null;
         try { sessionStorage.removeItem('mmo-actualizando'); } catch (e) {}
-        // reconexión = sesión nueva: la condición de guardián hay que revalidarla
         if (w.esAdmin) { w.esAdmin = false; if (window.onAdminCambia) window.onAdminCambia(false); }
-        Game.startRun(m.semilla); // jugador, HUD y tarjeta de presentación
+        if (window.TitleStash) TitleStash.syncDesdeServidor(m.alijo, m.inv, m.manos, m.equipo);
+        Game.startRun(m.semilla);
         construirNivel(m, w);
         w.log(`Estás en ${w.level.nombre} · instancia ${m.inst}. Pulsa T para hablar.`, 'good');
         crearChatUI();
@@ -397,6 +400,7 @@
     w.player.salud = m.salud ?? 100;
     w.player.inv = m.inv || [];
     w.player.manos = m.manos || [null, null];
+    w.player.equipo = m.equipo || { cara: null, cuerpo: null, pies: null };
     w.pasosNivel = m.caminata ? m.caminata.pasos : 0;
     w._caminataObjetivo = m.caminata ? m.caminata.objetivo : 0;
     w._caminataAvisos = {};

@@ -44,7 +44,10 @@
     activeName() { return this._load().activo; },
     get() {
       const d = this._load();
-      return d.activo ? d.perfiles[d.activo] : null;
+      if (!d.activo || !d.perfiles[d.activo]) return null;
+      const p = d.perfiles[d.activo];
+      if (this._migrarDeposito(p)) this._save(d);
+      return p;
     },
     create(nombre) {
       nombre = (nombre || '').trim().slice(0, 24);
@@ -56,6 +59,8 @@
           codice: {},
           records: { runs: 0, maxNiveles: 0, maxTurnos: 0, escapes: 0 },
           historial: [],
+          alijo: { inv: [] },
+          loadout: Inventario.vacio(),
         };
       }
       d.activo = nombre;
@@ -152,9 +157,81 @@
         return true;
       } catch (e) { return false; }
     },
+    _migrarDeposito(p) {
+      if (!p) return false;
+      let ok = false;
+      if (p.inventario && !p.loadout) {
+        p.loadout = {
+          inv: [...(p.inventario.inv || [])],
+          manos: [...(p.inventario.manos || [null, null])],
+          equipo: { ...(p.inventario.equipo || Inventario.vacio().equipo) },
+        };
+        delete p.inventario;
+        ok = true;
+      }
+      if (!p.alijo) { p.alijo = { inv: [] }; ok = true; }
+      if (!p.loadout) { p.loadout = Inventario.vacio(); ok = true; }
+      return ok;
+    },
+    cargarAlijo() {
+      const p = this.get();
+      const objects = world.data?.objects || {};
+      if (!p) return { inv: [] };
+      return { inv: Inventario.sanitizarAlijo(p.alijo.inv, objects) };
+    },
+    guardarAlijo(inv) {
+      const objects = world.data?.objects || {};
+      const sane = Inventario.sanitizarAlijo(inv, objects);
+      this._update((p) => {
+        p.alijo = { inv: sane };
+      });
+      return sane;
+    },
+    cargarLoadout() {
+      const p = this.get();
+      const objects = world.data?.objects || {};
+      if (!p) return Inventario.vacio();
+      const l = p.loadout;
+      return Inventario.sanitizar(l.inv, l.manos, l.equipo, objects);
+    },
+    guardarLoadout(inv, manos, equipo) {
+      const objects = world.data?.objects || {};
+      const sane = Inventario.sanitizar(inv, manos, equipo, objects);
+      this._update((p) => {
+        p.loadout = sane;
+      });
+      return sane;
+    },
+    cargarInventario() { return this.cargarLoadout(); },
+    guardarInventario(inv, manos, equipo) { return this.guardarLoadout(inv, manos, equipo); },
   };
 
   const saveKey = () => 'backrooms-save::' + (Profiles.activeName() || 'anon');
+
+  function persistirInventario() {
+    if (world.online || !world.player) return;
+    const sane = Profiles.guardarLoadout(
+      world.player.inv, world.player.manos, world.player.equipo
+    );
+    world.player.inv = [...sane.inv];
+    world.player.manos = [...sane.manos];
+    world.player.equipo = { ...sane.equipo };
+  }
+
+  function syncLoadoutDesdeJugador() {
+    if (!world.player) return;
+    Profiles.guardarLoadout(world.player.inv, world.player.manos, world.player.equipo);
+  }
+
+  function limpiarInventario() {
+    if (!world.player) return;
+    const v = Inventario.vacio();
+    world.player.inv = [...v.inv];
+    world.player.manos = [...v.manos];
+    world.player.equipo = { ...v.equipo };
+    if (!world.online) Profiles.guardarLoadout(v.inv, v.manos, v.equipo);
+    world.ui?.updateHUD();
+  }
 
   // ---------- utilidades de estado ----------
   world.log = (msg, cls) => world.ui.log(msg, cls);
@@ -351,11 +428,12 @@
   // ---------- inicio de partida ----------
   function startRun(seed) {
     world.runSeed = seed || RNG.randomSeed();
+    const inv0 = Profiles.cargarLoadout();
     world.player = {
       x: 0, y: 0, rx: 0, ry: 0, dir: 'down', flip: false, rot: 2,
       salud: 100, cordura: 100, sed: 100, hambre: 100,
       sintonia: 0, instintos: [], umbrales: [],
-      inv: [], manos: [null, null], equipo: { cara: null, cuerpo: null, pies: null },
+      inv: [...inv0.inv], manos: [...inv0.manos], equipo: { ...inv0.equipo },
       luz: false, viva: true,
     };
     world.journal = [];
@@ -677,6 +755,7 @@
             Effects.number(it.x, it.y, world.data.objects[it.id].nombre, '#a8d8a0');
           }
           if (window.Sfx) Sfx.play('recoger');
+          persistirInventario();
         }
       }
     }
@@ -1020,6 +1099,7 @@
           Profiles.registrarDescubierto('objetos', id);
           world.log(`Dado: ${d}. Encuentras: ${world.data.objects[id].nombre}.`, 'good');
           if (window.Effects) Effects.flash(world.player.x, world.player.y, '#ffe9a0');
+          persistirInventario();
         }
       } else if (d >= 7) {
         world.log(`Dado: ${d}. Vacío. Solo polvo y papel amarillento.`, 'event');
@@ -1061,6 +1141,7 @@
     world.log(`Empuñas: ${def.nombre}.`, 'good');
     if (window.Sfx) Sfx.play('ui');
     world.ui.updateHUD();
+    persistirInventario();
   }
 
   function desequipar(mano) {
@@ -1081,6 +1162,7 @@
     }
     if (window.Sfx) Sfx.play('ui');
     world.ui.updateHUD();
+    persistirInventario();
   }
 
   function toggleLuz() {
@@ -1148,6 +1230,7 @@
       world.player.inv.splice(slot, 1);
       lanzarFuego();
       world.ui.updateHUD();
+      persistirInventario();
       worldStep();
       return;
     }
@@ -1155,6 +1238,7 @@
       world.player.inv.splice(slot, 1);
       descargarParalisis();
       world.ui.updateHUD();
+      persistirInventario();
       worldStep();
       return;
     }
@@ -1172,6 +1256,7 @@
       world.player.inv.splice(slot, 1);
       world.log(`Usas: ${def.nombre}.`, 'good');
       world.ui.updateHUD();
+      persistirInventario();
       worldStep();
     }
   }
@@ -1213,6 +1298,7 @@
       if (def.efecto.activo === 'fuego') lanzarFuego();
       else if (def.efecto.activo === 'paralisis') descargarParalisis();
       world.ui.updateHUD();
+      persistirInventario();
       worldStep();
     }
   }
@@ -1228,6 +1314,7 @@
     world.log(`Dejas ${world.data.objects[id].nombre} en el suelo.`, 'event');
     if (window.Sfx) Sfx.play('ui');
     world.ui.updateHUD();
+    persistirInventario();
   }
 
   // ARROJAR (v18): lanzas el objeto a un punto visible lejano — el golpe hace
@@ -1277,6 +1364,7 @@
       ? `Arrojas ${world.data.objects[id].nombre} lejos. Algo se gira hacia el golpe.`
       : `Arrojas ${world.data.objects[id].nombre} lejos. El golpe resuena en los pasillos.`, 'event');
     world.ui.updateHUD();
+    persistirInventario();
     worldStep();
   }
 
@@ -1406,6 +1494,7 @@
     world.log(`Te pones: ${def.nombre}.`, 'good');
     if (window.Sfx) Sfx.play('ui');
     world.ui.updateHUD();
+    persistirInventario();
   }
 
   function quitarEquipo(tipo) {
@@ -1418,6 +1507,7 @@
     world.log(`Te quitas: ${world.data.objects[id].nombre}.`, 'event');
     if (window.Sfx) Sfx.play('ui');
     world.ui.updateHUD();
+    persistirInventario();
   }
 
   // ---------- esconderse (v18): taquillas y muebles registrados ----------
@@ -1529,6 +1619,7 @@
       salida: '☠ ' + causa,
     });
     Profiles.registrarFin(false, world.journal, world.turnTotal, world.runSeed, world.level.id);
+    limpiarInventario();
     localStorage.removeItem(saveKey());
     if (window.Sfx) { Sfx.stopAmbient(); Sfx.play('muerte'); }
     world.ui.showEnd(false, causa);
@@ -1544,6 +1635,7 @@
     });
     Profiles.registrarSalida(world.level.id, world.turn);
     Profiles.registrarFin(true, world.journal, world.turnTotal, world.runSeed, world.level.id);
+    persistirInventario();
     localStorage.removeItem(saveKey());
     if (window.Sfx) { Sfx.stopAmbient(); Sfx.play('victoria'); }
     world.ui.showEnd(true, 'Atravesaste el edificio imposible y despertaste en una acera cualquiera, bajo un sol de verdad.');
@@ -1551,6 +1643,7 @@
 
   // ---------- guardado ----------
   function save() {
+    persistirInventario();
     try {
       localStorage.setItem(saveKey(), JSON.stringify({
         runSeed: world.runSeed,
@@ -1617,6 +1710,7 @@
 
   window.Game = {
     world, startRun, continueRun, loadSave, Profiles, INSTINTOS,
+    syncLoadoutDesdeJugador,
     tryMove, wait, interact, toggleLuz, useItem, crossExit,
     girar, avanzar, equipar, desequipar, usarMano, tirarItem, arrojarItem, noclip,
     ponerEquipo, quitarEquipo, debugTeleport,

@@ -9,6 +9,7 @@ const Entidades = require('./sim/entidades');
 const Fisica = require('../game/js/sim/fisica');
 const P = require('./protocolo');
 const db = require('./db');
+const PersistInv = require('./persist-inv');
 
 let siguienteId = 1;
 const ESCONDITES = new Set(['taquilla', 'nevera', 'archivador']);
@@ -96,11 +97,14 @@ class Sala {
   entrar(ws, nombre, token, expediente) {
     const id = siguienteId++;
     const [x, y] = this.buscarSpawn();
+    const inv0 = PersistInv.desdeExpediente(expediente);
     const jug = {
       id, ws, nombre, token, x, y, rot: Math.PI, // θ continuo (π = mirando al sur)
       distSala: 0,
       salud: 100, luz: false, escondido: null, muerto: false,
-      inv: [], manos: [null, null], equipo: { cara: null, cuerpo: null, pies: null },
+      inv: [...inv0.inv],
+      manos: [...inv0.manos],
+      equipo: { ...inv0.equipo },
       esAdmin: false, muteadoHasta: 0,
       ultMov: 0, ultChat: 0, canal: null, ofertaEn: null,
       retorno: null, // puerta personal de vuelta (v23; la pone cambiarDeSala)
@@ -113,7 +117,8 @@ class Sala {
     this.enviar(ws, {
       t: 'bienvenida', id, nivel: this.nivelId, inst: this.inst,
       semilla: this.semilla, x, y, rot: jug.rot, sec: 0,
-      salud: jug.salud, inv: jug.inv, manos: jug.manos,
+      salud: jug.salud, inv: jug.inv, manos: jug.manos, equipo: jug.equipo,
+      alijo: expediente.alijo?.inv || [],
       caminata: jug.caminataObjetivo ? { pasos: 0, objetivo: jug.caminataObjetivo } : null,
       jugadores: this.censo(), ...this.estadoDinamico(),
     });
@@ -135,6 +140,8 @@ class Sala {
   }
 
   enviarInv(jug) {
+    PersistInv.guardar(jug);
+    db.guardarInventario(jug.token, jug.inv, jug.manos, jug.equipo);
     this.enviar(jug.ws, {
       t: 'inv', inv: jug.inv, manos: jug.manos, equipo: jug.equipo,
     });
@@ -142,6 +149,8 @@ class Sala {
 
   salir(jug) {
     if (!this.jugadores.delete(jug.id)) return;
+    PersistInv.guardar(jug);
+    db.guardarInventario(jug.token, jug.inv, jug.manos, jug.equipo);
     this.difundir({ t: 'sale', id: jug.id });
   }
 
@@ -511,19 +520,20 @@ class Sala {
     this.ruido = { x, y, radio, hasta: Date.now() + 3200 };
   }
 
-  // ---------- muerte: como el roguelike, despiertas otra vez en Level 0 ----------
+  // ---------- muerte: despiertas en Level 0 sin nada — el inventario se pierde ----------
   morir(jug, causa) {
     jug.muerto = true;
     jug.escondido = null;
     jug.canal = null;
-    if (jug.luz) this.luz(jug, false); // la linterna se pierde con el resto
+    if (jug.luz) this.luz(jug, false);
+    PersistInv.vaciar(jug);
+    this.enviarInv(jug);
     db.sumarMuerte(jug.token);
     this.difundir({ t: 'muere', id: jug.id, causa });
     setTimeout(() => {
       if (!this.jugadores.has(jug.id)) return;
       jug.salud = 100;
       jug.muerto = false;
-      jug.inv = []; jug.manos = [null, null];
       if (this.alMorir) this.alMorir(jug, this, causa);
     }, 2500);
   }
