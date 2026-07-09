@@ -1,29 +1,41 @@
 SONIDOS PERSONALIZADOS
 ======================
 
-Todos los sonidos del juego son placeholders sintetizados por código.
-Para sustituir cualquiera, coloca aquí un archivo con su nombre exacto:
+Todos los sonidos del juego tienen fallback sintetizado por codigo. Para sustituir
+cualquiera, coloca un archivo con su nombre exacto.
 
-  <nombre>.mp3   (también vale .ogg o .wav)
+Formatos aceptados:
+  .mp3, .ogg, .wav
 
-Nombres de efectos disponibles:
-  paso       — pisada al moverte
-  golpe      — una entidad te ataca
-  dano       — recibes daño
-  recoger    — recoges un objeto
-  dado       — tirada de dado
-  puerta     — cruzas una salida
-  registrar  — abres una taquilla/contenedor
-  muerte     — fin de la partida
-  victoria   — escapas de las Backrooms
-  latido     — corazón con la cordura baja
+Efectos generales en assets/sounds/:
+  paso       - pisada al moverte
+  golpe      - golpe/ataque/impacto
+  dano       - recibes dano
+  recoger    - recoges un objeto
+  dado       - tirada de dado
+  puerta     - cruzas una salida
+  registrar  - registras una taquilla/contenedor
+  muerte     - fin de partida
+  victoria   - escape/victoria
+  latido     - cordura baja
+  ui         - interfaz
+  derrumbe   - colapso/romper suelo
+  bisturi    - evento de bisturi
+  crujido    - no-clip/reorganizacion suave
 
-AMBIENTES POR NIVEL (carpeta niveles/):
-  niveles/<id-de-nivel>.mp3|wav|ogg  (ej.: niveles/level-0.mp3)
-  - Los de level-306, level-385 y level-777 son los audios REALES adjuntos a sus
-    páginas de la wiki (descargados con: node pipeline/download-audio.js).
-  - Para poner el tuyo (p. ej. el zumbido original de las Backrooms en Level 0):
-    guarda el archivo como  niveles/level-0.mp3  y YA ESTÁ — el juego lo detecta
-    solo, sin ejecutar nada. Si no hay archivo, suena la síntesis de la ficha.
+Entidades en assets/sounds/entidades/:
+  smiler.wav - loop del Smiler. Suena mas fuerte cuanto mas cerca esta el
+               Smiler del jugador.
+               Debe estar preparado como loop: el juego lo mantiene reproduciendo
+               y ajusta su volumen por proximidad.
 
-Tecla M: silenciar todo · Slider 🔊 del HUD y del título: volumen general.
+Compatibilidad:
+  El juego tambien intenta buscar assets/sounds/entities/smiler.wav y
+  assets/sounds/smiler.wav, pero la ruta recomendada en espanol es:
+  assets/sounds/entidades/smiler.wav
+
+Ambientes por nivel en assets/sounds/niveles/:
+  niveles/<id-de-nivel>.mp3|wav|ogg
+  Ejemplo: niveles/level-0.mp3
+
+Si no existe archivo para un sonido, el juego usa su sintesis integrada.

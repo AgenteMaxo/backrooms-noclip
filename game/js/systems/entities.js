@@ -151,6 +151,7 @@
     if (window.Sfx) Sfx.play('golpe');
     // que te saquen de un escondite duele MÁS
     const mult = world.escondido ? 1.5 : 1;
+    world._fuenteDano = def.glyph;
     world.hurt(Math.round(def.dano * mult), def.nombre);
     if (world.escondido) {
       world.escondido = null;

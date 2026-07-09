@@ -503,6 +503,7 @@
 
   const cache = {};      // id -> [canvas, canvas]
   const overrides = {};  // id -> [canvas...] desde PNG
+  let overrideVersion = 0;
 
   function build() {
     for (const [id, def] of Object.entries(DEFS))
@@ -570,15 +571,27 @@
       if (overrides[id]) continue;
       const img = new Image();
       img.onload = () => {
-        const n = Math.max(1, Math.floor(img.width / 48));
+        const frameW = img.height === 48 ? 48 : Math.max(1, img.height);
+        const n = Math.max(1, Math.floor(img.width / frameW));
         const frames = [];
         for (let i = 0; i < n; i++) {
           const c = document.createElement('canvas');
           c.width = 48; c.height = 48;
-          c.getContext('2d').drawImage(img, i * 48, 0, 48, 48, 0, 0, 48, 48);
+          const ctx = c.getContext('2d');
+          ctx.imageSmoothingEnabled = false;
+          const sx = i * frameW;
+          const sw = Math.min(frameW, img.width - sx);
+          const sh = img.height;
+          const esc = Math.min(48 / sw, 48 / sh);
+          const dw = Math.max(1, Math.round(sw * esc));
+          const dh = Math.max(1, Math.round(sh * esc));
+          const dx = Math.round((48 - dw) / 2);
+          const dy = Math.round(48 - dh);
+          ctx.drawImage(img, sx, 0, sw, sh, dx, dy, dw, dh);
           frames.push(c);
         }
         overrides[id] = frames;
+        overrideVersion++;
       };
       img.src = 'assets/sprites/' + id + '.png';
     }
@@ -745,5 +758,9 @@
   }
 
   build();
-  window.Sprites = { get, tryOverrides, drawProp, frameCount, tiene, list: () => Object.keys(DEFS) };
+  window.Sprites = {
+    get, tryOverrides, drawProp, frameCount, tiene,
+    list: () => Object.keys(DEFS),
+    version: () => overrideVersion,
+  };
 })();

@@ -17,14 +17,24 @@
   let ambientAudioEl = null;
   let idleStop = null;
   const overrides = {};
+  const entityLoops = {};
 
-  const NOMBRES = ['paso', 'golpe', 'dano', 'recoger', 'dado', 'puerta', 'registrar', 'muerte', 'victoria', 'latido', 'ui', 'derrumbe', 'bisturi', 'crujido'];
+  const NOMBRES = ['paso', 'golpe', 'dano', 'recoger', 'dado', 'puerta', 'registrar', 'muerte', 'victoria', 'latido', 'ui', 'derrumbe', 'bisturi', 'crujido', 'smiler'];
+  const SOUND_DIRS = {
+    smiler: ['entidades', 'entities'],
+  };
   for (const n of NOMBRES) {
     for (const ext of ['mp3', 'ogg', 'wav']) {
-      const el = new window.Audio();
-      el.addEventListener('canplaythrough', () => { if (!overrides[n]) overrides[n] = el; }, { once: true });
-      el.src = 'assets/sounds/' + n + '.' + ext;
-      el.preload = 'auto';
+      const rutas = [
+        ...(SOUND_DIRS[n] || []).map((dir) => `assets/sounds/${dir}/${n}.${ext}`),
+        `assets/sounds/${n}.${ext}`,
+      ];
+      for (const ruta of rutas) {
+        const el = new window.Audio();
+        el.addEventListener('canplaythrough', () => { if (!overrides[n]) overrides[n] = el; }, { once: true });
+        el.src = ruta;
+        el.preload = 'auto';
+      }
     }
   }
 
@@ -165,8 +175,63 @@
   function cue(glyph) {
     try {
       if (muted || !ctx) return;
+      if (overrides[glyph]) { play(glyph); return; }
       (CUES[glyph] ?? CUES.generico)();
     } catch (e) {}
+  }
+
+  function cueDist(glyph, distancia, radio = 8) {
+    try {
+      if (muted || !ctx) return;
+      const k = Math.max(0, Math.min(1, 1 - distancia / radio));
+      if (k <= 0) return;
+      const ov = overrides[glyph];
+      if (ov) {
+        const el = ov.cloneNode();
+        el.volume = Math.min(1, vol * volFx * (0.08 + k * k * 0.92));
+        el.play().catch(() => {});
+        return;
+      }
+      const old = sfxBus.gain.value;
+      sfxBus.gain.value = old * (0.15 + k * 0.85);
+      (CUES[glyph] ?? CUES.generico)();
+      setTimeout(() => { if (sfxBus) sfxBus.gain.value = old; }, 120);
+    } catch (e) {}
+  }
+
+  function entityLoop(glyph, distancia, radio = 8) {
+    try {
+      const k = Math.max(0, Math.min(1, 1 - distancia / radio));
+      const objetivo = muted ? 0 : Math.min(1, vol * volFx * (k * k));
+      const loop = entityLoops[glyph] || (entityLoops[glyph] = { el: null, vol: 0, last: 0 });
+      loop.last = performance.now();
+      const ov = overrides[glyph];
+      if (!ov) {
+        if (k > 0.12 && ctx) cueDist(glyph, distancia, radio);
+        return;
+      }
+      if (!loop.el || loop.el.src !== ov.src) {
+        if (loop.el) { loop.el.pause(); loop.el.src = ''; }
+        loop.el = ov.cloneNode();
+        loop.el.loop = true;
+        loop.el.volume = 0;
+      }
+      loop.vol = loop.vol * 0.86 + objetivo * 0.14;
+      loop.el.volume = Math.max(0, Math.min(1, loop.vol));
+      if (loop.vol > 0.01 && loop.el.paused) loop.el.play().catch(() => {});
+      if (loop.vol <= 0.003 && !loop.el.paused) loop.el.pause();
+    } catch (e) {}
+  }
+
+  function updateEntityLoops() {
+    const now = performance.now();
+    for (const loop of Object.values(entityLoops)) {
+      if (!loop.el) continue;
+      if (now - loop.last < 180) continue;
+      loop.vol *= 0.86;
+      loop.el.volume = Math.max(0, Math.min(1, loop.vol));
+      if (loop.vol <= 0.003 && !loop.el.paused) loop.el.pause();
+    }
   }
 
   function play(nombre, arg) {
@@ -568,13 +633,14 @@
     muted = !muted;
     try { localStorage.setItem('backrooms-mute', muted ? '1' : '0'); } catch (e) {}
     if (master) master.gain.value = muted ? 0 : vol;
+    if (muted) for (const loop of Object.values(entityLoops)) if (loop.el) loop.el.pause();
     if (muted) stopAmbient();
     else if (window.Game?.world?.level) ambient(window.Game.world.level);
     return muted;
   }
 
   window.Sfx = {
-    unlock, play, cue, ambient, stopAmbient, toggleMute, setVolume, idle,
+    unlock, play, cue, cueDist, entityLoop, updateEntityLoops, ambient, stopAmbient, toggleMute, setVolume, idle,
     level0Flicker,
     get muted() { return muted; },
     get volumen() { return vol; },

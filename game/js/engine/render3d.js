@@ -32,6 +32,7 @@
   let actorGroup = null;         // jugador/entidades/items (sobrevive a los rebuilds)
   let rebuild = null;            // generador de reconstrucción incremental en curso
   let itemsVersionVista = -1;    // items del suelo rehechos al cambiar world.itemsVersion
+  let spritesVersionVista = -1;
   let entitySprites = new Map(); // uid -> THREE.Sprite
   let itemSprites = new Map();   // index -> sprite
   let otrosSprites = new Map();  // id -> sprite (jugadores remotos del MMO)
@@ -1087,13 +1088,15 @@
       const it = world.map.items[i];
       if (it.taken) continue;
       const c = Render.itemToCanvas(it.id, world.data.objects);
-      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(c, 'item-' + it.id), transparent: true }));
+      const sv = window.Sprites?.version ? Sprites.version() : 0;
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex(c, 'item-' + it.id + '-' + sv), transparent: true }));
       s.scale.set(0.55, 0.6, 1);
       s.position.set(it.x + 0.5, 0.22, it.y + 0.5);
       actorGroup.add(s);
       itemSprites.set(i, s);
     }
     itemsVersionVista = world.itemsVersion || 0;
+    spritesVersionVista = window.Sprites?.version ? Sprites.version() : 0;
   }
 
   // centrado inmediato de cámara al entrar en un nivel nuevo
@@ -1271,7 +1274,8 @@
       }
     }
     // items del suelo: rehacer si la lógica los cambió (tirar/arrojar objetos)
-    if ((world.itemsVersion || 0) !== itemsVersionVista) rebuildItems(world);
+    if ((world.itemsVersion || 0) !== itemsVersionVista ||
+        (window.Sprites?.version && Sprites.version() !== spritesVersionVista)) rebuildItems(world);
 
     const p = world.player;
     const px = p.rx + 0.5, pz = p.ry + 0.5;

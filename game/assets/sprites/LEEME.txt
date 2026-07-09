@@ -1,22 +1,42 @@
 SPRITES PERSONALIZADOS
 ======================
 
-Coloca aquí archivos PNG para sustituir cualquier sprite del juego sin tocar código.
+Coloca aqui archivos PNG para sustituir cualquier sprite del juego sin tocar codigo.
 
 Formato:
- - Nombre del archivo: <id>.png  (ej.: hound.png, player_down.png, faceling.png)
- - Hoja horizontal de frames de 48×48 px. Puedes poner los frames que quieras:
-   96×48 = 2 frames, 192×48 = 4 frames… El juego los anima en bucle.
+ - Nombre del archivo: <id>.png  (ej.: hound.png, player_down.png, agua_almendras.png)
+ - Recomendado: hoja horizontal de frames de 48x48 px. Puedes poner los frames que quieras:
+   96x48 = 2 frames, 192x48 = 4 frames... El juego los anima en bucle.
+ - Tambien acepta sprites pequenos pixel-art: se escalan sin suavizado y se
+   centran dentro de una caja de 48x48 px.
  - Fondo transparente.
 
-Nota: el jugador integrado trae 4 frames de ciclo de andar por dirección (v14);
-si lo sustituyes con menos frames, también funciona.
+Nota: el jugador integrado trae 4 frames de ciclo de andar por direccion; si lo
+sustituyes con menos frames, tambien funciona.
 
 IDs disponibles:
  Jugador:   player_down, player_up, player_side  (side mira a la derecha; se voltea solo)
- Entidades: faceling, hound, deathmoth, clump, duller, skinstealer, window,
+ Entidades: smiler, faceling, hound, deathmoth, clump, duller, skinstealer, window,
             anethika, spine, needlelimb, silverslime, aranea, predatorydoor,
             cell, hunter
- (El smiler no usa sprite: son sus ojos y sonrisa brillando en la oscuridad.)
+ Objetos:   agua_almendras, botiquin, linterna, chaqueta, mascara_gas,
+            botas_reforzadas, amuleto, llave_nivel, tuberia, fuego_griego,
+            guante_paralisis, detector, trebol
 
-Si el PNG existe, el juego lo usa automáticamente; si no, usa el pixel-art integrado.
+Si el PNG existe, el juego lo usa automaticamente; si no, usa el pixel-art integrado.
+
+Guia de escala dentro del frame 48x48:
+ - Jugador humano: 36-40 px de alto.
+ - Faceling o humanoide: 36-40 px de alto.
+ - Hound: 24-30 px de alto, mas ancho que alto.
+ - Smiler: ojos y sonrisa dentro del 48x48; el cuerpo puede quedar implicito en negro/transparencia.
+ - Duller o entidad alta: 42-46 px de alto.
+ - Aranea o entidad grande: 34-42 px de alto, mas ancho que alto.
+ - Clump o masa: 28-36 px de alto.
+ - Objetos de suelo: 12-24 px.
+ - Props pequenos: 24-40 px.
+
+Recomendacion de hitbox visual:
+ - Mantener los pies/base cerca de la parte baja del frame.
+ - Centrar el cuerpo en X para que coincida con la casilla.
+ - No llenar todo el 48x48 salvo entidades grandes o altas.

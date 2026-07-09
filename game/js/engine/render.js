@@ -26,9 +26,11 @@
   function drawEntity(e, x, y, lit, t) {
     const def = e.def;
     const cx = x + 24, cy = y + 24;
+    const frame = Math.floor(t / 280) % Sprites.frameCount(def.glyph);
+    const sprite = Sprites.get(def.glyph, frame);
 
     // Smiler: solo ojos y sonrisa brillando en la oscuridad
-    if (def.glyph === 'smiler') {
+    if (def.glyph === 'smiler' && !sprite) {
       ctx.save();
       const glow = lit < 0.45 ? 1 : 0.25;
       ctx.globalAlpha = Math.max(0.15, glow);
@@ -51,8 +53,6 @@
       return;
     }
 
-    const frame = Math.floor(t / 280) % Sprites.frameCount(def.glyph);
-    const sprite = Sprites.get(def.glyph, frame);
     ctx.save();
     ctx.globalAlpha = Math.max(0.25, Math.min(1, lit + 0.25));
     const filtros = [];
@@ -392,6 +392,15 @@
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.beginPath(); ctx.ellipse(cx, cy + 9, 9, 3.2, 0, 0, 7); ctx.fill();
+    const frame = Math.floor(t / 320) % Sprites.frameCount(it.id);
+    const sprite = Sprites.get(it.id, frame);
+    if (sprite) {
+      ctx.shadowColor = def.color;
+      ctx.shadowBlur = 5 + Math.sin(t / 350 + cx) * 2;
+      ctx.drawImage(sprite, Math.round(cx - 24), Math.round(cy - 32));
+      ctx.restore();
+      return;
+    }
     ctx.shadowColor = def.color;
     ctx.shadowBlur = 6 + Math.sin(t / 350 + cx) * 3;
     ctx.fillStyle = def.color;

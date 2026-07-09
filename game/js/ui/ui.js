@@ -11,6 +11,7 @@
   };
 
   function show(name) {
+    if (name !== 'end') document.body.classList.remove('smiler-death');
     // fundido cosmético; el swap de display es SÍNCRONO (el selftest lo exige)
     const fade = $('fade');
     if (fade && !window.NOFX) {
@@ -73,6 +74,20 @@
     detector: 'antena', trebol: 'trebol',
     mascara_gas: 'mascara', botas_reforzadas: 'bota',
   };
+
+  function spriteObjeto(id, tam) {
+    if (!window.Sprites || !Sprites.tiene(id)) return null;
+    const spr = Sprites.get(id, 0);
+    if (!spr) return null;
+    const c = document.createElement('canvas');
+    c.width = tam; c.height = tam;
+    c.className = 'icono';
+    c.style.width = tam + 'px';
+    c.style.height = tam + 'px';
+    c.style.imageRendering = 'pixelated';
+    c.getContext('2d').drawImage(spr, 0, 0, tam, tam);
+    return c;
+  }
 
   function updateHUD() {
     if (!world.player || !world.level) return;
@@ -165,9 +180,10 @@
     if (id === '=') { el.title = `Ocupada por el objeto a dos manos (${enPanel ? 'clic: guardar' : 'clic o Q: usar'})`; return; }
     if (id) {
       const def = world.data.objects[id];
-      if (window.Icons) {
-        const itTam = Math.round(tam * 0.75);
-        const it = Icons.img(ICONOS_INV[id] || 'interrogante', itTam);
+      const itTam = Math.round(tam * 0.75);
+      const it = spriteObjeto(id, itTam) ||
+        (window.Icons ? Icons.img(ICONOS_INV[id] || 'interrogante', itTam) : null);
+      if (it) {
         it.classList.add('mano-item');
         it.style.marginLeft = (-itTam / 2) + 'px';
         el.appendChild(it);
@@ -369,7 +385,9 @@
     if (window.Sfx) Sfx.play('ui');
     const iconEl = $('item-icon');
     iconEl.textContent = '';
-    if (window.Icons && Icons.has(icono)) iconEl.appendChild(Icons.img(icono, 20));
+    const sprIcon = spriteObjeto(id, 28);
+    if (sprIcon) iconEl.appendChild(sprIcon);
+    else if (window.Icons && Icons.has(icono)) iconEl.appendChild(Icons.img(icono, 20));
     else iconEl.textContent = icono;
     $('item-name').textContent = def.nombre;
     $('item-desc').textContent = def.descripcion;
@@ -767,6 +785,7 @@
 
   // ---------- fin ----------
   function showEnd(victoria, causa) {
+    if (!world._muerteSmiler) document.body.classList.remove('smiler-death');
     show('end');
     if (window.Sfx) setTimeout(() => Sfx.idle(true, victoria ? 'victoria' : 'muerte'), 1600);
     const t = $('end-title');
