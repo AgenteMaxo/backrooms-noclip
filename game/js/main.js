@@ -61,6 +61,8 @@
   window.OPTS = { dado: true, controles: 'raton' };
   try { Object.assign(window.OPTS, JSON.parse(localStorage.getItem('backrooms-opts')) || {}); }
   catch (e) { /* opciones corruptas: valores por defecto */ }
+  // un valor inválido (versión vieja o edición manual) vuelve al modo por defecto
+  if (!['raton', 'teclas'].includes(OPTS.controles)) OPTS.controles = 'raton';
   function guardarOpts() {
     try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
   }
