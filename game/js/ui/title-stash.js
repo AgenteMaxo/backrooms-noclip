@@ -281,10 +281,10 @@
     if (lock) lock.style.display = bloqueado ? 'block' : 'none';
     const bs = $('btn-stash-all');
     const bl = $('btn-loadout-all');
+    const { alijo, loadout } = datos();
     if (bs) bs.disabled = bloqueado;
     if (bl) bl.disabled = bloqueado || (alijo.length > 0 && loadout.inv.length >= Inventario.CAP_MOCHILA);
 
-    const { alijo, loadout } = datos();
     const alijoEl = $('title-alijo-slots');
     const loadEl = $('title-loadout-slots');
     const manoEl = $('title-mano-slots');
