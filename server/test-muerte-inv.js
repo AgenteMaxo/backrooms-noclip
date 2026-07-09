@@ -16,7 +16,7 @@ function sesion() {
     const estado = { inv: [], msgs: [] };
     const ws = new WebSocket(`ws://127.0.0.1:${PUERTO}/ws`);
     ws.on('open', () => {
-      ws.send(JSON.stringify({ t: 'hola', nombre: 'Muerte', token: TOKEN, v: 7, nivel: 'level-1' }));
+      ws.send(JSON.stringify({ t: 'hola', nombre: 'Muerte', token: TOKEN, v: 8, nivel: 'level-1' }));
     });
     ws.on('message', (raw) => {
       const m = JSON.parse(raw.toString());

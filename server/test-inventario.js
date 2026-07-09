@@ -28,6 +28,9 @@ ok(dosManos.manos[0] === 'fuego_griego' && dosManos.manos[1] === '=', 'arma a do
 const eq = Inv.sanitizar([], [null, null], { cuerpo: 'chaqueta' }, OBJ);
 ok(eq.equipo.cuerpo === 'chaqueta', 'equipo vestido');
 
+const alijo = Inv.sanitizarAlijo(['trebol', 'noexiste', 'trebol'], OBJ);
+ok(alijo.length === 2 && alijo[0] === 'trebol', 'alijo filtra y permite duplicados');
+
 const corrupto = Inv.sanitizar(['noexiste', 'tuberia'], ['tuberia', null], {}, OBJ);
 ok(!corrupto.inv.includes('noexiste') && corrupto.manos[0] === 'tuberia', 'filtra ids inválidos y duplicados cruzados');
 

@@ -44,7 +44,10 @@
     activeName() { return this._load().activo; },
     get() {
       const d = this._load();
-      return d.activo ? d.perfiles[d.activo] : null;
+      if (!d.activo || !d.perfiles[d.activo]) return null;
+      const p = d.perfiles[d.activo];
+      if (this._migrarDeposito(p)) this._save(d);
+      return p;
     },
     create(nombre) {
       nombre = (nombre || '').trim().slice(0, 24);
@@ -56,6 +59,8 @@
           codice: {},
           records: { runs: 0, maxNiveles: 0, maxTurnos: 0, escapes: 0 },
           historial: [],
+          alijo: { inv: [] },
+          loadout: Inventario.vacio(),
         };
       }
       d.activo = nombre;
@@ -152,31 +157,70 @@
         return true;
       } catch (e) { return false; }
     },
-    cargarInventario() {
+    _migrarDeposito(p) {
+      if (!p) return false;
+      let ok = false;
+      if (p.inventario && !p.loadout) {
+        p.loadout = {
+          inv: [...(p.inventario.inv || [])],
+          manos: [...(p.inventario.manos || [null, null])],
+          equipo: { ...(p.inventario.equipo || Inventario.vacio().equipo) },
+        };
+        delete p.inventario;
+        ok = true;
+      }
+      if (!p.alijo) { p.alijo = { inv: [] }; ok = true; }
+      if (!p.loadout) { p.loadout = Inventario.vacio(); ok = true; }
+      return ok;
+    },
+    cargarAlijo() {
       const p = this.get();
       const objects = world.data?.objects || {};
-      if (!p?.inventario) return Inventario.vacio();
-      const i = p.inventario;
-      return Inventario.sanitizar(i.inv, i.manos, i.equipo, objects);
+      if (!p) return { inv: [] };
+      return { inv: Inventario.sanitizarAlijo(p.alijo.inv, objects) };
     },
-    guardarInventario(inv, manos, equipo) {
+    guardarAlijo(inv) {
       const objects = world.data?.objects || {};
-      const sane = Inventario.sanitizar(inv, manos, equipo, objects);
-      this._update((p) => { p.inventario = sane; });
+      const sane = Inventario.sanitizarAlijo(inv, objects);
+      this._update((p) => {
+        p.alijo = { inv: sane };
+      });
       return sane;
     },
+    cargarLoadout() {
+      const p = this.get();
+      const objects = world.data?.objects || {};
+      if (!p) return Inventario.vacio();
+      const l = p.loadout;
+      return Inventario.sanitizar(l.inv, l.manos, l.equipo, objects);
+    },
+    guardarLoadout(inv, manos, equipo) {
+      const objects = world.data?.objects || {};
+      const sane = Inventario.sanitizar(inv, manos, equipo, objects);
+      this._update((p) => {
+        p.loadout = sane;
+      });
+      return sane;
+    },
+    cargarInventario() { return this.cargarLoadout(); },
+    guardarInventario(inv, manos, equipo) { return this.guardarLoadout(inv, manos, equipo); },
   };
 
   const saveKey = () => 'backrooms-save::' + (Profiles.activeName() || 'anon');
 
   function persistirInventario() {
     if (world.online || !world.player) return;
-    const sane = Profiles.guardarInventario(
+    const sane = Profiles.guardarLoadout(
       world.player.inv, world.player.manos, world.player.equipo
     );
     world.player.inv = [...sane.inv];
     world.player.manos = [...sane.manos];
     world.player.equipo = { ...sane.equipo };
+  }
+
+  function syncLoadoutDesdeJugador() {
+    if (!world.player) return;
+    Profiles.guardarLoadout(world.player.inv, world.player.manos, world.player.equipo);
   }
 
   function limpiarInventario() {
@@ -185,7 +229,7 @@
     world.player.inv = [...v.inv];
     world.player.manos = [...v.manos];
     world.player.equipo = { ...v.equipo };
-    if (!world.online) Profiles.guardarInventario(v.inv, v.manos, v.equipo);
+    if (!world.online) Profiles.guardarLoadout(v.inv, v.manos, v.equipo);
     world.ui?.updateHUD();
   }
 
@@ -384,7 +428,7 @@
   // ---------- inicio de partida ----------
   function startRun(seed) {
     world.runSeed = seed || RNG.randomSeed();
-    const inv0 = Profiles.cargarInventario();
+    const inv0 = Profiles.cargarLoadout();
     world.player = {
       x: 0, y: 0, rx: 0, ry: 0, dir: 'down', flip: false, rot: 2,
       salud: 100, cordura: 100, sed: 100, hambre: 100,
@@ -1666,6 +1710,7 @@
 
   window.Game = {
     world, startRun, continueRun, loadSave, Profiles, INSTINTOS,
+    syncLoadoutDesdeJugador,
     tryMove, wait, interact, toggleLuz, useItem, crossExit,
     girar, avanzar, equipar, desequipar, usarMano, tirarItem, arrojarItem, noclip,
     ponerEquipo, quitarEquipo, debugTeleport,

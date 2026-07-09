@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BACKROOMS MMO</title>
-<link rel="stylesheet" href="css/style.css?v=251">
+<link rel="stylesheet" href="css/style.css?v=252">
 </head>
 <body>
 <div id="app">
@@ -30,6 +30,26 @@
           <button id="btn-profile-import" class="btn-small">Importar</button>
           <input id="profile-import-file" type="file" accept=".json,application/json" style="display:none">
           <button id="btn-profile-del" class="btn-small">Borrar</button>
+        </div>
+      </div>
+      <div id="title-inventory" class="title-inv-box" style="display:none">
+        <p class="profile-title">— ALIJO Y MOCHILA DE SALIDA —</p>
+        <p id="title-inv-warn" class="warn title-inv-warn">
+          Lo que lleves a la partida lo puedes perder al morir. Clic en un objeto para moverlo al otro lado.
+        </p>
+        <div class="title-inv-grid">
+          <div class="title-inv-col">
+            <h4 class="title-inv-h">Alijo seguro <span id="title-alijo-count" class="title-inv-n"></span></h4>
+            <p class="title-inv-sub">Aquí tus cosas sobreviven aunque caigas.</p>
+            <div id="title-alijo-slots" class="title-slots"></div>
+            <button type="button" id="btn-stash-all" class="btn-small title-inv-btn">← Guardar todo</button>
+          </div>
+          <div class="title-inv-col">
+            <h4 class="title-inv-h">Llevar a la partida <span id="title-loadout-count" class="title-inv-n"></span></h4>
+            <p class="title-inv-sub">Puedes despertar vacío y dejarlo todo guardado.</p>
+            <div id="title-loadout-slots" class="title-slots"></div>
+            <button type="button" id="btn-loadout-all" class="btn-small title-inv-btn">Llevar todo →</button>
+          </div>
         </div>
       </div>
       <div class="seed-row">
@@ -248,36 +268,37 @@
 
 <!-- ?v= rompe la caché del edge (Cloudflare cachea .js/.css por defecto aunque
      el origen no lo pida): SUBIR el número en cada versión, junto con VERSION_JUEGO -->
-<script src="js/data.js?v=251"></script>
-<script src="js/engine/rng.js?v=251"></script>
-<script src="js/mapgen/mapgen.js?v=251"></script>
-<script src="js/engine/tiles.js?v=251"></script>
-<script src="js/engine/sprites.js?v=251"></script>
-<script src="js/engine/effects.js?v=251"></script>
-<script src="js/audio-manifest.js?v=251"></script>
-<script src="js/engine/sfx.js?v=251"></script>
-<script src="js/engine/fov.js?v=251"></script>
-<script src="js/systems/entities.js?v=251"></script>
-<script src="js/systems/rules.js?v=251"></script>
-<script src="js/engine/render.js?v=251"></script>
-<script src="js/lib/three.min.js?v=251"></script>
-<script src="js/lib/shaders/CopyShader.js?v=251"></script>
-<script src="js/lib/shaders/LuminosityHighPassShader.js?v=251"></script>
-<script src="js/lib/shaders/GammaCorrectionShader.js?v=251"></script>
-<script src="js/lib/postprocessing/EffectComposer.js?v=251"></script>
-<script src="js/lib/postprocessing/RenderPass.js?v=251"></script>
-<script src="js/lib/postprocessing/ShaderPass.js?v=251"></script>
-<script src="js/lib/postprocessing/UnrealBloomPass.js?v=251"></script>
-<script src="js/engine/atmos3d.js?v=251"></script>
-<script src="js/engine/render3d.js?v=251"></script>
-<script src="js/systems/inventario.js?v=251"></script>
-<script src="js/systems/game.js?v=251"></script>
-<script src="js/ui/icons.js?v=251"></script>
-<script src="js/ui/ui.js?v=251"></script>
-<script src="js/ui/minimap.js?v=251"></script>
-<script src="js/sim/fisica.js?v=251"></script>
-<script src="js/net/otros.js?v=251"></script>
-<script src="js/net/cliente.js?v=251"></script>
-<script src="js/main.js?v=251"></script>
+<script src="js/data.js?v=252"></script>
+<script src="js/engine/rng.js?v=252"></script>
+<script src="js/mapgen/mapgen.js?v=252"></script>
+<script src="js/engine/tiles.js?v=252"></script>
+<script src="js/engine/sprites.js?v=252"></script>
+<script src="js/engine/effects.js?v=252"></script>
+<script src="js/audio-manifest.js?v=252"></script>
+<script src="js/engine/sfx.js?v=252"></script>
+<script src="js/engine/fov.js?v=252"></script>
+<script src="js/systems/entities.js?v=252"></script>
+<script src="js/systems/rules.js?v=252"></script>
+<script src="js/engine/render.js?v=252"></script>
+<script src="js/lib/three.min.js?v=252"></script>
+<script src="js/lib/shaders/CopyShader.js?v=252"></script>
+<script src="js/lib/shaders/LuminosityHighPassShader.js?v=252"></script>
+<script src="js/lib/shaders/GammaCorrectionShader.js?v=252"></script>
+<script src="js/lib/postprocessing/EffectComposer.js?v=252"></script>
+<script src="js/lib/postprocessing/RenderPass.js?v=252"></script>
+<script src="js/lib/postprocessing/ShaderPass.js?v=252"></script>
+<script src="js/lib/postprocessing/UnrealBloomPass.js?v=252"></script>
+<script src="js/engine/atmos3d.js?v=252"></script>
+<script src="js/engine/render3d.js?v=252"></script>
+<script src="js/systems/inventario.js?v=252"></script>
+<script src="js/systems/game.js?v=252"></script>
+<script src="js/ui/icons.js?v=252"></script>
+<script src="js/ui/ui.js?v=252"></script>
+<script src="js/ui/title-stash.js?v=252"></script>
+<script src="js/ui/minimap.js?v=252"></script>
+<script src="js/sim/fisica.js?v=252"></script>
+<script src="js/net/otros.js?v=252"></script>
+<script src="js/net/cliente.js?v=252"></script>
+<script src="js/main.js?v=252"></script>
 </body>
 </html>

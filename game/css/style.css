@@ -323,6 +323,25 @@ body.fs #game-canvas, body.fs #gl-canvas { border: none; box-shadow: none; }
 #profile-name { width: 140px; }
 #profile-records { color: #8a8470; font-size: 15px; margin: 4px 0 8px; }
 
+/* ---------- alijo en pantalla de inicio (v26) ---------- */
+.title-inv-box { background: rgba(20,18,13,.65); border: 1px solid var(--borde);
+  padding: 14px 16px; margin-bottom: 18px; text-align: left; }
+.title-inv-warn { font-size: 14px; margin: 0 0 12px; text-align: center; }
+.title-inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 560px) { .title-inv-grid { grid-template-columns: 1fr; } }
+.title-inv-col { min-width: 0; }
+.title-inv-h { color: var(--amarillo); font-size: 15px; margin: 0 0 4px; font-weight: normal; }
+.title-inv-n { color: var(--gris); font-size: 13px; }
+.title-inv-sub { color: #8a8470; font-size: 12.5px; margin: 0 0 8px; line-height: 1.35; }
+.title-slots { display: grid; grid-template-columns: repeat(6, 40px); gap: 6px;
+  justify-content: center; margin-bottom: 8px; }
+.title-inv-slot { width: 40px; height: 40px; background: #0a0906; border: 1px solid var(--borde);
+  cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.title-inv-slot:not(.vacia):hover { border-color: var(--amarillo-osc);
+  box-shadow: 0 0 8px rgba(217,198,110,.2); }
+.title-inv-slot.vacia { cursor: default; opacity: .35; }
+.title-inv-btn { margin-top: 4px; width: 100%; }
+
 /* ---------- códice ---------- */
 #codex-panel { position: fixed; inset: 0; background: rgba(3,3,2,.88);
   display: flex; align-items: center; justify-content: center; z-index: 30; }

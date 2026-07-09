@@ -5,15 +5,28 @@ global.window = global;
 require('../game/js/systems/inventario.js');
 const { DATA } = require('./sim/mundo');
 const Inv = global.Inventario;
+const db = require('./db');
 
 function sanitizar(inv, manos, equipo) {
   return Inv.sanitizar(inv, manos, equipo, DATA.objects);
 }
 
+function sanitizarAlijo(inv) {
+  return Inv.sanitizarAlijo(inv, DATA.objects);
+}
+
 function desdeExpediente(exp) {
-  if (!exp?.inventario) return Inv.vacio();
-  const i = exp.inventario;
+  const i = exp?.loadout || exp?.inventario;
+  if (!i) return Inv.vacio();
   return sanitizar(i.inv, i.manos, i.equipo);
+}
+
+function sincronizarDeposito(token, alijoInv, loadout) {
+  const saneAlijo = sanitizarAlijo(alijoInv);
+  const saneLoadout = sanitizar(loadout?.inv, loadout?.manos, loadout?.equipo);
+  db.guardarAlijo(token, saneAlijo);
+  db.guardarLoadout(token, saneLoadout.inv, saneLoadout.manos, saneLoadout.equipo);
+  return { alijo: { inv: saneAlijo }, loadout: saneLoadout };
 }
 
 function guardar(jug) {
@@ -32,4 +45,7 @@ function vaciar(jug) {
   return v;
 }
 
-module.exports = { sanitizar, desdeExpediente, guardar, vaciar, vacio: Inv.vacio };
+module.exports = {
+  sanitizar, sanitizarAlijo, desdeExpediente, sincronizarDeposito,
+  guardar, vaciar, vacio: Inv.vacio,
+};

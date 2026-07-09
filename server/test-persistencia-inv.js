@@ -14,7 +14,7 @@ function cliente(token) {
     const inv = [];
     const ws = new WebSocket(`ws://127.0.0.1:${PUERTO}/ws`);
     ws.on('open', () => {
-      ws.send(JSON.stringify({ t: 'hola', nombre: 'Persist', token, v: 7, nivel: 'level-1' }));
+      ws.send(JSON.stringify({ t: 'hola', nombre: 'Persist', token, v: 8, nivel: 'level-1' }));
     });
     ws.on('message', (raw) => {
       const m = JSON.parse(raw.toString());

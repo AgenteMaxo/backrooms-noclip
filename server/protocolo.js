@@ -19,7 +19,7 @@
 //   {t:'pong'}
 'use strict';
 
-const VERSION = 7; // v25: loot/cajas/dados client-side, cámara libre — el server solo valida
+const VERSION = 8; // v26: alijo seguro + mochila de salida en pantalla de inicio
 const MAX_MSG = 512;          // bytes por mensaje entrante
 const MAX_CHAT = 120;         // caracteres de un chat
 const COOLDOWN_MOVER = 165;   // ms entre pasos (el cliente usa 170: margen de jitter)
@@ -40,6 +40,8 @@ function leer(raw) {
       if (typeof m.nombre !== 'string' || typeof m.token !== 'string') return null;
       if (m.token.length > 64) return null;
       if (m.nivel !== undefined && (typeof m.nivel !== 'string' || m.nivel.length > 32)) return null;
+      if (m.alijo !== undefined && !Array.isArray(m.alijo)) return null;
+      if (m.loadout !== undefined && (typeof m.loadout !== 'object' || m.loadout === null)) return null;
       return m;
     case 'p': { // v24: POSICIÓN reportada por el cliente (él es la autoridad
       // del movimiento; el servidor la VALIDA — velocidad, paredes, teleports)

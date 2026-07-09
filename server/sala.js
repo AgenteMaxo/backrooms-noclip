@@ -118,6 +118,7 @@ class Sala {
       t: 'bienvenida', id, nivel: this.nivelId, inst: this.inst,
       semilla: this.semilla, x, y, rot: jug.rot, sec: 0,
       salud: jug.salud, inv: jug.inv, manos: jug.manos, equipo: jug.equipo,
+      alijo: expediente.alijo?.inv || [],
       caminata: jug.caminataObjetivo ? { pasos: 0, objetivo: jug.caminataObjetivo } : null,
       jugadores: this.censo(), ...this.estadoDinamico(),
     });

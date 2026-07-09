@@ -13,6 +13,7 @@ const filtro = require('./filtro');
 const { asignar, tickTodas, estado } = require('./sala');
 const { DATA } = require('./sim/mundo');
 const db = require('./db');
+const PersistInv = require('./persist-inv');
 
 // clave de administración: variable de entorno MMO_ADMIN o una aleatoria
 // impresa al arrancar (el streamer la escribe en el chat: /admin <clave>)
@@ -97,6 +98,9 @@ wss.on('connection', (ws, req) => {
         return;
       }
       const nombre = filtro.nombreLimpio(m.nombre);
+      if (m.alijo !== undefined || m.loadout !== undefined) {
+        PersistInv.sincronizarDeposito(m.token, m.alijo, m.loadout);
+      }
       const expediente = db.conectar(m.token, nombre);
       if (expediente.baneado) { ws.close(1008, 'baneado'); return; }
       // puerta de desarrollo (?nivel=): SOLO con MMO_DEV=1 — en producción
