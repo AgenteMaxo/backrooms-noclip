@@ -738,6 +738,10 @@ class Sala {
       jug.salud = 100; jug.sed = 100; jug.cordura = 100;
       jug.muerto = false;
       jug.inv = []; jug.manos = [null, null];
+      // lo VESTIDO también se queda atrás (paridad con startRun del modo solo;
+      // si no, las botas_reforzadas regalaban su bonus para siempre)
+      jug.equipo = { cara: null, cuerpo: null, pies: null };
+      this.enviarInv(jug); // el cliente pisa inv/manos/equipo (mensaje 'inv')
       if (this.alMorir) this.alMorir(jug, this, causa);
     }, 2500);
   }

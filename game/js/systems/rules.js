@@ -123,8 +123,12 @@
       icono: '∅',
       desc: 'Tus pertenencias no cruzan a este nivel: entras con las manos vacías.',
       entrar(world) {
-        if (world.player.inv.length) {
-          world.player.inv = [];
+        const p = world.player;
+        if (p.inv.length || p.manos.some(Boolean) || Object.values(p.equipo).some(Boolean)) {
+          p.inv = [];
+          p.manos = [null, null];
+          p.equipo = { cara: null, cuerpo: null, pies: null };
+          p.luz = false; // la linterna perdida no puede seguir alumbrando
           world.log('Tu equipo ha desaparecido. Solo quedas tú.', 'danger');
         }
       },

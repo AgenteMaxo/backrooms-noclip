@@ -406,6 +406,19 @@
     return /agujero|caes |caer |caída|desplom|abismo|pozo|trampilla|no.?clip|desmay|despiert/i.test(def.texto || '');
   }
 
+  // anillo creciente hasta la casilla pisable más cercana (paridad con
+  // buscarSpawn del server): un punto guardado puede haber quedado tapiado o
+  // sobre el vacío tras ventanas deslizantes o remodelaciones
+  function casillaPisableCerca(g, cx, cy) {
+    for (let r = 0; r < 20; r++)
+      for (let dy = -r; dy <= r; dy++)
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          if (MapGen.walkable(MapGen.at(g, cx + dx, cy + dy))) return [cx + dx, cy + dy];
+        }
+    return [cx, cy];
+  }
+
   function enterLevel(id, via, entrada) {
     const def = world.data.levels[id];
     if (!def) { world.log('Ese camino no lleva a ninguna parte.', 'event'); return; }
@@ -464,6 +477,8 @@
         if (exVuelta) pos = [exVuelta.x, exVuelta.y];
       }
       if (!pos) pos = world.map.spawn;
+      // nunca aparezcas dentro de una pared ni sobre el abismo
+      pos = casillaPisableCerca(world.map.grid, pos[0], pos[1]);
       world.player.x = pos[0];
       world.player.y = pos[1];
     } else {
@@ -484,13 +499,16 @@
       world.player.y = world.map.spawn[1];
 
       // salida de RETORNO donde apareces: la única manera de volver atrás es la
-      // puerta que ya usaste — salvo que hayas CAÍDO (físicamente imposible)
-      if (desdeId && (!entrada || !entrada.sinRetorno)) {
+      // puerta que ya usaste — salvo que hayas CAÍDO (físicamente imposible).
+      // retornoA la pasa continueRun: al recargar no hay nivel anterior
+      // (desdeId es null) pero la puerta guardada debe seguir existiendo
+      const vueltaA = desdeId || (entrada && entrada.retornoA) || null;
+      if (vueltaA && (!entrada || !entrada.sinRetorno)) {
         world.map.exits.push({
           x: world.player.x, y: world.player.y,
           def: {
             texto: 'El camino por el que llegaste sigue abierto.',
-            destino: desdeId, tipo: 'retorno',
+            destino: vueltaA, tipo: 'retorno',
           },
         });
       }
@@ -615,6 +633,12 @@
       ex.x -= shiftX; ex.y -= shiftY;
       return dentro(ex.x, ex.y) && dist[ex.y * W + ex.x] >= 0;
     });
+    // el spawn también viaja con la ventana (lo consume enterLevel al volver
+    // sin puerta de vuelta); si cae fuera o inalcanzable, se reancla al jugador
+    world.map.spawn[0] -= shiftX;
+    world.map.spawn[1] -= shiftY;
+    const [spx, spy] = world.map.spawn;
+    if (!dentro(spx, spy) || dist[spy * W + spx] < 0) world.map.spawn = [p.x, p.y];
     const ocupadas = new Set(world.map.exits.map((ex) => ex.y * W + ex.x));
     for (const ex of nuevo.exits || []) {
       const key = ex.y * W + ex.x;
@@ -1742,6 +1766,9 @@
         dadosN: world.dadosN,
         pasosNivel: world.pasosNivel,
         caminataObjetivo: world._caminataObjetivo,
+        // la puerta personal de vuelta del nivel actual: null si la entrada
+        // fue sinRetorno (caída, caminata, teleport de depuración)
+        retorno: world.map.exits.find((e) => e.def.tipo === 'retorno')?.def.destino || null,
         tutorial: world.tutorial,
       }));
     } catch (e) { /* almacenamiento no disponible */ }
@@ -1780,7 +1807,8 @@
     world._muerteSmiler = false;
     world._fuenteDano = null;
     world.level = null;
-    enterLevel(s.levelId, 'Retomas la marcha donde lo dejaste.');
+    enterLevel(s.levelId, 'Retomas la marcha donde lo dejaste.',
+      s.retorno ? { retornoA: s.retorno } : undefined);
     world.pasosNivel = Math.max(0, s.pasosNivel || 0);
     if (s.caminataObjetivo) world._caminataObjetivo = s.caminataObjetivo;
     const f = world.pasosNivel / Math.max(1, world._caminataObjetivo);
