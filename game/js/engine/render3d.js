@@ -36,6 +36,7 @@
   let itemSprites = new Map();   // index -> sprite
   let otrosSprites = new Map();  // id -> sprite (jugadores remotos del MMO)
   let playerSprite = null;
+  let playerMaskSprite = null;   // capa opcional (máscara de gas) sobre el jugador
   let texCache = new Map();      // clave -> THREE.Texture
   let grain = null;
   let camBobT = 0;
@@ -380,6 +381,7 @@
     itemSprites.clear();
     otrosSprites.clear();
     playerSprite = null;
+    playerMaskSprite = null;
   }
 
   function quad(pos, uv, idx, corners, uvRect, nor) {
@@ -1280,6 +1282,14 @@
       playerSprite.scale.set(1, SPRITE_H, 1);
       actorGroup.add(playerSprite);
     }
+    if (!playerMaskSprite) {
+      // capa de la máscara de gas: billboard aparte pegado al del cuerpo, sin
+      // escribir en el depth buffer para que nunca compita con él (v25.1)
+      playerMaskSprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }));
+      playerMaskSprite.scale.set(1, SPRITE_H, 1);
+      playerMaskSprite.renderOrder = 1;
+      actorGroup.add(playerMaskSprite);
+    }
 
     // jugador: orientación del sprite RELATIVA a la cámara
     let sid, sflip = false;
@@ -1307,6 +1317,7 @@
       else if (svy < 0) sid = 'player_up';
       else { sid = 'player_side'; sflip = svx < 0; }
     }
+    const maskId = sid.replace('player_', 'mascara_'); // antes de sumar _herido
     // malherido: el propio sprite lo cuenta (sangre y palidez)
     if (p.salud < 35 && Sprites.tiene(sid + '_herido')) sid += '_herido';
     const pframe = world.moving ? Math.floor(t / 150) % Sprites.frameCount(sid) : 0;
@@ -1314,6 +1325,16 @@
     playerSprite.material.needsUpdate = true;
     playerSprite.position.set(px, SPRITE_H / 2 + 0.02, pz);
     playerSprite.visible = !world.escondido; // dentro de un mueble no se te ve
+
+    // capa de la máscara de gas (PUESTA en la ranura de cara): PNG opcional
+    const conMascara = world.equipado && world.equipado('mascara_gas') && Sprites.tiene(maskId);
+    playerMaskSprite.visible = conMascara && !world.escondido;
+    if (conMascara) {
+      const mframe = pframe % Sprites.frameCount(maskId);
+      playerMaskSprite.material.map = spriteTexFlip(maskId, mframe, sflip);
+      playerMaskSprite.material.needsUpdate = true;
+      playerMaskSprite.position.copy(playerSprite.position);
+    }
 
     // entidades (crear bajo demanda, ocultar si no visibles)
     for (const e of world.entities) {

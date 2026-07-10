@@ -744,6 +744,15 @@
     ctx.restore();
   }
 
+  // capa visual de la máscara de gas (v25.1): sin arte procedural — solo
+  // overrides PNG en game/assets/sprites/mascara_down.png, _up.png, _side.png
+  // (hoja horizontal de 48×48 como cualquier otro override; opcional, si no
+  // existen no se dibuja nada). Se compone SOBRE el sprite del jugador.
+  const CAPA_MASCARA_GAS = ['mascara_down', 'mascara_up', 'mascara_side'];
+
   build();
-  window.Sprites = { get, tryOverrides, drawProp, frameCount, tiene, list: () => Object.keys(DEFS) };
+  window.Sprites = {
+    get, tryOverrides, drawProp, frameCount, tiene, list: () => Object.keys(DEFS),
+    CAPA_MASCARA_GAS,
+  };
 })();

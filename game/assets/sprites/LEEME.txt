@@ -20,3 +20,12 @@ IDs disponibles:
  (El smiler no usa sprite: son sus ojos y sonrisa brillando en la oscuridad.)
 
 Si el PNG existe, el juego lo usa automáticamente; si no, usa el pixel-art integrado.
+
+CAPAS DE EQUIPO (se dibujan ENCIMA del sprite del jugador)
+------------------------------------------------------------
+ Máscara de gas: mascara_down, mascara_up, mascara_side.png
+ Estas NO tienen pixel-art integrado — si no existen, simplemente no se
+ dibuja nada (la máscara sigue funcionando por su efecto, solo falta la capa
+ visual). Se muestran automáticamente en cuanto la máscara de gas está
+ PUESTA (ranura de cara), en 2D y en 3D, respetando la dirección/flip del
+ jugador. Mismo formato: 48×48 por frame, fondo transparente.

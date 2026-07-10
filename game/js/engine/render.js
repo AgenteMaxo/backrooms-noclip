@@ -172,6 +172,13 @@
     ctx.translate(px + 24, py + 20);
     ctx.scale(p.flip ? -resp : resp, resp);
     ctx.drawImage(img, -24, -24);
+    // capa de máscara de gas (PUESTA en la ranura de cara): PNG opcional en
+    // game/assets/sprites/mascara_<dir>.png, se compone encima del cuerpo
+    if (world.equipado && world.equipado('mascara_gas')) {
+      const maskId = 'mascara_' + dir;
+      if (Sprites.tiene(maskId))
+        ctx.drawImage(Sprites.get(maskId, frame % Sprites.frameCount(maskId)), -24, -24);
+    }
     ctx.restore();
   }
 

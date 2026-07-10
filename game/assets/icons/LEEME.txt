@@ -1,0 +1,23 @@
+ICONOS PERSONALIZADOS
+======================
+
+Coloca aquí archivos PNG para sustituir el icono pixel-art de la UI sin tocar código.
+
+Formato:
+ - Nombre del archivo: <id>.png  (ej.: mascara.png)
+ - Imagen cuadrada, fondo transparente. Un solo cuadro (los iconos no animan).
+ - Cualquier resolución sirve (se escala con image-rendering:pixelated, así
+   que un PNG grande y suave se verá "pixelado" al reducirse igualmente).
+   64×64 o 128×128 son buenos tamaños de partida.
+
+IDs disponibles: cualquier id de game/js/ui/icons.js (main.js llama a
+Icons.tryOverrides(Icons.list()) al arrancar, igual que con los sprites).
+El único que interesa por ahora:
+ mascara  → icono de la máscara de gas (mochila, mano del HUD, ficha de objeto)
+
+Si el PNG existe, el juego lo usa automáticamente; si no, usa el pixel-art
+integrado (matriz 12×12 en game/js/ui/icons.js).
+
+Nota: esto es independiente de la CAPA visual sobre el personaje
+(game/assets/sprites/mascara_down.png, _up.png, _side.png) — este PNG es
+solo el icono pequeño de la interfaz.
