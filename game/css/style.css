@@ -624,13 +624,14 @@ details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
   .title-box { padding: 16px 20px; }
   .title-box h1 { font-size: 30px; letter-spacing: 5px; margin-bottom: 6px; }
   .subtitle { margin-bottom: 16px; font-size: 15px; }
-  .intro-text { margin-bottom: 16px; font-size: 16px; line-height: 1.45; }
-  #profile-box { padding: 10px 14px; margin-bottom: 12px; }
+  .intro-text { margin-bottom: 8px; font-size: 16px; line-height: 1.45; }
+  .backrooms-census { min-height: 24px; margin: -4px auto 8px; padding: 3px 11px; font-size: 14px; }
+  #profile-box { padding: 10px 14px; margin-bottom: 8px; }
   .profile-title { margin-bottom: 6px; }
   .seed-row { margin-bottom: 10px; }
   .room-row { margin-bottom: 10px; }
   .btn-big { padding: 12px 24px; }
-  .hint { margin-top: 14px; font-size: 13px; line-height: 1.5; }
+  .hint { margin-top: 8px; font-size: 13px; line-height: 1.5; }
   
   .level-card { padding: 20px 24px; }
   .level-card h2 { font-size: 15px; margin-bottom: 4px; }
@@ -654,8 +655,9 @@ details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
   .title-box { padding: 8px 12px; }
   .title-box h1 { font-size: 24px; letter-spacing: 3px; margin-bottom: 4px; }
   .subtitle { margin-bottom: 8px; font-size: 14px; }
-  .intro-text { margin-bottom: 8px; font-size: 14px; line-height: 1.35; }
-  #profile-box { padding: 8px 10px; margin-bottom: 8px; }
+  .intro-text { margin-bottom: 3px; font-size: 14px; line-height: 1.35; }
+  .backrooms-census { min-height: 21px; margin: 0 auto 4px; padding: 1px 9px; font-size: 13px; }
+  #profile-box { padding: 8px 10px; margin-bottom: 4px; }
   .seed-row { margin-bottom: 6px; }
   .room-row { margin-bottom: 6px; }
   .btn-big { padding: 10px 20px; font-size: 11px; }
@@ -672,6 +674,7 @@ details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
 
 @media (max-height: 580px) {
   .intro-text { display: none; }
+  .backrooms-census { display: none; }
   .hint { display: none; }
   .card-quote { display: none; }
 }
@@ -751,4 +754,3 @@ details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
 .btn-music-float * {
   pointer-events: none;
 }
-
