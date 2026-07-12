@@ -735,14 +735,10 @@
     base(0.95);
     switch (estilo) {
       case 'moqueta_humeda':
+        // los cercos de humedad NO se hornean aquí: al vivir dentro del lienzo
+        // macro se repetían cada 2 tiles de forma visible. Ahora se dispersan
+        // como decals sueltos por render3d.js (ver tiles.manchas más abajo).
         spk(0.78, 2700); spk(1.14, 1750); spkDet(0.9, 500, 2);
-        ctx.globalAlpha = 0.3;
-        ctx.fillStyle = shade(pal.detalle, 0.75);
-        for (let i = 0; i < 5; i++) {
-          const ex = rng.int(0, S), ey = rng.int(0, S), r1 = rng.int(20, 34), r2 = rng.int(14, 22);
-          wrap((ox, oy) => { ctx.beginPath(); ctx.ellipse(ex + ox, ey + oy, r1, r2, rng.f(), 0, 7); ctx.fill(); });
-        }
-        ctx.globalAlpha = 1;
         break;
       case 'moqueta':
         spk(0.78, 2700); spk(1.14, 1750);
@@ -873,6 +869,7 @@
         wallStyle,
         suelo: [0, 1, 2].map((v) => floorTile(pal, estiloSuelo, rng, v)),
         sueloSeam: floorSeam(pal, estiloSuelo, rngHD),
+        manchas: estiloSuelo === 'moqueta_humeda',
         agua: aguaTile(pal, rng),
         decor: decorTile(pal, levelDef.bioma, estiloSuelo, rng),
         caraFull: wallStyle === 'tabique' ? buildCaraFull(pal, estiloPared, rng) : null,
