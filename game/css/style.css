@@ -468,9 +468,36 @@ body.fs #game-canvas, body.fs #gl-canvas { border: none; box-shadow: none; }
 /* ---------- códice ---------- */
 #codex-panel, #changelog-panel { position: fixed; inset: 0; background: rgba(3,3,2,.88);
   display: flex; align-items: center; justify-content: center; z-index: 30; }
+.codex-box-wrapper { position: relative; max-height: 88vh; }
 .codex-box { width: min(720px, 94vw); max-height: 88vh; overflow: auto;
   border: 8px solid transparent; border-image: var(--marco) 8 fill stretch;
   padding: 24px 30px; }
+.btn-close-box {
+  position: absolute;
+  top: 20px;
+  right: 34px;
+  background: transparent;
+  border: 1px solid var(--borde);
+  color: var(--gris);
+  font-family: inherit;
+  font-size: 20px;
+  line-height: 1;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all .12s;
+  z-index: 10;
+}
+.btn-close-box:hover {
+  color: var(--hueso);
+  border-color: var(--gris);
+}
+.btn-close-box:active {
+  transform: translateY(1px);
+}
 .codex-box h2 { color: var(--amarillo); font-size: 22px; margin-bottom: 6px; }
 .codex-records { color: var(--gris); font-size: 16px; margin-bottom: 18px; }
 .codex-box h3 { color: var(--gris); font-size: 16px; letter-spacing: 1px; margin: 18px 0 8px; }

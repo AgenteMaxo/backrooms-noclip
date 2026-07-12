@@ -46,6 +46,75 @@
   document.addEventListener('keydown', () => Sfx.unlock(), { once: true });
   document.addEventListener('click', () => Sfx.unlock(), { once: true });
 
+  // Cierre global consistente de paneles mediante tecla ESC o C (Reportado por aimar667 [HYTL])
+  document.addEventListener('keydown', (ev) => {
+    if (ev.code !== 'Escape' && ev.code !== 'KeyC') return;
+
+    // Si están escribiendo en un input, ignorar atajos de teclado de una sola letra (como 'C')
+    const activeEl = document.activeElement;
+    const typing = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable);
+    if (typing && ev.code !== 'Escape') return;
+
+    // 1. Panel de Changelog
+    const changelogPanel = document.getElementById('changelog-panel');
+    if (changelogPanel && changelogPanel.style.display !== 'none') {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (window.world && world.ui && typeof world.ui.toggleChangelog === 'function') {
+        world.ui.toggleChangelog(false);
+      } else {
+        changelogPanel.style.display = 'none';
+      }
+      return;
+    }
+
+    // 2. Panel de Códice
+    const codexPanel = document.getElementById('codex-panel');
+    if (codexPanel && codexPanel.style.display !== 'none') {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (window.world && world.ui && typeof world.ui.toggleCodex === 'function') {
+        world.ui.toggleCodex(false);
+      } else {
+        codexPanel.style.display = 'none';
+      }
+      return;
+    }
+
+    // 3. Menú de sonido/ajustes (solo con Escape)
+    const sndMenu = document.getElementById('sound-menu');
+    if (sndMenu && sndMenu.style.display !== 'none' && ev.code === 'Escape') {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (typeof cerrarSndMenu === 'function') {
+        cerrarSndMenu();
+      } else {
+        sndMenu.style.display = 'none';
+      }
+      return;
+    }
+
+    // 4. Abrir Códice en la pantalla de título si se pulsa C
+    if (ev.code === 'KeyC' && (!window.world || !world.level || world.over)) {
+      const titleScreen = document.getElementById('screen-title');
+      if (titleScreen && titleScreen.style.display !== 'none') {
+        const sndMenu = document.getElementById('sound-menu');
+        if (
+          (!codexPanel || codexPanel.style.display === 'none') &&
+          (!changelogPanel || changelogPanel.style.display === 'none') &&
+          (!sndMenu || sndMenu.style.display === 'none')
+        ) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          if (window.world && world.ui && typeof world.ui.toggleCodex === 'function') {
+            world.ui.toggleCodex(true);
+          }
+          return;
+        }
+      }
+    }
+  }, { capture: true });
+
   // slider de volumen del título (en partida el volumen vive en Ajustes: ESC)
   for (const sid of ['vol-slider-title']) {
     const s = document.getElementById(sid);

@@ -274,40 +274,44 @@
 
   <!-- Códice del Errante (superpuesto, accesible desde título y juego con C) -->
   <div id="codex-panel" style="display:none">
-    <div class="codex-box">
-      <h2><span data-icon="libro" data-icon-size="17"></span> Códice del Errante — <span id="codex-name"></span></h2>
-      <p id="codex-records" class="codex-records"></p>
-      <details class="cdx" id="cdx-niveles" open>
-        <summary>Niveles transitados <span class="cdx-n" id="cdx-n-niveles"></span></summary>
-        <div id="codex-levels"></div>
-      </details>
-      <details class="cdx">
-        <summary>Colección — entidades <span class="cdx-n" id="cdx-n-ent"></span></summary>
-        <div id="codex-entidades" class="col-grid"></div>
-      </details>
-      <details class="cdx">
-        <summary>Colección — objetos <span class="cdx-n" id="cdx-n-obj"></span></summary>
-        <div id="codex-objetos" class="col-grid"></div>
-      </details>
-      <details class="cdx">
-        <summary>Salidas descubiertas <span class="cdx-n" id="cdx-n-sal"></span></summary>
-        <div id="codex-salidas"></div>
-      </details>
-      <details class="cdx">
-        <summary>Últimas expediciones <span class="cdx-n" id="cdx-n-hist"></span></summary>
-        <ol id="codex-history"></ol>
-      </details>
-      <button id="btn-codex-close" class="btn-small">Cerrar (C)</button>
+    <div class="codex-box-wrapper">
+      <button id="btn-codex-close-top" class="btn-close-box" aria-label="Cerrar">&times;</button>
+      <div class="codex-box">
+        <h2><span data-icon="libro" data-icon-size="17"></span> Códice del Errante — <span id="codex-name"></span></h2>
+        <p id="codex-records" class="codex-records"></p>
+        <details class="cdx" id="cdx-niveles" open>
+          <summary>Niveles transitados <span class="cdx-n" id="cdx-n-niveles"></span></summary>
+          <div id="codex-levels"></div>
+        </details>
+        <details class="cdx">
+          <summary>Colección — entidades <span class="cdx-n" id="cdx-n-ent"></span></summary>
+          <div id="codex-entidades" class="col-grid"></div>
+        </details>
+        <details class="cdx">
+          <summary>Colección — objetos <span class="cdx-n" id="cdx-n-obj"></span></summary>
+          <div id="codex-objetos" class="col-grid"></div>
+        </details>
+        <details class="cdx">
+          <summary>Salidas descubiertas <span class="cdx-n" id="cdx-n-sal"></span></summary>
+          <div id="codex-salidas"></div>
+        </details>
+        <details class="cdx">
+          <summary>Últimas expediciones <span class="cdx-n" id="cdx-n-hist"></span></summary>
+          <ol id="codex-history"></ol>
+        </details>
+      </div>
     </div>
   </div>
 
   <!-- Changelog (accesible desde título) -->
   <div id="changelog-panel" style="display:none">
-    <div class="codex-box">
-      <h2><span data-icon="reloj" data-icon-size="17"></span> Changelog</h2>
-      <p class="codex-records">Qué ha cambiado en el juego, versión a versión — lo más reciente arriba.</p>
-      <div id="changelog-list"></div>
-      <button id="btn-changelog-close" class="btn-small">Cerrar</button>
+    <div class="codex-box-wrapper">
+      <button id="btn-changelog-close-top" class="btn-close-box" aria-label="Cerrar">&times;</button>
+      <div class="codex-box">
+        <h2><span data-icon="reloj" data-icon-size="17"></span> Changelog</h2>
+        <p class="codex-records">Qué ha cambiado en el juego, versión a versión — lo más reciente arriba.</p>
+        <div id="changelog-list"></div>
+      </div>
     </div>
   </div>
 
