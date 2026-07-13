@@ -80,6 +80,13 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
   padding: 7px 16px; cursor: pointer; margin-top: 12px; transition: all .12s; }
 .btn-small:hover { color: var(--hueso); border-color: var(--gris); }
 .btn-small:active { transform: translateY(1px); }
+/* botón discreto de partida en solitario, bajo el DESPERTAR grande */
+.btn-offline { display: block; margin: 7px auto 0; padding: 3px 10px;
+  background: transparent; color: var(--gris); border: 1px solid var(--borde);
+  font-family: inherit; font-size: 13px; letter-spacing: 1px; cursor: pointer;
+  opacity: .8; transition: all .12s; }
+.btn-offline:hover { color: var(--hueso); border-color: var(--gris); opacity: 1; }
+.btn-offline:active { transform: translateY(1px); }
 /* aviso sutil de "hay novedades" (changelog no visto): desaparece al abrirlo */
 .btn-small.novedad { border-color: var(--amarillo); color: var(--amarillo);
   animation: glow-novedad 2.2s ease-in-out infinite; }

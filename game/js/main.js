@@ -1816,6 +1816,15 @@
   $id('btn-start').onclick = () => {
     conectarAlServidor($id('btn-start'));
   };
+  // modo offline (partida en solitario, sin servidor): recarga con
+  // ?autostart=1 — es la señal que ya usa TODO el arranque offline
+  // (input por turnos, D-pad táctil...), así no hay un segundo camino
+  $id('btn-offline').onclick = () => {
+    const p = new URLSearchParams(location.search);
+    p.set('autostart', '1');
+    p.delete('online');
+    location.search = p.toString();
+  };
   $id('btn-again').onclick = () => {
     refreshTitle();
     world.ui.show('title');
