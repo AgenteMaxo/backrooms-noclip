@@ -1957,6 +1957,15 @@
     if (window.Changelog) Changelog.marcarVisto();
     world.ui.toggleChangelog(true);
   };
+  $id('btn-level-map').onclick = () => {
+    // El generador deja mapa.html utilizable tanto al abrir index.html desde
+    // disco como al servir el juego desde /. El propio mapa comparte
+    // DailySeed y actualiza sus rutas al cambiar el día.
+    const ruta = location.protocol === 'file:'
+      ? '../data/game/mapa.html'
+      : '/mapa.html';
+    window.open(ruta, '_blank', 'noopener');
+  };
 
   // ---------- Selector de Música de Menú ----------
   const btnMusicMenu = $id('btn-music-menu');
