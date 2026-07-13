@@ -1139,6 +1139,26 @@
     return c ? tex(c, key) : null;
   }
 
+  // variante con capas de personalización (pelo/ojos/ropa) compuestas y
+  // teñidas — la clave de textura suma la apariencia para no compartir caché
+  // entre jugadores con distinto estilo/color (v28)
+  function apKey(apariencia) {
+    if (!apariencia) return '';
+    // v28.14: el modo (hazmat/personalizado) cambia el sprite entero aunque
+    // las 6 categorías de abajo queden iguales (se conservan aunque no se
+    // usen) — sin esto, cambiar de modo reusaba la textura vieja de la caché
+    return apariencia.modo + '-' + ['cabello', 'ojos', 'vello', 'superior', 'inferior', 'piel']
+      .map((c) => (apariencia[c] ? apariencia[c].estilo + apariencia[c].color : ''))
+      .join('-');
+  }
+  function spriteTexTintado(glyph, apariencia, frame, flip) {
+    if (!apariencia) return spriteTexFlip(glyph, frame, flip);
+    const key = 'ent-' + glyph + '-' + frame + (flip ? '-f' : '') + '-ap' + apKey(apariencia);
+    if (texCache.has(key)) return texCache.get(key);
+    const c = Sprites.getTintado(glyph, apariencia, frame, flip);
+    return c ? tex(c, key) : null;
+  }
+
   function entVisible(world, e) {
     const g = world.map.grid;
     // v22: posiciones flotantes — el índice de luz va por tile redondeado
@@ -1317,7 +1337,7 @@
     // malherido: el propio sprite lo cuenta (sangre y palidez)
     if (p.salud < 35 && Sprites.tiene(sid + '_herido')) sid += '_herido';
     const pframe = world.moving ? Math.floor(t / 150) % Sprites.frameCount(sid) : 0;
-    playerSprite.material.map = spriteTexFlip(sid, pframe, sflip);
+    playerSprite.material.map = spriteTexTintado(sid, p.apariencia, pframe, sflip);
     playerSprite.material.needsUpdate = true;
     playerSprite.position.set(px, SPRITE_H / 2 + 0.02, pz);
     playerSprite.visible = !world.escondido; // dentro de un mueble no se te ve
@@ -1398,7 +1418,7 @@
         const f2 = (Math.abs(o.rx - o.x) + Math.abs(o.ry - o.y) > 0.03)
           ? Math.floor(t / 150) % Sprites.frameCount(sid2) : 0;
         s.visible = true;
-        s.material.map = spriteTexFlip(sid2, f2, flip2);
+        s.material.map = spriteTexTintado(sid2, o.apariencia, f2, flip2);
         s.material.needsUpdate = true;
         s.position.set(o.rx + 0.5, SPRITE_H / 2 + 0.02, o.ry + 0.5);
       }

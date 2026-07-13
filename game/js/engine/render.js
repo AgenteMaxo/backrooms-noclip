@@ -162,7 +162,7 @@
     let spriteId = dir === 'side' ? 'player_side' : 'player_' + dir;
     if (p.salud < 35 && Sprites.tiene && Sprites.tiene(spriteId + '_herido')) spriteId += '_herido';
     const frame = world.moving ? Math.floor(t / 150) % Sprites.frameCount(spriteId) : 0;
-    const img = Sprites.get(spriteId, frame);
+    const img = Sprites.getTintado(spriteId, p.apariencia, frame, false);
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath(); ctx.ellipse(px + 24, py + 40, 11, 4, 0, 0, 7); ctx.fill();
@@ -726,7 +726,7 @@
         const dir = d4 === 0 ? 'up' : d4 === 2 ? 'down' : 'side';
         const sid = 'player_' + dir;
         const anda = Math.abs(o.rx - o.x) + Math.abs(o.ry - o.y) > 0.03;
-        const img = Sprites.get(sid, anda ? Math.floor(t / 150) % Sprites.frameCount(sid) : 0);
+        const img = Sprites.getTintado(sid, o.apariencia, anda ? Math.floor(t / 150) % Sprites.frameCount(sid) : 0, false);
         ctx.save();
         ctx.translate(ox + 24, oy + 20);
         if (d4 === 3) ctx.scale(-1, 1);

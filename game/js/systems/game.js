@@ -56,6 +56,7 @@
           codice: {},
           records: { runs: 0, maxNiveles: 0, maxTurnos: 0, escapes: 0 },
           historial: [],
+          apariencia: Apariencia.DEFECTO,
         };
       }
       d.activo = nombre;
@@ -134,6 +135,17 @@
         });
         p.historial = p.historial.slice(0, 20);
       });
+    },
+    // personalización de personaje (v28): estilo+color de pelo/ojos/ropa,
+    // se recuerda por perfil de una partida a otra
+    apariencia() {
+      const p = this.get();
+      return Apariencia.normalizar(p && p.apariencia);
+    },
+    setApariencia(apariencia) {
+      const limpia = Apariencia.normalizar(apariencia);
+      this._update((p) => { p.apariencia = limpia; });
+      return limpia;
     },
     exportar() {
       const d = this._load();
@@ -379,6 +391,7 @@
       salud: 100, cordura: 100, sed: 100, hambre: 100,
       sintonia: 0, instintos: [], umbrales: [],
       inv: [], manos: [null, null], equipo: { cara: null, cuerpo: null, pies: null },
+      apariencia: Profiles.apariencia(),
       luz: false, viva: true,
     };
     world.journal = [];
@@ -1755,6 +1768,7 @@
           sed: world.player.sed, hambre: world.player.hambre,
           inv: world.player.inv, manos: world.player.manos,
           equipo: world.player.equipo,
+          apariencia: world.player.apariencia,
           sintonia: world.player.sintonia, instintos: world.player.instintos,
           umbrales: world.player.umbrales,
         },
@@ -1789,6 +1803,7 @@
       umbrales: s.player.umbrales || [],
       inv: s.player.inv, manos: s.player.manos || [null, null],
       equipo: s.player.equipo || { cara: null, cuerpo: null, pies: null },
+      apariencia: Apariencia.normalizar(s.player.apariencia || Profiles.apariencia()),
       luz: false, viva: true,
     };
     world.journal = s.journal;

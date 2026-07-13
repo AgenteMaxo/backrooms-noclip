@@ -4,6 +4,33 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
+    { v: 'v28.7', cambios: [
+      'El pelo ahora se dibuja por delante de la ropa (antes podía quedar tapado por cuellos o capuchas).',
+    ] },
+    { v: 'v28.6', cambios: [
+      'Arreglado: la miniatura de "Parte superior" se veía estirada en el personalizador.',
+      'Nueva opción "Sin ropa" en la parte superior del personalizador.',
+    ] },
+    { v: 'v28.5', cambios: [
+      'La ropa (parte superior e inferior) ya puede animarse al caminar, igual que el resto del personaje.',
+    ] },
+    { v: 'v28.4', cambios: [
+      'Ajuste técnico interno en cómo se cargan las prendas de "Parte superior"/"Parte inferior" — sin cambios para el jugador.',
+    ] },
+    { v: 'v28.3', cambios: [
+      'La ropa se divide ahora en "Parte superior" y "Parte inferior", cada una con sus propias opciones.',
+    ] },
+    { v: 'v28.2', cambios: [
+      'Más colores fantasía para el cabello y el vello facial (rosa, azul, violeta, verde, rojo), además de los naturales.',
+      'El personalizador ya no tiene tope fijo de estilos por categoría — se irán sumando más opciones de pelo, ojos, vello y ropa con el tiempo.',
+    ] },
+    { v: 'v28.1', cambios: [
+      'Personalización ampliada: ahora también podés elegir vello facial (o dejarlo sin barba) y el tono de piel de tu personaje.',
+    ] },
+    { v: 'v28.0', cambios: [
+      'Nuevo botón "Personalizar" en el título: elegí estilo y color de pelo, ojos y ropa antes de despertar en Level 0.',
+      'Tu apariencia ahora se ve también para los demás jugadores en la partida online.',
+    ] },
     { v: 'v27.2', cambios: [
       'Nueva pestaña Changelog en la pantalla de título: qué ha cambiado en cada versión, resumido.',
     ] },

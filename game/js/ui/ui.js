@@ -712,6 +712,238 @@
     $('choice-modal').style.display = 'flex';
   }
 
+  // ---------- personalización de personaje (v28): estilo + color de pelo/ojos/ropa ----------
+  // se abre desde el título, ANTES de que exista world.player — trabaja sobre
+  // una copia local hasta "Confirmar", que la persiste en el perfil activo
+  function pintarApariencia(sel) {
+    const cv = $('ap-preview-canvas');
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, 48, 48);
+    const img = Sprites.getTintado('player_down', sel, 0, false);
+    if (img) ctx.drawImage(img, 0, 0);
+  }
+
+  // v28.8: selector estilo Stardew Valley — flechas + texto ("Piel 1",
+  // "Cabello 2"...), sin cuadrados de color ni grillas de miniaturas; el
+  // único preview visual es el muñeco grande de arriba (ap-preview-canvas),
+  // así que ninguna fila necesita ya dibujar su propio recorte de cabeza.
+  // v28.9: el COLOR de cabello/vello/ojos pasó a ser continuo (3 sliders
+  // R/G/B, ver refrescarColorRGB — y Sprites.tintarCapa→tintarMultiply en
+  // sprites.js, que aplica ese RGB como multiplicador sobre el sprite gris
+  // de la capa) — "piel" es la ÚNICA que conserva flechas sobre una paleta
+  // fija (tintarCuerpo sigue con el remapeo de 3 tonos, no el multiplicador).
+  const NOMBRE_SIN = { cabello: 'Sin pelo', vello: 'Sin vello facial', superior: 'Sin ropa' };
+  const NOMBRE_CAT = { piel: 'Piel', cabello: 'Cabello', ojos: 'Ojos', vello: 'Vello', superior: 'Superior', inferior: 'Inferior' };
+  const CATS_ESTILO = ['cabello', 'ojos', 'vello', 'superior', 'inferior'];
+  const CATS_COLOR_RGB = Apariencia.CATEGORIAS_COLOR_RGB; // ['cabello','vello','ojos']
+
+  function numeroEstilo(estilo) {
+    const m = /(\d+)$/.exec(estilo || '');
+    return m ? m[1] : '?';
+  }
+
+  // pinta una fila "◀ texto ▶" reusable — estilo (todas las categorías) y
+  // el color de "piel" (la única que sigue siendo una paleta fija)
+  function pintarFlecha(el, texto, onIzq, onDer) {
+    el.innerHTML = '';
+    const bIzq = document.createElement('button');
+    bIzq.className = 'ap-arrow'; bIzq.textContent = '◀'; bIzq.onclick = onIzq;
+    const span = document.createElement('span');
+    span.className = 'ap-valor'; span.textContent = texto;
+    const bDer = document.createElement('button');
+    bDer.className = 'ap-arrow'; bDer.textContent = '▶'; bDer.onclick = onDer;
+    el.appendChild(bIzq); el.appendChild(span); el.appendChild(bDer);
+  }
+
+  function refrescarEstiloFila(cat, sel) {
+    const el = $('ap-estilo-' + cat);
+    if (!el) return;
+    const opciones = Apariencia.CATEGORIAS_OPCIONALES.includes(cat)
+      ? [null, ...Sprites.estilosDisponibles(cat)]
+      : Sprites.estilosDisponibles(cat);
+    if (!opciones.length) { el.innerHTML = ''; return; }
+    let idx = opciones.indexOf(sel[cat].estilo);
+    if (idx < 0) idx = 0;
+    const estilo = opciones[idx];
+    const texto = estilo === null ? (NOMBRE_SIN[cat] || 'Ninguno') : `${NOMBRE_CAT[cat]} ${numeroEstilo(estilo)}`;
+    const mover = (paso) => () => {
+      const i = (idx + paso + opciones.length) % opciones.length;
+      sel[cat] = { estilo: opciones[i], color: sel[cat].color };
+      refrescarTodo(sel);
+      pintarApariencia(sel);
+      if (window.Sfx) Sfx.play('ui');
+    };
+    pintarFlecha(el, texto, mover(-1), mover(1));
+  }
+
+  // "piel" es la ÚNICA categoría que sigue eligiendo color de una paleta
+  // fija con flechas (tiñe el cuerpo entero vía remapTonos, no un
+  // multiplicador) — cabello/vello/ojos usan refrescarColorRGB, más abajo.
+  function refrescarColorFila(cat, sel) {
+    const el = $('ap-color-' + cat);
+    if (!el) return;
+    const colores = Apariencia.PALETA[cat];
+    let idx = colores.indexOf(sel[cat].color);
+    if (idx < 0) idx = 0;
+    const texto = `${NOMBRE_CAT[cat]} ${idx + 1}`;
+    const mover = (paso) => () => {
+      const i = (idx + paso + colores.length) % colores.length;
+      sel[cat] = { estilo: sel[cat].estilo, color: colores[i] };
+      refrescarTodo(sel);
+      pintarApariencia(sel);
+      if (window.Sfx) Sfx.play('ui');
+    };
+    pintarFlecha(el, texto, mover(-1), mover(1));
+  }
+
+  function hexARgb(hex) {
+    const n = parseInt((hex || '#808080').slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function rgbAHex(r, g, b) {
+    return '#' + [r, g, b].map((v) => Math.max(0, Math.min(255, v | 0)).toString(16).padStart(2, '0')).join('');
+  }
+  // degradé negro→canal puro por fila: indica qué controla cada slider sin
+  // depender de letras/leyenda, mismo espíritu minimalista de la referencia
+  const CANALES_RGB = [
+    { k: 'r', ex: '#ff3b3b' },
+    { k: 'g', ex: '#3bff5c' },
+    { k: 'b', ex: '#3b9bff' },
+  ];
+
+  // color continuo (cabello/vello/ojos, v28.9): 3 sliders R/G/B de 0 a 255
+  // — el color final se aplica como MULTIPLICADOR sobre el sprite gris de
+  // la capa al dibujarla (Sprites.tintarCapa→tintarMultiply en sprites.js),
+  // preservando la silueta/alpha original de la capa. oninput NO reconstruye
+  // las filas (solo repinta el preview grande) para no destruir el <input>
+  // que el usuario está arrastrando en ese momento.
+  function refrescarColorRGB(cat, sel) {
+    const el = $('ap-color-' + cat);
+    if (!el) return;
+    el.innerHTML = '';
+    const valores = {};
+    [valores.r, valores.g, valores.b] = hexARgb(sel[cat].color);
+    for (const { k, ex } of CANALES_RGB) {
+      const fila = document.createElement('div');
+      fila.className = 'ap-rgb-fila';
+      const input = document.createElement('input');
+      input.type = 'range'; input.min = 0; input.max = 255; input.step = 1;
+      input.value = valores[k];
+      input.style.background = `linear-gradient(to right, #000, ${ex})`;
+      const span = document.createElement('span');
+      span.className = 'ap-valor-rgb';
+      span.textContent = valores[k];
+      input.oninput = () => {
+        valores[k] = +input.value;
+        span.textContent = input.value;
+        sel[cat] = { estilo: sel[cat].estilo, color: rgbAHex(valores.r, valores.g, valores.b) };
+        pintarApariencia(sel);
+      };
+      input.onchange = () => { if (window.Sfx) Sfx.play('ui'); };
+      fila.appendChild(input); fila.appendChild(span);
+      el.appendChild(fila);
+    }
+  }
+
+  // v28.14: modo "Traje Hazmat" (skin fija, DEFECTO) vs "Personalizar" (las
+  // 6 filas de abajo) — oculta ap-cats-personalizables entero con hazmat,
+  // ya que ninguna capa se dibuja en ese modo (Sprites.getTintado corta
+  // directo a hazmat_down/up/side, ver sprites.js). elegir piel/cabello/etc
+  // mientras está en hazmat sigue guardándose (por si vuelve a
+  // Personalizar), solo que no se ve hasta cambiar el modo.
+  // v28.16: el dado tampoco tiene sentido en "hazmat" (no hay nada que
+  // sortear), así que se oculta junto con las filas de personalización.
+  // v28.17: sin columna de opciones que mostrar, .ap-layout centra el
+  // recuadro del muñeco en el ancho del panel (ver .ap-layout.centrado en
+  // el CSS) en vez de dejarlo pegado a la derecha con la izquierda vacía.
+  function refrescarModo(sel) {
+    const esHazmat = sel.modo === 'hazmat';
+    $('btn-modo-hazmat').classList.toggle('sel', esHazmat);
+    $('btn-modo-personalizar').classList.toggle('sel', !esHazmat);
+    $('ap-cats-personalizables').style.display = esHazmat ? 'none' : '';
+    $('btn-ap-random').style.display = esHazmat ? 'none' : '';
+    $('ap-layout').classList.toggle('centrado', esHazmat);
+  }
+
+  // el color de piel tiñe TODO el cuerpo — el único lugar que lo refleja
+  // ahora es el preview grande, así que no hace falta redibujar nada más al
+  // cambiarlo; refrescarTodo simplemente reconstruye todas las filas
+  function refrescarTodo(sel) {
+    refrescarModo(sel);
+    for (const cat of CATS_ESTILO) refrescarEstiloFila(cat, sel);
+    refrescarColorFila('piel', sel);
+    for (const cat of CATS_COLOR_RGB) refrescarColorRGB(cat, sel);
+  }
+
+  // v28.12: botón de dado — sortea las 6 categorías de una (estilo y/o
+  // color según corresponda). Es puramente cosmético y corre ANTES de que
+  // exista una partida (world.player), así que no pasa por RNG.create(seed)
+  // como el resto de la aleatoriedad del juego (esa regla es para que una
+  // PARTIDA sea reproducible por semilla; esto no participa de ninguna).
+  function elegirAleatorio(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function aleatorizarApariencia(sel) {
+    // sortear un look tiene sentido en "Personalizar" — si estaba en
+    // hazmat, cambiar de modo para que el resultado se vea de una
+    sel.modo = 'personalizado';
+    sel.piel = { estilo: null, color: elegirAleatorio(Apariencia.PALETA.piel) };
+    for (const cat of CATS_ESTILO) {
+      const opciones = Apariencia.CATEGORIAS_OPCIONALES.includes(cat)
+        ? [null, ...Sprites.estilosDisponibles(cat)]
+        : Sprites.estilosDisponibles(cat);
+      const estilo = opciones.length ? elegirAleatorio(opciones) : null;
+      const color = CATS_COLOR_RGB.includes(cat)
+        ? rgbAHex(Math.random() * 256, Math.random() * 256, Math.random() * 256)
+        : null;
+      sel[cat] = { estilo, color };
+    }
+    refrescarTodo(sel);
+    pintarApariencia(sel);
+    if (window.Sfx) Sfx.play('ui');
+  }
+
+  function showApariencia() {
+    const sel = JSON.parse(JSON.stringify(Game.Profiles.apariencia()));
+    refrescarTodo(sel);
+    pintarApariencia(sel);
+    $('apariencia-panel').style.display = 'flex';
+
+    // v28.15: los overrides PNG (hazmat_down.png, capas de apariencia...)
+    // cargan async (Image.onload) — si el panel ya se pintó antes de que
+    // terminaran, nada disparaba un repintado solo y el preview se quedaba
+    // mostrando el placeholder procedural para siempre. Este watcher
+    // repinta apenas Sprites.version() suba (mismo contador que usa
+    // render3d.js para lo mismo en la escena 3D).
+    let versionVista = Sprites.version();
+    const watcher = setInterval(() => {
+      const v = Sprites.version();
+      if (v !== versionVista) { versionVista = v; pintarApariencia(sel); }
+    }, 200);
+
+    $('btn-ap-random').onclick = () => aleatorizarApariencia(sel);
+    $('btn-modo-hazmat').onclick = () => {
+      sel.modo = 'hazmat';
+      refrescarModo(sel);
+      pintarApariencia(sel);
+      if (window.Sfx) Sfx.play('ui');
+    };
+    $('btn-modo-personalizar').onclick = () => {
+      sel.modo = 'personalizado';
+      refrescarModo(sel);
+      pintarApariencia(sel);
+      if (window.Sfx) Sfx.play('ui');
+    };
+    $('btn-apariencia-close').onclick = () => {
+      clearInterval(watcher);
+      Game.Profiles.setApariencia(sel);
+      $('apariencia-panel').style.display = 'none';
+      if (window.Sfx) Sfx.play('ui');
+    };
+    if (window.Sfx) Sfx.play('ui');
+  }
+
   // ---------- diario ----------
   function renderJournal(listEl) {
     listEl.innerHTML = '';
@@ -931,6 +1163,7 @@
     log, updateHUD, flashDamage, showLevelCard, showDice,
     showExitModal, showLevelPicker, showChoice, toggleJournal, showEnd, show, toggleCodex,
     toggleBackpack, toggleLog, showInstintos, pulsarMano, toggleChangelog,
+    showApariencia,
     get flashT() { return flashT; },
   };
 })();

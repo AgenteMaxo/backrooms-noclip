@@ -27,6 +27,7 @@
       rx: j.x, ry: j.y, rot: j.rot ?? 2,
       chat: null, chatT: 0,
       escondido: !!j.escondido, luz: false,
+      apariencia: Apariencia.normalizar(j.apariencia), // v28: pelo/ojos/ropa elegidos
       _snaps: [{ t: performance.now(), x: j.x, y: j.y }],
     });
     sincroniza();

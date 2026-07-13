@@ -486,6 +486,99 @@ details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
 .col-nivel { border: 1px solid var(--borde); background: #0f0e0a; padding: 10px 14px;
   margin-bottom: 8px; font-size: 15px; }
 .col-nivel ul { padding-left: 20px; color: #cfc8b0; line-height: 1.55; }
+
+/* ---------- personalización de personaje (v28) ---------- */
+#apariencia-panel { position: fixed; inset: 0; background: rgba(3,3,2,.88);
+  display: flex; align-items: center; justify-content: center; z-index: 30; }
+/* v28.12: cabecera con el botón de aleatorio arriba a la derecha */
+.ap-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.ap-cab h2 { margin-bottom: 0; }
+.ap-dado { width: 34px; height: 34px; padding: 0; background: #0f0e0a; border: 1px solid var(--borde);
+  cursor: pointer; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.ap-dado:hover { border-color: var(--amarillo-osc); box-shadow: 0 0 8px rgba(217,198,110,.3); }
+.ap-dado:active { transform: translateY(1px); }
+/* v28.10: opciones a la izquierda, muñeco a la derecha (pedido del usuario).
+   align-items:stretch hace que .ap-preview (el item flex) ocupe TODA la
+   altura de la fila (la de .ap-opciones, la columna más alta) — le da
+   "recorrido" vertical a su hijo sticky para poder centrarse en él. */
+.ap-layout { display: flex; align-items: stretch; gap: 26px; }
+/* v28.17: con "Traje Hazmat" .ap-opciones (=#ap-cats-personalizables, ver
+   HTML) se oculta ENTERA — ya no queda ningún hijo suyo en el layout de dos
+   columnas (el selector de modo se movió afuera, arriba de .ap-layout, así
+   que es full-width en cualquier modo). Sin la columna de opciones, .centrado
+   centra el único hijo que queda (.ap-preview) en el ancho del panel — pedido
+   explícito del usuario, ya que dejarlo pegado a la derecha con toda la
+   izquierda vacía se veía descentrado. Reemplaza el min-height de v28.16
+   (ya no hace falta: sin columna hermana para "estirarse" a su altura, el
+   sticky-centrado no tiene con qué flotar, así que no hay riesgo de que
+   invada la cabecera). */
+.ap-layout.centrado { justify-content: center; }
+.ap-opciones { flex: 1; min-width: 0; }
+/* v28.14: elegir entre la skin fija de Hazmat o personalizar — control
+   segmentado (dos botones pegados, uno "activo" resaltado), full-width
+   arriba de .ap-layout; el resto de las filas se oculta entera con "Traje
+   Hazmat" (nada de eso aplica sin capas que teñir) */
+.ap-modo { display: flex; gap: 0; margin-bottom: 14px; border: 1px solid var(--borde); }
+.ap-modo-btn { flex: 1; padding: 8px 4px; background: #0f0e0a; border: none;
+  color: var(--gris); font-family: inherit; font-size: 13px; cursor: pointer; }
+.ap-modo-btn:not(:last-child) { border-right: 1px solid var(--borde); }
+.ap-modo-btn:hover { color: var(--hueso); }
+.ap-modo-btn.sel { background: #1c1810; color: var(--amarillo); }
+/* v28.12: un poco más separado del borde derecho (pedido del usuario: "más
+   a la izquierda") en vez de quedar pegado al padding del panel */
+.ap-preview { flex: 0 0 auto; margin-right: 22px; }
+/* v28.17: ese margen es para separarlo de la columna de opciones — con
+   "Traje Hazmat" no hay columna (centrado real), así que se anula */
+.ap-layout.centrado .ap-preview { margin-right: 0; }
+/* v28.11: el muñeco pedido "a la mitad" de la derecha — sticky con
+   top:50%+translateY(-50%) es el truco estándar para centrar un elemento
+   sticky en el viewport mientras se scrollea: como .ap-preview (el padre)
+   ahora es tan alto como toda la columna de opciones, este bloque tiene
+   margen para "flotar" centrado en vez de quedar pegado arriba o abajo. */
+.ap-preview-sticky { position: sticky; top: 50%; transform: translateY(-50%); text-align: center; }
+/* v28.17: el truco de arriba necesita que .ap-preview sea alto (estirado
+   por la columna larga de "Personalizar") para calcular un "50%" seguro —
+   con "Traje Hazmat" no hay esa columna hermana, .ap-preview vuelve a su
+   alto natural (~147px) y ESE 50% da un offset chico que empuja el
+   recuadro por encima de .ap-layout, tapando la cabecera (mismo síntoma
+   que v28.16, otra causa). Como en "hazmat" no hay nada largo que
+   scrollear, no hace falta el sticky ahí: se desactiva y el recuadro queda
+   en flujo normal, ya centrado por .ap-layout.centrado. */
+.ap-layout.centrado .ap-preview-sticky { position: static; transform: none; }
+/* 48px nativos × 3 = 144px: múltiplo entero para que el escalado pixelado
+   quede nítido — vuelto a este tamaño (el usuario pidió agrandar solo el
+   FONDO con zoom, no el recuadro del personaje).
+   Fondo de habitación provisto por el usuario (v28.13): un solo valor en
+   background-size escala el ancho a ese % del recuadro y calcula el alto
+   "auto" preservando la proporción 4:3 de la imagen 640×480 — >100% hace
+   zoom (recorta más de los bordes) sin deformarla; center la mantiene
+   encuadrada en el pilar. #0a0906 queda de respaldo por si el archivo no
+   carga. border explícito: SIEMPRE tiene que quedar el marco del recuadro. */
+.ap-preview canvas { width: 144px; height: 144px; image-rendering: pixelated;
+  background: #0a0906 url('../assets/ui/personalizar-fondo.png') center/160% no-repeat;
+  border: 1px solid var(--borde); }
+/* v28.11: ajustes más compactos (pedido del usuario) */
+.ap-cat { margin-bottom: 10px; }
+.ap-cat > .ap-titulo { display: block; color: var(--amarillo); font-size: 13px;
+  letter-spacing: .5px; margin-bottom: 3px; }
+/* v28.8: selector estilo Stardew Valley — flechas + texto, sin cuadrados de color */
+.ap-flecha { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 5px; }
+.ap-arrow { width: 23px; height: 23px; padding: 0; background: #0f0e0a; border: 1px solid var(--borde);
+  color: var(--amarillo); font-size: 12px; line-height: 1; cursor: pointer; }
+.ap-arrow:hover { border-color: var(--amarillo-osc); box-shadow: 0 0 8px rgba(217,198,110,.3); }
+.ap-arrow:active { transform: translateY(1px); }
+.ap-valor { min-width: 105px; text-align: center; color: var(--hueso); font-size: 13px; }
+/* v28.9: color continuo de cabello/vello/ojos — 3 sliders R/G/B apilados,
+   cada uno con su propio degradé negro→canal y número a la derecha */
+.ap-rgb { display: flex; flex-direction: column; gap: 4px; width: 175px; margin: 0 auto 5px; }
+.ap-rgb-fila { display: flex; align-items: center; gap: 7px; }
+.ap-rgb-fila input[type=range] { -webkit-appearance: none; appearance: none; flex: 1; height: 6px;
+  outline: none; cursor: pointer; border: 1px solid var(--borde); }
+.ap-rgb-fila input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none;
+  width: 10px; height: 14px; background: var(--hueso); border: 2px solid var(--amarillo); cursor: pointer; }
+.ap-rgb-fila input[type=range]::-moz-range-thumb {
+  width: 10px; height: 14px; background: var(--hueso); border: 2px solid var(--amarillo); cursor: pointer; border-radius: 0; }
+.ap-valor-rgb { width: 22px; text-align: right; color: var(--hueso); font-size: 12px; }
 .col-nivel .col-locked, li.col-locked { color: #5a5546; font-style: italic; }
 
 /* ---------- fin ---------- */

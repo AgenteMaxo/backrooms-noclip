@@ -71,9 +71,10 @@
     ultimoError = null;
     ws = new WebSocket(urlServidor());
     ws.onopen = () => enviar({
-      t: 'hola', nombre, token: token(), v: 7, // debe coincidir con protocolo.js
+      t: 'hola', nombre, token: token(), v: 8, // debe coincidir con protocolo.js
       nivel: params.get('nivel') || undefined, // puerta de desarrollo (solo MMO_DEV=1)
       sala: salaActual || undefined,
+      apariencia: Game.Profiles.apariencia(), // v28: visible para otros jugadores
     });
     ws.onmessage = (ev) => {
       let m;
@@ -425,6 +426,7 @@
     w.player.inv = m.inv || [];
     w.player.manos = m.manos || [null, null];
     w.player.equipo = m.equipo || { cara: null, cuerpo: null, pies: null };
+    w.player.apariencia = Apariencia.normalizar(m.apariencia || w.player.apariencia);
     w.pasosNivel = m.caminata ? m.caminata.pasos : 0;
     w._caminataObjetivo = m.caminata ? m.caminata.objetivo : 0;
     w._caminataAvisos = {};

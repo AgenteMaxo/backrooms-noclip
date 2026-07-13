@@ -19,7 +19,9 @@
 //   {t:'pong'}
 'use strict';
 
-const VERSION = 7; // v25: loot/cajas/dados client-side, cámara libre — el server solo valida
+const Apariencia = require('../game/js/apariencia.js'); // fuente única estilos/colores permitidos
+
+const VERSION = 8; // v28: personalización de personaje (pelo/ojos/ropa) visible para otros
 const MAX_MSG = 512;          // bytes por mensaje entrante
 const MAX_CHAT = 120;         // caracteres de un chat
 const COOLDOWN_MOVER = 165;   // ms entre pasos (el cliente usa 170: margen de jitter)
@@ -42,6 +44,10 @@ function leer(raw) {
       if (m.token.length > 64) return null;
       if (m.nivel !== undefined && (typeof m.nivel !== 'string' || m.nivel.length > 32)) return null;
       if (m.sala !== undefined && (typeof m.sala !== 'string' || m.sala.length > MAX_SALA_PRIVADA)) return null;
+      // apariencia (v28): cualquier estilo/color fuera de la lista permitida
+      // cae en el valor por defecto — normalizado acá, no hace falta rechazar
+      // toda la conexión por un campo cosmético
+      m.apariencia = Apariencia.normalizar(m.apariencia);
       return m;
     case 'p': { // v24: POSICIÓN reportada por el cliente (él es la autoridad
       // del movimiento; el servidor la VALIDA — velocidad, paredes, teleports)

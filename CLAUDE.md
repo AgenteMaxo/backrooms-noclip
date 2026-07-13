@@ -38,7 +38,7 @@ wiki fandom → data/raw/ (crudo, 1100+ archivos, NO editar) → data/parsed/ (g
 Sin módulos ES: cada archivo de `game/js/` es un IIFE que expone un global en `window` (`RNG`, `MapGen`, `GAME_DATA`...). **El orden de los `<script>` en `game/index.html` es la gestión de dependencias** — si añades un archivo, insértalo en el orden correcto:
 
 ```
-data.js → engine/rng.js → mapgen/mapgen.js → engine/tiles.js → engine/sprites.js
+data.js → apariencia.js → engine/rng.js → mapgen/mapgen.js → engine/tiles.js → engine/sprites.js
   → engine/effects.js → audio-manifest.js → engine/sfx.js → engine/fov.js
   → systems/entities.js → systems/rules.js → engine/render.js
   → lib/three.min.js → lib/shaders/* → lib/postprocessing/* (postpro UMD r147)
@@ -315,6 +315,260 @@ el haz al sur). Ajustes: `window.VERSION_JUEGO` visible, botón pantalla complet
 Debug (online = `/tp`) y `#debug-stats` (barras salud/comida/bebida/cordura, ui.js). Local
 sin servidor: cualquier clave desbloquea. Arnés de integración e2e usado en v23 (levanta
 servidor real + cliente ws): reproducirlo si se toca sala/protocolo.
+
+**v28 — personalización de personaje (protocolo v8)**: pantalla "Personalizar" en el título
+(botón junto a Códice/Changelog) para elegir ESTILO + COLOR de cabello/ojos/ropa antes de
+`startRun`, visible también para otros jugadores online. Fuente única de estilos/colores/
+normalización en `game/js/apariencia.js` (mismo patrón dual navegador+Node que
+`sim/fisica.js`: `window.Apariencia` en el cliente, `module.exports` en el server — SIN
+`document`/`canvas`, así `server/sala.js` y `protocolo.js` lo pueden `require` directo). Las
+capas recoloreables son PNG **provistos por el usuario** (no generados ni extraídos por
+pipeline): `game/assets/apariencia/<Estilo>.png` (`Hair1`, `Eyes1`, `Clothes1`...) — UN solo
+archivo de 192×48 por estilo, 4 frames en fila (frame 0 down, 1 up, 2 side, 3 SIN USAR — el
+motor nunca lo lee; un frame puede quedar transparente si no aplica, p. ej. ojos de
+espaldas). `cargarCapaEstilo` recorta cada frame 1:1 SIN escalar ni centrar (a diferencia de
+`cargarOverride`) — la alineación píxel a píxel con el cuerpo base es responsabilidad del
+archivo, CON UNA SALVEDAD: `AJUSTE_CAPA` (`sprites.js`) permite un desplazamiento dx/dy fino
+por estilo+dirección aplicado SOLO al dibujar (el PNG del usuario no se toca nunca) — para
+cuando un frame queda corrido y no vale la pena pedir un reexport. (v28.0 probó primero una
+hoja de 192×48/4 celdas, después 3 archivos sueltos de 48×48 por dirección, y volvió a la
+hoja de 4 celdas por preferencia del usuario — el bug real de alineación no era el formato de
+archivo, era el CONTENIDO dibujado en distinta posición por frame; de ahí `AJUSTE_CAPA` en
+vez de forzar más iteraciones de formato. Medí la referencia de la cabeza del cuerpo base con
+un decoder PNG mínimo hecho ad-hoc con `zlib.inflateSync`, ver
+`game/assets/apariencia/LEEME.txt` para los números.) Cada píxel ya en uno de 3 grises
+exactos (`#4d4d4d`/`#808080`/`#b3b3b3`, ver `game/assets/apariencia/LEEME.txt`). El cuerpo
+BASE reutiliza el override normal de `player_down/up/side.png` (debe ser un cuerpo neutro
+sin pelo/ropa propios para este sistema — ver nota en `game/assets/sprites/LEEME.txt`).
+**Trampa real de file:// (SIN servidor, el modo por defecto)**: `tintarCapa` NO puede usar
+`getImageData`/`putImageData` — Chrome marca como "tainted" cualquier canvas donde se dibujó
+una imagen cargada por `file://`, y `getImageData` tira `SecurityError` ahí (`drawImage` y la
+subida de textura WebGL SÍ funcionan sobre contenido tainted; solo la LECTURA de píxeles de
+vuelta a JS está bloqueada). El remapeo de los 3 tonos al color elegido se hace con un filtro
+SVG (`feComponentTransfer` discreto de 3 pasos por canal vía `ctx.filter = 'url(#...)'`,
+`color-interpolation-filters="sRGB"`) — puro `drawImage` con filtro, cero lectura de píxeles.
+Si se te ocurre "optimizar" esto a getImageData de nuevo: NO, se rompe en file://. Motor en
+`sprites.js`: `cargarCapaEstilo`/`tintarCapa` (reutiliza `shadeHex` para sombra/brillo — NO
+hay una segunda fórmula de sombreado) y `getTintado(baseId, apariencia, frame, flip)`, que
+clona el sprite base y compone las capas encima en orden `ojos→vello→inferior→superior→cabello`
+(cabello AL FRENTE de todo, incluida la ropa — pedido explícito del usuario), cachea el
+compuesto y también genera la variante `_herido` (la sangre se pinta SOBRE el compuesto
+final, no solo sobre el cuerpo).
+`render.js`/`render3d.js` llaman `getTintado`/`spriteTexTintado` (nueva, junto a
+`spriteTexFlip`, clave de textura con la apariencia) en los 4 sitios que dibujan jugador —
+local y remoto, 2D y 3D — con fallback a `Sprites.get` si `apariencia` es null
+(compatibilidad). El selector de estilo en `ui.js` (`showApariencia`) recorta las miniaturas
+de cabello/ojos a un primer plano de la cabeza (`RECORTE_CABELLO`/`RECORTE_OJOS`, ojos bien
+cerrado sobre la cara) — el cuerpo entero a 48px no deja distinguir el estilo; ropa se
+muestra de cuerpo entero. Persistencia: `player.apariencia` junto a `equipo` en
+`startRun`/`continueRun`/`save` (`game.js`), y recordada POR PERFIL vía
+`Profiles.apariencia()`/`setApariencia()` (`create()` inicializa cada perfil nuevo con
+`Apariencia.DEFECTO` — un perfil nuevo nunca hereda la apariencia de otro). Red: la
+apariencia viaja UNA vez en el handshake `hola` y en `censo()`/`entra` (NUNCA en el `pos` de
+alta frecuencia) — el servidor la NORMALIZA con `Apariencia.normalizar()` (estilo/color fuera
+de la lista permitida cae al valor por defecto) en vez de rechazar la conexión entera por un
+campo cosmético. Subir protocolo a v8 tocó el literal `v:` hardcodeado en CUATRO sitios
+además de `cliente.js`/`protocolo.js`: `server/bots.js`, `server/test-integracion.js`,
+`server/test-admin-clave.js`, `server/test-retorno.js` — si volvés a subir versión, grepear
+`v: 7`-style antes de dar por terminado o los arneses se desconectan solos. **v28.1 — vello
+facial y tono de piel**: `vello` es una categoría MÁS (misma mecánica que `cabello`: capa
+opcional `Vello1/2/3.png`, `estilo:null` = sin barba por defecto, incluida en el orden de
+dibujo de `getTintado` — ver v28.7 más abajo por el orden ACTUAL, cambió desde acá; miniatura
+con el MISMO recorte de cara que ojos — `RECORTE_OJOS` reutilizado, no uno propio). `piel` es distinta —
+no es una capa (sin prefijo en `PREFIJOS`, sin PNG propio) — pero usa la MISMA mecánica de
+remapeo de 3 tonos que el resto (a pedido explícito del usuario, reemplazando un primer
+intento con `globalCompositeOperation:'color'` + `'destination-in'` que sí funcionaba pero
+no compartía código): `remapTonos(fuente, colorHex)` en `sprites.js` es la primitiva común
+que `tintarCapa` (capas) y la nueva `tintarCuerpo` (cuerpo base) comparten. Para que el tono
+de piel se pueda elegir, `game/assets/sprites/player_down/up/side.png` TIENEN que estar en
+gris puro de 3 tonos como cualquier capa (ver la nota nueva en
+`game/assets/sprites/LEEME.txt`) — si están en color natural, `tintarCuerpo` los tiñe igual
+pero el resultado no se ve bien (no hay forma de "saltarse" el tinte por diseño: el cuerpo
+gris sin colorear se ve mal, así que `piel` NO tiene opción `color:null`, siempre tiene un
+valor real desde `PALETA.piel[0]`). `CATEGORIAS_COLOR_OPCIONAL` en `apariencia.js` quedó
+vacío (antes tenía `piel`) — el mecanismo de "color opcional" se dejó genérico por si hace
+falta para otra categoría futura. `tintarCuerpo` cachea por `id+frame+color` (el cuerpo base
+SÍ tiene varios frames de caminata, a diferencia de las capas que son una sola pose — por
+eso es una función aparte de `tintarCapa`, no la misma). El panel muestra Piel PRIMERO
+(antes de Cabello), a pedido del usuario — orden en el HTML y en el loop de
+`showApariencia()` en `ui.js`. `refrescarTodo(sel)` en `ui.js` redibuja las 5 filas juntas
+(no solo la tocada) porque el color de piel cambia el cuerpo de TODAS las miniaturas, no
+solo la de su propia fila. **v28.2 — sin límite fijo de estilos**: `ESTILOS` (lista cerrada
+`['Hair1','Hair2','Hair3']`) se reemplazó por `PREFIJOS` (`{cabello:'Hair', ojos:'Eyes',
+ropa:'Clothes', vello:'Vello'}`) + `estiloValido(cat, estilo)` — un regex
+`^Prefijo[1-9][0-9]{0,2}$` en vez de una lista cerrada, así que agregar un estilo nuevo es
+subir el PNG con el número que sigue, CERO cambios de código (client Y server, comparten
+`apariencia.js`). El descubrimiento real de cuántos hay lo hace `sprites.js` en tiempo de
+carga: `probarCategoria()` prueba `<Prefijo>1, <Prefijo>2...` secuencial y corta tras
+`MAX_HUECOS_ESTILO` (3) números seguidos sin archivo — por eso la numeración NO puede tener
+huecos grandes (documentado en `game/assets/apariencia/LEEME.txt`); `estilosDisponibles(cat)`
+ahora devuelve lo que `estilosPorCategoria` fue encontrando, no un filtro sobre una lista
+fija. Nótese la asimetría a propósito: el CLIENTE limita cuántos estilos se OFRECEN
+(sondeo real de archivos), el SERVIDOR solo valida la FORMA del nombre (no sabe ni le
+importa si el PNG existe de verdad — si no existe, esa capa simplemente no se dibuja en
+quien la reciba, mismo espíritu que cualquier frame faltante de este sistema). Los que
+suman `vello`/`piel` a un array de categorías hardcodeado en vez de leer
+`Apariencia.CATEGORIAS`: `getTintado`'s `cats`, `apKey()` en `render3d.js`, y
+`CATS_APARIENCIA` en `ui.js` — grepear esos 3 sitios si se agrega OTRA categoría más.
+**v28.3 — ropa dividida en superior/inferior, SIN teñir**: `ropa` se partió en `superior`
+(torso) e `inferior` (piernas/pies), cada una con su propio prefijo (`Superior`, `Inferior`)
+en `PREFIJOS`. A diferencia de TODAS las demás capas, estas dos NO pasan por
+`tintarCapa`/`remapTonos` — `CATEGORIAS_SIN_COLOR` en `apariencia.js` las marca, y
+`getTintado` en `sprites.js` las dibuja leyendo directo de `capasEstilo[estilo][dir]` (el
+PNG ya viene en color final, no gris de 3 tonos — para tener variantes de color hay que
+hacer un estilo nuevo por combinación, p. ej. `Superior1`=campera verde,
+`Superior2`=campera roja). `color` para estas dos queda SIEMPRE `null` (forzado en
+`normalizar`, ni siquiera pasa por `CATEGORIAS_COLOR_OPCIONAL`) y `ui.js` no les renderiza
+fila de swatches — ojo si se agrega una categoría "sin color" nueva: hay que chequear
+`CATEGORIAS_SIN_COLOR` ANTES de tocar `$('ap-colores-'+cat)`, no después (ese div ya ni
+existe en el HTML para estas dos, tocarlo primero tira `TypeError` — bug real que pasó acá
+al escribir esto). Miniaturas con recortes propios sin calibrar todavía (`RECORTE_SUPERIOR`/
+`RECORTE_INFERIOR` en `ui.js`, estimados sobre proporciones del cuerpo, no medidos con PNG
+real como se hizo con cabello/ojos). Formato de archivo TAMBIÉN distinto (a pedido del
+usuario): en vez de una hoja única de 192×48 con las 3 direcciones, `superior`/`inferior`
+son 3 archivos SUELTOS por estilo — `<Estilo>_down/up/side.png`, mismo patrón que
+`player_down/up/side.png` — `CATEGORIAS_MULTIARCHIVO` en `apariencia.js` las marca;
+`probarEstiloMultiarchivo` en `sprites.js` (hermana de `probarEstilo`, la de la hoja única)
+prueba las 3 direcciones POR SEPARADO y cuenta el estilo como "encontrado" si al menos
+`_down` cargó — `probarCategoria` elige uno u otro cargador según
+`MULTIARCHIVO_APARIENCIA.includes(categoria)`. Sin escalar/centrar, igual que el resto;
+mismo `AJUSTE_CAPA` (por dirección) disponible. **A diferencia de TODAS las demás capas
+(una sola pose estática), cada archivo `_down/up/side` de superior/inferior SÍ anima con
+el ciclo de caminata** (pedido explícito del usuario: "que cada posición tenga 4 frames,
+como el player") — hoja horizontal de hasta 4 frames de 48×48, exactamente el mismo
+formato que `player_down/up/side.png` (`cargarOverride`). `capasEstilo[estilo][dir]` para
+estas dos categorías es un ARRAY de canvases (uno por frame), no un canvas suelto como en
+el resto — `capaAnimada(estilo, dir, frame)` en `sprites.js` hace `frames[frame %
+frames.length]`. El resto de las capas (cabello/ojos/vello) siguen siendo un canvas único
+por dirección — si se toca `capasEstilo` en el futuro, ojo con esta asimetría de forma
+(array vs canvas) según la categoría. **v28.6**: `RECORTE_SUPERIOR` (miniatura) tenía w≠h
+(28×16) — un recorte no cuadrado estira/aplasta al dibujarse en el destino cuadrado de
+48×48 (bug real, se veía "estirado"); recalibrado a cuadrado (22×22) con medidas reales de
+`Superior1_down.png` (torso x:15-33 y:18-30, centro 24,24 — ya coincidía con el centro del
+cuerpo). Regla general para CUALQUIER recorte de miniatura nuevo: que `w === h`. También
+`superior` se sumó a `CATEGORIAS_OPCIONALES` (opción "Sin ropa", torso desnudo) — a
+propósito SOLO `superior`, no `inferior` (pedido explícito del usuario). **v28.7**: orden
+de dibujo de `getTintado`'s `cats` cambiado a `['ojos','vello','inferior','superior',
+'cabello']` — cabello AHORA VA AL FRENTE de todo, incluida la ropa (antes iba primero/atrás)
+— pedido explícito del usuario. Si se vuelve a tocar el orden, actualizar también el
+comentario de `getTintado` en `sprites.js` (dice el orden en texto, se desincroniza fácil).
+**v28.8 — panel de Personalizar rediseñado estilo Stardew Valley**: se reemplazaron las
+grillas de miniaturas/swatches por filas "◀ texto ▶" (`.ap-arrow`/`.ap-valor` en `ui.js`,
+`pintarFlecha` reusable) para estilo (todas las categorías) y color (solo "piel", que sigue
+con paleta fija) — el único preview visual ahora es el muñeco grande de arriba
+(`ap-preview-canvas`), así que ninguna fila necesita dibujar su propio recorte de cabeza.
+**v28.9 — color CONTINUO para cabello/vello/ojos**: en vez de una paleta cerrada de
+swatches, 3 sliders R/G/B (`refrescarColorRGB` en `ui.js`, `CATEGORIAS_COLOR_RGB` en
+`apariencia.js`, validación de forma con `HEX_RE` en vez de `PALETA[cat].includes(...)`).
+El tinte de esas 3 capas pasó de `remapTonos` (filtro SVG discreto de 3 tonos) a
+`tintarMultiply` en `sprites.js`: dibuja la capa, compone un relleno sólido del color
+elegido con `globalCompositeOperation='multiply'` (cada canal del gris de la capa queda
+escalado por el canal del color) y recorta con `destination-in` contra la MISMA capa para
+restaurar su alpha original — 'multiply' por sí solo vuelve opaco todo el lienzo, así que
+sin el recorte el tinte "rellenaría" la silueta entera. Sigue siendo pura composición de
+canvas (cero `getImageData`), así que no rompe la trampa de `file://` (ver nota grande de
+v28 más arriba). `remapTonos`/el filtro SVG quedan vivos SOLO para "piel" (`tintarCuerpo`),
+que conserva su paleta fija de swatches con flechas.
+**v28.10-v28.11 — layout de dos columnas + muñeco centrado + ajustes compactos** (pedido
+explícito del usuario): opciones a la izquierda, muñeco a la derecha (`.ap-layout` flex,
+`.ap-opciones`/`.ap-preview`). El muñeco usa el truco estándar de "sticky centrado":
+`.ap-layout` con `align-items:stretch` hace que `.ap-preview` (el item flex) sea tan alto
+como toda la columna de opciones, dándole "recorrido" vertical a su hijo
+`.ap-preview-sticky` (`position:sticky; top:50%; transform:translateY(-50%)`) para flotar
+centrado en el viewport mientras se scrollea en vez de quedar pegado arriba. Filas de
+opciones más chicas (`.ap-arrow`/`.ap-valor`/`.ap-rgb` con fuentes y paddings reducidos) para
+que quepa todo sin scroll en la mayoría de los tamaños de ventana.
+**v28.12 — botón de dado (aleatoriza TODA la apariencia)**: arriba a la derecha del panel
+(`.ap-cab` flex, `#btn-ap-random`), `aleatorizarApariencia` en `ui.js` sortea las 6
+categorías (estilo de una lista `Sprites.estilosDisponibles(cat)`, color con
+`Math.random()` para cabello/vello/ojos) y fuerza `modo:'personalizado'` (ver v28.14) para
+que el resultado se vea. Es aleatoriedad puramente cosmética, ANTES de que exista una
+partida — no pasa por `RNG.create(seed)` (esa regla es para que una PARTIDA sea
+reproducible por semilla; esto no participa de ninguna). El ícono es una imagen PNG real
+provista por el usuario (`game/assets/icons/dado.png`, vía `<img>` plano con
+`image-rendering:pixelated`, NO el sistema de iconos pixel-art de `icons.js` — más simple
+para un ícono de una sola vez que no necesita el mecanismo genérico data-icon). El muñeco
+se corrió un poco a la izquierda (`margin-right` en `.ap-preview`) a pedido del usuario.
+**v28.13 — fondo de habitación real detrás del muñeco**: imagen PNG provista por el usuario
+(`game/assets/ui/personalizar-fondo.png`, 640×480) como `background-image` de
+`#ap-preview-canvas` (el canvas dibuja el sprite con `ctx.clearRect` primero, así que el
+fondo CSS se ve por donde el sprite es transparente) — `center/cover` para llenar el
+recuadro 1:1 sin deformar la imagen 4:3 (recorta simétrico los bordes izq/der ya que el
+pilar de la composición queda centrado). Zoom pedido después: un solo valor en
+`background-size` (`160%`) escala el ancho a ese % del recuadro y calcula alto "auto"
+preservando la proporción — más simple que jugar con `background-position` para simular
+zoom, y no deforma nada. El recuadro volvió a 144px (3× de 48 nativos) tras un intento de
+agrandarlo a 192px que el usuario pidió deshacer: el pedido real era zoom al FONDO, no un
+recuadro más grande.
+**v28.14 — Traje Hazmat: skin PREDETERMINADA + modo de apariencia**: antes de "Piel" hay un
+control segmentado (`.ap-modo`, dos botones) para elegir "Traje Hazmat" (fijo,
+predeterminado) o "Personalizar" (las 6 categorías de siempre) — `apariencia.modo` nuevo
+campo (`Apariencia.MODOS`, `DEFECTO.modo:'hazmat'` en `apariencia.js`): cualquier perfil sin
+este campo (todos los guardados antes de v28.14, y cualquier perfil nuevo) cae en "hazmat"
+por pedido explícito del usuario — "si no personaliza, se queda con la skin de Hazmat".
+Elegir piel/cabello/etc. mientras el modo es "hazmat" NO se borra, solo no se ve hasta
+volver a "Personalizar" (`refrescarModo` en `ui.js` oculta `#ap-cats-personalizables`
+entero, no cada fila). El traje es un sprite PROCEDURAL nuevo en `sprites.js`
+(`DEFS.hazmat_down/up/side`) que reusa EXACTAMENTE el esqueleto/ciclo de caminata del
+jugador base (`ciclo()` + `piernasFrontal`/`piernasSide` sin cambios) — la capucha/visor
+sale de remapear 1 a 1 las filas de pelo/cara del jugador (`h→m` capucha, `H→M` sombra,
+`f→v` visor, `F→z`/`e→z` acento oscuro/remaches) y el torso/piernas reusa las MISMAS filas
+del jugador con una paleta nueva (mono amarillo en vez de ropa/piel), así que conserva la
+silueta/proporciones sin volver a medir nada. `Sprites.getTintado` corta directo a
+`hazmat_<dir>` (sin componer capas ni teñir) cuando `apariencia.modo==='hazmat'` — es la
+ÚNICA rama que no pasa por el resto de la función. Como `hazmat_down/up/side` son ids
+normales de `DEFS`, `Sprites.list()` los expone solos a `tryOverrides` en `main.js`: el
+usuario puede reemplazar el traje procedural con su propio arte más adelante con solo subir
+`game/assets/sprites/hazmat_down/up/side.png`, mismo mecanismo que el cuerpo base, cero
+cambios de código. Bug real encontrado y corregido en el mismo cambio: `apKey()` en
+`render3d.js` (clave de caché de textura) no incluía `modo` — cambiar de modo sin tocar las
+6 categorías reusaba la textura vieja de la caché porque la clave quedaba idéntica.
+**v28.15 — el usuario subió `hazmat_down.png` real, dos bugs de visibilidad**: (1)
+`rutasOverride()` en `sprites.js` solo buscaba en `assets/sprites`/`assets/objetos`/`assets`
+— el usuario (por costumbre, todo el resto del arte de apariencia vive ahí) puso el archivo
+en `assets/apariencia/`, carpeta que NO se buscaba para overrides de cuerpo completo tipo
+`player_down.png`/`hazmat_down.png`; ahora `assets/apariencia` está sumada a esa lista, así
+que el archivo se encuentra sin importar en cuál de las dos carpetas quede. (2) los
+overrides cargan async (`Image.onload`) y nada repintaba el preview del panel si terminaban
+de cargar DESPUÉS del primer pintado — `showApariencia` ahora corre un `setInterval` que
+compara `Sprites.version()` (el mismo contador que ya usaba `render3d.js` para esto mismo en
+la escena 3D) y repinta si subió, limpiado al cerrar el panel. Medí con un decoder pngjs ad
+hoc el bounding box vertical de `hazmat_down.png` contra `player_down.png`: son IDÉNTICOS
+(fila 6 a 42 de 48) — el traje real del usuario ya estaba perfectamente alineado; lo que se
+veía "corrido" o "flotando" antes de este fix era el PLACEHOLDER PROCEDURAL (nunca se había
+cargado el override real por el bug de carpeta).
+**v28.16 — dado tapaba el título en "Traje Hazmat"**: con "Traje Hazmat" seleccionado,
+`#ap-cats-personalizables` queda oculto y `.ap-opciones` se reduce a solo el selector de
+modo (~40px) — el truco de sticky-centrado de `.ap-preview` (pensado para la columna LARGA
+de "Personalizar", con mucho recorrido vertical) tenía tan poco margen ahí que el recuadro
+del muñeco terminaba flotando por encima de `.ap-layout`, tapando el título y el botón de
+dado de `.ap-cab` (confirmado midiendo `getBoundingClientRect` de ambos: se superponían en
+viewports bajos). Fix: `min-height:300px` en `.ap-opciones` — un piso de altura que le da
+"aire" de sobra al sticky en cualquier modo, sin afectar "Personalizar" (que ya excede eso
+por su propio contenido). Además, el dado en sí se oculta con "Traje Hazmat" (`refrescarModo`
+en `ui.js`): no hay nada que sortear ahí.
+**v28.17 — pedido: el recuadro de Hazmat centrado (no pegado a la derecha)**: con la columna
+de opciones vacía en "Traje Hazmat", dejar el recuadro en su lugar de siempre (columna
+derecha del layout de dos columnas) se veía descentrado — toda la mitad izquierda del panel
+quedaba vacía. Reestructura: `.ap-modo` (los dos botones) salió de `.ap-opciones` y ahora
+vive FUERA de `.ap-layout`, full-width, arriba de las dos columnas — así siempre se ve
+completo sin importar el modo. `.ap-opciones` y `#ap-cats-personalizables` se fusionaron en
+un solo elemento (ya no hace falta el div intermedio): ocultarlo saca la columna ENTERA del
+flex, y `.ap-layout.centrado` (clase que alterna `refrescarModo`) le pone
+`justify-content:center` para que el único hijo que queda (`.ap-preview`) se centre en el
+ancho del panel. Un descubrimiento real en el camino: el fix de v28.16 (`min-height:300px`)
+dejó de hacer falta al sacar `.ap-opciones` del flex — pero SIN ese alto, el truco de
+sticky-centrado (pensado para que `.ap-preview` se "estire" tan alto como la columna larga
+de "Personalizar") volvió a fallar por UNA CAUSA DISTINTA: con `.ap-preview` de vuelta a su
+alto natural (~147px), `top:50%` calcula un offset chico (~73px) que la posición "pegada"
+(sticky ya activo desde el primer pintado, sin necesidad de scroll real) empuja por encima
+de `.ap-layout`, tapando la cabecera otra vez — mismo síntoma que v28.16, causa nueva.
+Solución real: como en "hazmat" no hay nada largo para scrollear, no hace falta sticky ahí
+en absoluto — `.ap-layout.centrado .ap-preview-sticky { position:static; transform:none; }`
+lo deja en flujo normal (ya centrado por `.ap-layout.centrado`), sticky-centrado queda
+exclusivo de "Personalizar" (que sí lo necesita, por su columna larga). Verificado con
+`getBoundingClientRect` en varios altos de viewport: sin superposición, centrado horizontal
+exacto (mismo centerX que el panel).
 
 (Todos existen y están committeados. v3: render cenital con paredes finas autotile en `tiles.js`/`render.js`,
 pixel-art data-driven en `sprites.js` con override PNG desde `game/assets/sprites/`, efectos de combate

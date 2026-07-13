@@ -7,6 +7,7 @@
 const { DATA, RNG, MapGen, generarMapa, esTransitable } = require('./sim/mundo');
 const Entidades = require('./sim/entidades');
 const Fisica = require('../game/js/sim/fisica');
+const Apariencia = require('../game/js/apariencia');
 const P = require('./protocolo');
 const db = require('./db');
 
@@ -98,7 +99,7 @@ class Sala {
   censo() {
     return [...this.jugadores.values()].map((j) => ({
       id: j.id, nombre: j.nombre, x: j.x, y: j.y, rot: j.rot,
-      escondido: !!j.escondido,
+      escondido: !!j.escondido, apariencia: j.apariencia,
     }));
   }
 
@@ -113,7 +114,7 @@ class Sala {
     };
   }
 
-  entrar(ws, nombre, token, expediente) {
+  entrar(ws, nombre, token, expediente, apariencia) {
     const id = siguienteId++;
     const [x, y] = this.buscarSpawn();
     const jug = {
@@ -121,6 +122,7 @@ class Sala {
       distSala: 0,
       salud: 100, sed: 100, cordura: 100, luz: false, escondido: null, muerto: false,
       inv: [], manos: [null, null], equipo: { cara: null, cuerpo: null, pies: null },
+      apariencia: Apariencia.normalizar(apariencia), // v28: visible para otros (censo/entra)
       esAdmin: false, muteadoHasta: 0,
       ultMov: 0, ultChat: 0, canal: null, ofertaEn: null,
       retorno: null, // puerta personal de vuelta (v23; la pone cambiarDeSala)
@@ -134,10 +136,11 @@ class Sala {
       t: 'bienvenida', id, nivel: this.nivelId, inst: this.inst,
       semilla: this.semilla, privada: this.privada, x, y, rot: jug.rot, sec: 0,
       salud: jug.salud, sed: jug.sed, cordura: jug.cordura, inv: jug.inv, manos: jug.manos, equipo: jug.equipo,
+      apariencia: jug.apariencia,
       caminata: jug.caminataObjetivo ? { pasos: 0, objetivo: jug.caminataObjetivo } : null,
       jugadores: this.censo(), ...this.estadoDinamico(),
     });
-    this.difundir({ t: 'entra', id, nombre, x, y, rot: jug.rot });
+    this.difundir({ t: 'entra', id, nombre, x, y, rot: jug.rot, apariencia: jug.apariencia });
     this.jugadores.set(id, jug);
     return jug;
   }

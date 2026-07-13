@@ -14,6 +14,26 @@ Formato:
 Nota: el jugador integrado trae 4 frames de ciclo de andar por direccion; si lo
 sustituyes con menos frames, tambien funciona.
 
+Nota sobre personalización de personaje: si vas a usar el sistema de capas de
+apariencia (pelo/ojos/ropa/vello recoloreables, ver
+game/assets/apariencia/LEEME.txt), estos 3 archivos de player_* deben ser un
+CUERPO NEUTRO (torso sin pelo, ojos ni ropa propios dibujados) — las capas de
+apariencia se dibujan encima y lo visten. Si preferís no usar personalización,
+podés dejar estos 3 archivos con pelo/ropa ya pintados como cualquier otro
+override normal.
+
+Nota sobre el TONO DE PIEL (apariencia): a diferencia del pelo/ojos/ropa (que
+son capas aparte), el tono de piel tiñe estos 3 archivos DIRECTAMENTE, con la
+misma mecánica de remapeo de 3 tonos — así que si querés que el tono de piel
+se pueda elegir, player_down.png / player_up.png / player_side.png tienen que
+estar dibujados en gris puro de 3 tonos exactos (igual que Hair1.png, ver
+game/assets/apariencia/LEEME.txt para el formato exacto: sombra #4d4d4d,
+medio #808080, brillo #b3b3b3, sin dithering). Mantené la MISMA hoja de
+frames de caminata que ya tenías (hasta 4 frames de 48x48 por dirección) —
+solo cambia que ahora todo el dibujo va en esos 3 grises en vez de color
+natural. Sin esto, el selector de piel sigue funcionando pero tiñe lo que
+sea que tengas ahí (si está en color, el resultado no se va a ver bien).
+
 IDs disponibles:
  Jugador:   player_down, player_up, player_side  (side mira a la derecha; se voltea solo)
  Entidades: smiler, faceling, hound, deathmoth, clump, duller, skinstealer, window,

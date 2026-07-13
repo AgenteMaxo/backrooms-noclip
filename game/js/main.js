@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v27.3';
+  window.VERSION_JUEGO = 'v28.7';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -30,6 +30,8 @@
     ...Object.values(world.data.entities).map((e) => e.glyph),
     ...Object.keys(world.data.objects),
   ]);
+  // capas de personalización de personaje (game/assets/apariencia/) si existen
+  Sprites.tryCapasApariencia();
 
   // ---------- input ----------
   const KEYS = {
@@ -1061,6 +1063,11 @@
   if (params.get('netdebug')) window.NETDEBUG = true; // consola: derivas de red y rtt
   if ((params.get('autostart') || params.get('selftest') || params.get('online')) && !Game.Profiles.activeName())
     Game.Profiles.create(params.get('nombre') || 'Errante');
+  // depuración visual: ?abrir=apariencia abre el panel de personalización desde el título
+  if (params.get('abrir') === 'apariencia') {
+    if (!Game.Profiles.activeName()) Game.Profiles.create('Errante');
+    setTimeout(() => world.ui.showApariencia(), 300);
+  }
   // ---------- BACKROOMS MMO: ?online=1 conecta al mundo compartido ----------
   if (params.get('online')) {
     Net.iniciar(params.get('nombre') || Game.Profiles.activeName() || 'Errante');
@@ -1299,6 +1306,7 @@
     btnContinue.disabled = true;
     btn.textContent = 'CRUZANDO LA REALIDAD…';
     errNet.style.display = 'none';
+    $id('btn-start-offline').style.display = 'none';
     if (esperaConexion) clearInterval(esperaConexion);
     Net.iniciar(P.activeName(), salaPrivada || undefined);
     const t0 = Date.now();
@@ -1321,6 +1329,8 @@
         errNet.textContent = Net.ultimoError ||
           'No se pudo conectar con las Backrooms. ¿El servidor está despierto?';
         errNet.style.display = 'block';
+        // sin servidor a mano: ofrecer seguir en un jugador, sin tocar la URL
+        $id('btn-start-offline').style.display = 'inline-block';
       }
     }, 200);
   }
@@ -1387,9 +1397,18 @@
   };
   $id('btn-codex').onclick = () => world.ui.toggleCodex(true);
   $id('btn-changelog').onclick = () => world.ui.toggleChangelog(true);
+  $id('btn-apariencia').onclick = () => world.ui.showApariencia();
 
   $id('btn-start').onclick = () => {
     conectarAlServidor($id('btn-start'));
+  };
+  // sin servidor a mano (aparece recién si "DESPERTAR EN LEVEL 0" no pudo
+  // conectar): arranca la partida en un jugador, sin tocar la URL — misma
+  // ruta que usa ?autostart=1, Net.iniciar nunca se llama
+  $id('btn-start-offline').onclick = () => {
+    $id('btn-start-offline').style.display = 'none';
+    $id('title-net').style.display = 'none';
+    Game.startRun();
   };
   $id('btn-again').onclick = () => {
     refreshTitle();

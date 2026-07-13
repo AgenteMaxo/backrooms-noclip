@@ -126,7 +126,7 @@ wss.on('connection', (ws, req) => {
       const nivel = devOk && m.nivel && DATA.levels[m.nivel] ? m.nivel : NIVEL_INICIAL;
       sala = asignar(nivel, salaPrivada || undefined);
       prepararSala(sala);
-      jug = sala.entrar(ws, nombre, m.token, expediente);
+      jug = sala.entrar(ws, nombre, m.token, expediente, m.apariencia);
       jug._reSala = (s) => { sala = s; };  // el cruce actualiza la sala del socket
       db.registrarVisita(m.token, nivel);
       console.log(`[+] ${jug.nombre}#${jug.id} → ${sala.clave} (${sala.jugadores.size})`);
@@ -228,7 +228,7 @@ function cambiarDeSala(jug, salaVieja, defSalida, opts) {
     caminata: jug.caminataObjetivo ? { pasos: 0, objetivo: jug.caminataObjetivo } : null,
     jugadores: nueva.censo(), ...nueva.estadoDinamico(),
   });
-  nueva.difundir({ t: 'entra', id, nombre: jug.nombre, x, y, rot: jug.rot }, id);
+  nueva.difundir({ t: 'entra', id, nombre: jug.nombre, x, y, rot: jug.rot, apariencia: jug.apariencia }, id);
   if (jug.luz) nueva.difundir({ t: 'luzDe', id, si: true });
   if (jug._reSala) jug._reSala(nueva);
   db.registrarVisita(jug.token, nueva.nivelId);
