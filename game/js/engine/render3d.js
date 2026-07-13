@@ -236,6 +236,16 @@
       x.moveTo(16, 20); x.lineTo(12, 6);
       x.stroke();
     }),
+    // cerco de humedad suelto: un único decal circular con caída de alpha,
+    // reutilizado por TODAS las manchas del suelo (una textura, un material).
+    mancha: () => lienzo(64, 64, (x, w, h) => {
+      const g = x.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, w / 2 - 3);
+      g.addColorStop(0, 'rgba(18,14,7,0.5)');
+      g.addColorStop(0.65, 'rgba(18,14,7,0.25)');
+      g.addColorStop(1, 'rgba(18,14,7,0)');
+      x.fillStyle = g;
+      x.beginPath(); x.arc(w / 2, h / 2, w / 2 - 3, 0, 7); x.fill();
+    }),
     escalera: (col) => lienzo(48, 48, (x, w, h) => {
       x.fillStyle = '#0a0806'; x.fillRect(0, 0, w, h);
       for (let i = 0; i < 6; i++) {
@@ -472,6 +482,23 @@
       bandas.push(m);
       floorPos = []; floorUv = []; floorIdx = []; floorNor = [];
     };
+    // --- MANCHAS sueltas (v28.1): cercos de humedad dispersos en vez de la
+    // textura macro repitiéndolos cada 2 tiles. Un único decal reutilizado,
+    // por tile se decide con seededUnit (misma técnica que los grupos de
+    // fluorescentes) — determinista y sin crear un RNG por casilla. ~4 % de
+    // las casillas de moqueta_humeda tienen una, con radio/posición al azar.
+    const manchaTex = tiles.manchas ? pintado('p-mancha', PINTORES.mancha) : null;
+    const matMancha = manchaTex ? new THREE.MeshBasicMaterial({ map: manchaTex, transparent: true }) : null;
+    let manchaPos = [], manchaUv = [], manchaIdx = [], manchaNor = [];
+    const flushManchas = () => {
+      if (!manchaPos.length) return;
+      const m = mkFlat(manchaPos, manchaUv, manchaIdx, manchaNor, matMancha);
+      m.receiveShadow = false;
+      grupo.add(m);
+      bandas.push(m);
+      manchaPos = []; manchaUv = []; manchaIdx = []; manchaNor = [];
+    };
+    const UMBRAL_MANCHA = 0.04;
     const aguaPos = [], aguaUv = [], aguaIdx = [], aguaNor = [];
     const plantas = [];
     const esVerde = world.level.bioma === 'invernadero' || world.level.bioma === 'bosque';
@@ -488,10 +515,23 @@
             [[x, 0.02, y + 1], [x + 1, 0.02, y + 1], [x + 1, 0.02, y], [x, 0.02, y]],
             [0, 0, 1, 1], aguaNor);
         else if (v === T.DECOR && esVerde) plantas.push([x, y]);
+        if (matMancha && v === T.SUELO) {
+          const clave = `${world.runSeed}:${world.ventanaN || 0}:mancha:${x}:${y}`;
+          const u = seededUnit(clave);
+          if (u < UMBRAL_MANCHA) {
+            const r = 0.22 + seededUnit(clave + ':r') * 0.26;
+            const jx = x + 0.5 + (seededUnit(clave + ':x') - 0.5) * 0.5;
+            const jy = y + 0.5 + (seededUnit(clave + ':y') - 0.5) * 0.5;
+            quad(manchaPos, manchaUv, manchaIdx,
+              [[jx - r, 0.02, jy + r], [jx + r, 0.02, jy + r], [jx + r, 0.02, jy - r], [jx - r, 0.02, jy - r]],
+              [0, 0, 1, 1], manchaNor);
+          }
+        }
       }
-      if ((y & 15) === 15) { flushSuelo(); yield; }
+      if ((y & 15) === 15) { flushSuelo(); flushManchas(); yield; }
     }
     flushSuelo();
+    flushManchas();
     if (aguaPos.length)
       grupo.add(mkFlat(aguaPos, aguaUv, aguaIdx, aguaNor, new THREE.MeshLambertMaterial({ map: aguaTex })));
     yield;
@@ -1304,7 +1344,7 @@
     if (CAM_MODO === 'tercera') {
       if (world.online) {
         // v25: cámara libre — el sprite muestra la cara que toque
-        const rel = ((Math.round(((p.rot || 0) - (-camYaw)) / (Math.PI / 2)) % 4) + 4) % 4;
+        const rel = Otros.dir4((p.rot || 0) + camYaw);
         if (rel === 0) sid = 'player_up';
         else if (rel === 2) sid = 'player_down';
         else { sid = 'player_side'; sflip = rel === 3; }
@@ -1722,7 +1762,10 @@
 
   function project(wx, wy) {
     const v = new THREE.Vector3(wx + 0.5, 0.8, wy + 0.5).project(camera);
-    return [(v.x * 0.5 + 0.5) * W, (-v.y * 0.5 + 0.5) * H];
+    // v.z > 1 tras project(): el punto queda detrás de la cámara (la
+    // división de perspectiva por w negativa lo puede devolver dentro del
+    // rango de pantalla en vez de fuera) — quien llama debe ignorarlo
+    return [(v.x * 0.5 + 0.5) * W, (-v.y * 0.5 + 0.5) * H, v.z > 1];
   }
 
   function drawOverlay(world, t) {

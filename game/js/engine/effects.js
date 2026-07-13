@@ -61,7 +61,8 @@
       // el timestamp del rAF puede ir ligeramente por detrás de performance.now()
       const k = Math.min(1, Math.max(0, (t - e.t0) / e.dur));
       // los bocadillos con referencia viajan con su dueño (encima de la cabeza)
-      const [sx, sy] = e.ref ? P(e.ref.rx, e.ref.ry) : P(e.wx, e.wy);
+      const [sx, sy, detras] = e.ref ? P(e.ref.rx, e.ref.ry) : P(e.wx, e.wy);
+      if (detras) continue; // el dueño queda detrás de la cámara: no dibujar
       ctx.save();
       if (e.type === 'bub') {
         // fundido de entrada/salida

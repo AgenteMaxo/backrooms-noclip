@@ -113,9 +113,17 @@
     if (o) { o.rot = rot; o.rotObj = rot; o.giroT = performance.now(); }
   }
 
-  // cuantiza un ángulo θ a las 4 direcciones de sprite (0 N, 1 E, 2 S, 3 O)
+  // cuantiza un ángulo θ a las 4 direcciones de sprite (0 N, 1 E, 2 S, 3 O);
+  // normaliza a (-pi,pi] y redondea los empates a 45° alejando de cero por
+  // igual en ambos sentidos, si no A y D quedaban asimétricos por el propio
+  // redondeo de JS (y por el ruido de coma flotante justo en el empate)
   function dir4(th) {
-    return ((Math.round((th || 0) / (Math.PI / 2)) % 4) + 4) % 4;
+    let a = (th || 0) % (Math.PI * 2);
+    if (a > Math.PI) a -= Math.PI * 2;
+    else if (a <= -Math.PI) a += Math.PI * 2;
+    const q = a / (Math.PI / 2);
+    const rel = Math.sign(q) * Math.round(Math.abs(q) + 1e-9);
+    return ((rel % 4) + 4) % 4;
   }
 
   // txt ya viene filtrado por el servidor
@@ -203,7 +211,8 @@
     const p = world?.player;
     for (const o of porId.values()) {
       if (o.escondido) continue; // dentro de una taquilla no hay nombre que leer
-      const [sx, sy] = proj(o.rx, o.ry);
+      const [sx, sy, detras] = proj(o.rx, o.ry);
+      if (detras) continue;
       if (sx < -80 || sy < -80 || sx > ctx.canvas.width + 80 || sy > ctx.canvas.height + 80) continue;
       // capa social de PROXIMIDAD: de lejos ves una figura, no sabes quién es
       const cercano = p && Math.hypot(o.rx - p.rx, o.ry - p.ry) <= RADIO_SOCIAL;

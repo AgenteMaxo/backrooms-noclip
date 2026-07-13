@@ -4,6 +4,10 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
+    { v: 'v28.7', cambios: [
+      'Las manchas de humedad del suelo ya no se repiten en un patrón visible, ahora se reparten al azar. (carlosdiezm)',
+      'Arreglado: el menú de configuración del mando no se cerraba bien con ESC. (carlosdiezm)',
+    ] },
     { v: 'v28.6', cambios: [
       'Arreglado (multijugador): algunas entidades podían golpear casi al instante, sin dar tiempo a esquivar el aviso. (josealmon)',
       'Nueva protección de 3 segundos al entrar por primera vez a cada nivel, para no morir nada más cruzar. (josealmon)',

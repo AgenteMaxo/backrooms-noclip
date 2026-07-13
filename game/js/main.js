@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v28.6';
+  window.VERSION_JUEGO = 'v28.7';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -60,7 +60,7 @@
     if (changelogPanel && changelogPanel.style.display !== 'none') {
       ev.preventDefault();
       ev.stopPropagation();
-      if (window.world && world.ui && typeof world.ui.toggleChangelog === 'function') {
+      if (world.ui && typeof world.ui.toggleChangelog === 'function') {
         world.ui.toggleChangelog(false);
       } else {
         changelogPanel.style.display = 'none';
@@ -73,7 +73,7 @@
     if (codexPanel && codexPanel.style.display !== 'none') {
       ev.preventDefault();
       ev.stopPropagation();
-      if (window.world && world.ui && typeof world.ui.toggleCodex === 'function') {
+      if (world.ui && typeof world.ui.toggleCodex === 'function') {
         world.ui.toggleCodex(false);
       } else {
         codexPanel.style.display = 'none';
@@ -81,7 +81,19 @@
       return;
     }
 
-    // 3. Menú de sonido/ajustes (solo con Escape)
+    // 3. Panel de ajustes de mando (se abre sobre/desde Ajustes y no lo cerraba)
+    const gamepadMenuEl = document.getElementById('gamepad-menu');
+    if (gamepadMenuEl && gamepadMenuEl.style.display !== 'none' && ev.code === 'Escape') {
+      ev.preventDefault();
+      ev.stopPropagation();
+      gamepadMenuEl.style.display = 'none';
+      if (typeof openedFromSndMenu !== 'undefined' && openedFromSndMenu && typeof abrirSndMenu === 'function') {
+        abrirSndMenu();
+      }
+      return;
+    }
+
+    // 4. Menú de sonido/ajustes (solo con Escape)
     const sndMenu = document.getElementById('sound-menu');
     if (sndMenu && sndMenu.style.display !== 'none' && ev.code === 'Escape') {
       ev.preventDefault();
@@ -94,7 +106,7 @@
       return;
     }
 
-    // 4. Abrir Códice en la pantalla de título si se pulsa C
+    // 5. Abrir Códice en la pantalla de título si se pulsa C
     if (ev.code === 'KeyC' && (!window.world || !world.level || world.over)) {
       const titleScreen = document.getElementById('screen-title');
       if (titleScreen && titleScreen.style.display !== 'none') {
@@ -106,7 +118,7 @@
         ) {
           ev.preventDefault();
           ev.stopPropagation();
-          if (window.world && world.ui && typeof world.ui.toggleCodex === 'function') {
+          if (world.ui && typeof world.ui.toggleCodex === 'function') {
             world.ui.toggleCodex(true);
           }
           return;
