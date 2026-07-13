@@ -169,7 +169,6 @@
   world.visionActual = function () {
     let v = world.level.vision + 2 + world.visionMod;
     if (world.player.luz) v += 4;
-    if (world.instinto('piel_fluorescente')) v += 1;
     return Math.max(2, v);
   };
 
@@ -203,69 +202,11 @@
   world.thirst = (n) => { world.player.sed = Math.max(0, Math.min(100, world.player.sed + n)); };
   world.hunger = (n) => { world.player.hambre = Math.max(0, Math.min(100, world.player.hambre + n)); };
 
-  // ---------- LA SINTONÍA (v18): las Backrooms te reclaman ----------
-  // No hay XP: hay un pacto. Presenciar horrores te SINTONIZA con el lugar —
-  // ganas Instintos (poderes), pero la realidad cada vez te reconoce menos
-  // como suyo: escapar se vuelve más difícil. Poder ↔ volver a casa.
-  const INSTINTOS = {
-    oido_moqueta: { nombre: 'Oído de moqueta', icono: 'onda',
-      desc: 'Sientes a las entidades a través de los muros: aparecen en tu mapa aunque no las veas.' },
-    pies_moqueta: { nombre: 'Pies de moqueta', icono: 'punto',
-      desc: 'Tus pasos ya no suenan del todo humanos: las entidades te detectan 2 casillas más tarde.' },
-    reflejos_errante: { nombre: 'Reflejos de errante', icono: 'estrella',
-      desc: 'Un 25% de las veces esquivas por puro instinto los ataques que ves venir (⚠).' },
-    visceras_vacio: { nombre: 'Vísceras del vacío', icono: 'vacio',
-      desc: 'Tu cuerpo aprende a no necesitar: la sed y el hambre te consumen a la MITAD.' },
-    lengua_paredes: { nombre: 'Lengua de las paredes', icono: 'libro',
-      desc: 'Los contenedores te susurran lo que guardan: registrar nunca acaba mal (sin pifias).' },
-    piel_fluorescente: { nombre: 'Piel de fluorescente', icono: 'linterna',
-      desc: '+1 de visión permanente… y las Deathmoths te confunden con una luz más.' },
-    sangre_amarilla: { nombre: 'Sangre amarilla', icono: 'gota',
-      desc: 'Regeneras 1 de salud cada 12 turnos, pero el agua de almendras te repone la MITAD.' },
-    noclip: { nombre: 'No-clip', icono: 'diametro', min: 80,
-      desc: 'Tecla G: atraviesas la pared que encaras. Cuesta 10 de cordura y arriesga caer al Vacío.' },
-  };
-  world.instinto = (id) => (world.player?.instintos || []).includes(id);
-
   // RUIDO (v18): las entidades latentes/en alerta investigan los sonidos
   world.hacerRuido = function (x, y, radio) {
     world.ruido = { x, y, radio, turno: world.turnTotal };
   };
 
-  // sube (o baja) la Sintonía; al cruzar 20/40/60/80 se elige 1 de 3 Instintos
-  world.tune = function (n) {
-    const p = world.player;
-    if (!p || world.over) return;
-    const antes = p.sintonia || 0;
-    p.sintonia = Math.max(0, Math.min(100, antes + n));
-    if (p.sintonia === antes) return;
-    for (const u of [20, 40, 60, 80]) {
-      if (antes < u && p.sintonia >= u && !(p.umbrales || (p.umbrales = [])).includes(u)) {
-        p.umbrales.push(u);
-        ofrecerInstinto(u);
-        break;
-      }
-    }
-    world.ui.updateHUD();
-  };
-
-  function ofrecerInstinto(umbral) {
-    const p = world.player;
-    const rng = RNG.create(`${world.runSeed}::instinto::${umbral}`);
-    const pool = Object.keys(INSTINTOS).filter(
-      (k) => !p.instintos.includes(k) && (INSTINTOS[k].min ?? 0) <= umbral
-    );
-    const ofertas = rng.shuffle(pool).slice(0, 3);
-    if (!ofertas.length) return;
-    if (window.Effects) Effects.bubble(p.x, p.y, 'Algo está cambiando en mí…', p);
-    if (window.Sfx) Sfx.cue('generico');
-    world.ui.showInstintos(umbral, ofertas.map((k) => ({ id: k, ...INSTINTOS[k] })), (id) => {
-      p.instintos.push(id);
-      world.log(`INSTINTO: ${INSTINTOS[id].nombre}. Las Backrooms te han dado algo… y se han quedado algo.`, 'good');
-      if (id === 'piel_fluorescente') recomputeFov();
-      world.ui.updateHUD();
-    });
-  }
   // posesión total (mochila + manos + puesto) — los pasivos de bolsillo
   // funcionan por llevarlos encima
   world.hasItem = (id) => world.player.inv.includes(id) ||
@@ -343,7 +284,6 @@
           world.explored[(cy + y) * g.w + (cx + x)] = 0;
       // el render 3D reconstruye su escena al ver cambiar esta versión
       world.mapaVersion = (world.mapaVersion || 0) + 1;
-      world.tune(2); // presenciar la no-euclidianidad deja huella
       return true;
     }
     return false;
@@ -352,7 +292,7 @@
   world.rollDice = function (texto, cb) {
     world.busy = true;
     if (window.Sfx) Sfx.play('dado');
-    // el d20 decide lógica de partida (noclip, escapes, botín…): sale de la semilla,
+    // el d20 decide lógica de partida (escapes, botín…): sale de la semilla,
     // nunca de Math.random(). Contador propio para que el guardado reanude la secuencia.
     let resultado;
     if (!world.online) {
@@ -377,7 +317,6 @@
     world.player = {
       x: 0, y: 0, rx: 0, ry: 0, dir: 'down', flip: false, rot: 2,
       salud: 100, cordura: 100, sed: 100, hambre: 100,
-      sintonia: 0, instintos: [], umbrales: [],
       inv: [], manos: [null, null], equipo: { cara: null, cuerpo: null, pies: null },
       luz: false, viva: true,
     };
@@ -652,6 +591,16 @@
       world.map.items.push({ x: spot[0], y: spot[1], id: 'agua_almendras' });
     }
 
+    // Sala Manila: viaja con la ventana si su rect sigue dentro del solape;
+    // si queda atrás, la franja fresca puede traer la suya con su propia tirada.
+    if (world.map.manila) {
+      const mx = world.map.manila.x - shiftX, my = world.map.manila.y - shiftY;
+      const cabe = mx >= 0 && my >= 0 && mx + world.map.manila.w <= W && my + world.map.manila.h <= H;
+      world.map.manila = cabe ? { ...world.map.manila, x: mx, y: my } : null;
+    }
+    if (!world.map.manila && nuevo.manila) world.map.manila = { ...nuevo.manila };
+    if (nuevo.manilaSalida) world.map.manilaSalida = nuevo.manilaSalida;
+
     world.explored = nExp;
     world.light = new Float32Array(W * H);
     world.mapaVersion = (world.mapaVersion || 0) + 1;
@@ -762,6 +711,38 @@
       return; // enterLevel ya recalcula, guarda y presenta el nuevo estado
     }
 
+    // Sala Manila: permanencia REAL (minutos de reloj, no turnos ni pasos) —
+    // quedarse dentro difumina los sentidos y termina cruzando solo.
+    const rm = world.map.manila;
+    const dentroManila = !!rm && world.player.x >= rm.x && world.player.x < rm.x + rm.w &&
+      world.player.y >= rm.y && world.player.y < rm.y + rm.h;
+    if (!dentroManila) {
+      world._manilaDesde = null;
+      world._manilaAviso = 0;
+    } else if (!world.busy) {
+      if (!world._manilaDesde) {
+        world._manilaDesde = performance.now();
+        world._manilaAviso = 0;
+        world._manilaIntento = (world._manilaIntento || 0) + 1;
+        world._manilaObjetivoMs = MapGen.manilaGoal(
+          world.map.manilaSalida, `${world.runSeed}::${world.level.id}`, world._manilaIntento
+        ) * 1000;
+      }
+      const frac = (performance.now() - world._manilaDesde) / world._manilaObjetivoMs;
+      if (frac >= 0.5 && world._manilaAviso < 1) {
+        world._manilaAviso = 1;
+        world.log('Este sitio empieza a difuminarte los sentidos…', 'event');
+      } else if (frac >= 0.8 && world._manilaAviso < 2) {
+        world._manilaAviso = 2;
+        world.log('Cuesta recordar por qué entraste aquí…', 'event');
+      } else if (frac >= 1) {
+        world._manilaDesde = null;
+        world.log('El tiempo se te ha escapado de las manos. Ya no sabes cuánto llevas aquí.', 'event');
+        crossExit(world.map.manilaSalida);
+        return;
+      }
+    }
+
     // aviso al pisar un contenedor sin registrar
     const contAqui = (world.map.props || []).find(
       (p) => p.contenedor && !p.registrado && p.x === world.player.x && p.y === world.player.y
@@ -776,18 +757,10 @@
     // descansar en niveles seguros repone la mente (hasta 70)
     if (world.level.peligro <= 1 && world.player.cordura < 70 && world.turn % 25 === 0)
       world.sanity(1);
-    const drenaje = world.instinto('visceras_vacio') ? 2 : 1; // vísceras del vacío
-    if (world.turn % (9 * drenaje) === 0) world.thirst(-1);
-    if (world.turn % (15 * drenaje) === 0) world.hunger(-1);
+    if (world.turn % 9 === 0) world.thirst(-1);
+    if (world.turn % 15 === 0) world.hunger(-1);
     if (world.player.sed <= 0 && world.turn % 3 === 0) world.hurt(2, 'la deshidratación', true);
     if (world.player.hambre <= 0 && world.turn % 5 === 0) world.hurt(1, 'la inanición', true);
-
-    // Sintonía (v18): el lugar cala en ti — o te suelta, muy despacio
-    if (world.instinto('sangre_amarilla') && world.turnTotal % 12 === 0 && world.player.salud < 100)
-      world.player.salud = Math.min(100, world.player.salud + 1);
-    if (world.turnTotal % 50 === 0 && world.player.cordura < 25) world.tune(2);
-    if (world.turnTotal % 40 === 0 && world.level.peligro >= 4) world.tune(1);
-    if (world.turnTotal % 50 === 0 && world.level.peligro <= 1) world.tune(-1);
     // el ruido reciente caduca
     if (world.ruido && world.turnTotal - world.ruido.turno > 8) world.ruido = null;
 
@@ -806,8 +779,6 @@
       piensa('sed', P.sed < 30, P.sed > 55, 'Tengo la garganta seca. Necesito beber.');
       piensa('sed2', P.sed <= 5, P.sed > 20, 'Agua… lo que sea… AGUA.');
       piensa('hambre', P.hambre < 30, P.hambre > 55, 'Me ruge el estómago.');
-      piensa('sint', (P.sintonia || 0) >= 85, (P.sintonia || 0) < 70,
-        'Las paredes ya no me susurran. Me HABLAN. Y las entiendo.');
       if ((world.level.reglas || []).includes('frio') &&
           world.turn % 38 === 12 && !world.equipado('chaqueta'))
         Effects.bubble(P.x, P.y, 'Me castañetean los dientes…', P);
@@ -905,7 +876,6 @@
           ent.reveladaHasta = world.turn + 6;
           world.log(`¡Chocas con algo en la oscuridad! ¡${ent.def.nombre} estaba ahí!`, 'danger');
           world.sanity(-3);
-          world.tune(4); // tocar lo que vive aquí te sintoniza con esto
           if (window.Sfx) Sfx.cue(ent.def.glyph);
           if (window.Effects) Effects.doShake(3, 120);
           worldStep(); // el susto consume el turno
@@ -963,7 +933,6 @@
       world.log(`Has derribado a ${ent.def.nombre}.`, 'good');
       if (window.Effects) Effects.particles(ent.x, ent.y, ent.def.color, 20);
       world.sanity(-2); // matar en las Backrooms también pesa
-      world.tune(8);    // …y el lugar toma nota de ti
       return;
     }
     world.log(`Golpeas a ${ent.def.nombre} con la tubería.`, 'good');
@@ -1037,7 +1006,6 @@
             if (mala) {
               world.hurt(14, 'el agua contaminada', true);
               world.sanity(-8);
-              world.tune(6); // esa agua ya era parte del lugar; ahora tú también
               world.log('Arde al tragar. El brillo del agua NO era un buen augurio.', 'danger');
             } else {
               world.thirst(30);
@@ -1062,11 +1030,6 @@
     if (window.Sfx) Sfx.play('registrar');
     world.hacerRuido(world.player.x, world.player.y, 10); // registrar HACE RUIDO
     world.rollDice(`Registras ${NOMBRES_CONT[cont.id] ?? 'el contenedor'}…`, (d) => {
-      // lengua de las paredes: los contenedores te susurran — nunca pifias
-      if (d < 7 && world.instinto('lengua_paredes')) {
-        world.log('Las paredes susurran: «ahí no». Retiras la mano a tiempo.', 'good');
-        d = 7;
-      }
       if (d >= 14) {
         const basicos = ['agua_almendras', 'agua_almendras', 'botiquin', 'linterna', 'tuberia', 'trebol'];
         const pool = basicos.concat(Object.keys(world.data.objects).filter((id) => !basicos.includes(id)));
@@ -1175,7 +1138,7 @@
         Effects.particles(e.x, e.y, '#ff8a30', 14);
         Effects.number(e.x, e.y, '−30', '#ff8a30');
       }
-      if (e.vida <= 0) { e.viva = false; world.log(`${e.def.nombre} arde hasta desaparecer.`, 'good'); world.tune(5); }
+      if (e.vida <= 0) { e.viva = false; world.log(`${e.def.nombre} arde hasta desaparecer.`, 'good'); }
     }
     if (window.Effects) Effects.flash(world.player.x, world.player.y, '#ff8a30');
     if (!alcanzadas) world.log('Las llamas se apagan sin alcanzar a nada.', 'event');
@@ -1199,17 +1162,16 @@
 
   function aplicarNumericos(def, id) {
     const ef = def.efecto || {};
-    const mitad = id === 'agua_almendras' && world.instinto('sangre_amarilla') ? 0.5 : 1;
     if (ef.salud) {
-      const v = Math.round(ef.salud * mitad);
+      const v = ef.salud;
       if (v < 0) world.hurt(Math.abs(v), def.nombre, true);
       else {
         world.player.salud = Math.min(100, world.player.salud + v);
         if (window.Effects) Effects.number(world.player.x, world.player.y, '+' + v + ' ♥', '#9ee8a0');
       }
     }
-    if (ef.cordura) world.sanity(Math.round(ef.cordura * mitad));
-    if (ef.sed) world.thirst(Math.round(ef.sed * mitad));
+    if (ef.cordura) world.sanity(ef.cordura);
+    if (ef.sed) world.thirst(ef.sed);
     if (ef.ruido) world.hacerRuido(world.player.x, world.player.y, ef.ruido);
   }
 
@@ -1242,7 +1204,6 @@
     if (e.vida <= 0) {
       e.viva = false;
       world.log(`${e.def.nombre} cae.`, 'good');
-      world.tune(5);
     }
   }
 
@@ -1362,7 +1323,6 @@
     if (def.efecto?.pasivo) { world.log(`${def.nombre}: su efecto es pasivo, basta con llevarlo.`, 'event'); return; }
     if (def.efecto) {
       aplicarNumericos(def, id);
-      if (id === 'amuleto') world.tune(-5); // el ancla al hogar te DES-sintoniza
       world.player.inv.splice(slot, 1);
       world.log(`Usas: ${def.nombre}.`, 'good');
       world.ui.updateHUD();
@@ -1473,39 +1433,6 @@
       : `Arrojas ${world.data.objects[id].nombre} lejos. El golpe resuena en los pasillos.`, 'event');
     world.ui.updateHUD();
     worldStep();
-  }
-
-  // No-clip (Instinto de umbral 80): atraviesas la pared que encaras
-  function noclip() {
-    if (world.online) return; // sin Sintonía en el MMO (retirada a petición)
-    if (world.busy || world.over || world.escondido) return;
-    if (!world.instinto('noclip')) {
-      if ((world.player.instintos || []).length)
-        world.log('Sabes que se puede… pero tu cuerpo aún no. (Instinto No-clip, Sintonía 80.)', 'event');
-      return;
-    }
-    const [fx, fy] = ROT_VEC[world.player.rot ?? 2];
-    const g = world.map.grid;
-    const wx = world.player.x + fx, wy = world.player.y + fy;
-    const ox = world.player.x + fx * 2, oy = world.player.y + fy * 2;
-    if (MapGen.at(g, wx, wy) !== T.PARED) { world.log('Ahí no hay pared que atravesar.', 'event'); return; }
-    if (!MapGen.walkable(MapGen.at(g, ox, oy))) { world.log('Sientes el otro lado: no hay NADA transitable.', 'event'); return; }
-    if (world.entities.some((e) => e.viva && e.x === ox && e.y === oy)) {
-      world.log('Algo ocupa el otro lado. Mejor no aparecer DENTRO de ello.', 'danger');
-      return;
-    }
-    world.rollDice('Empujas tu cuerpo A TRAVÉS de la pared…', (d) => {
-      if (d <= 3) { die('Te des-encajaste de la realidad. El Vacío no devuelve nada.'); return; }
-      world.player.x = ox;
-      world.player.y = oy;
-      world.sanity(-10);
-      if (world.over) return;
-      world.tune(4);
-      world.log('Atraviesas la pared como quien cruza agua fría.', 'good');
-      if (window.Sfx) Sfx.play('crujido');
-      if (window.Effects) Effects.particles(ox, oy, '#d9c66e', 12);
-      worldStep();
-    });
   }
 
   // teleport de depuración (v20.2): salto directo a cualquier nivel desde el
@@ -1646,21 +1573,7 @@
       return;
     }
     if (tipo === 'escape') {
-      // el precio de la Sintonía: cuanto más eres de ESTE lado, menos te deja
-      // salir la realidad (d20 contra sintonía/5 — a 100 no hay vuelta)
-      const s = world.player.sintonia || 0;
-      if (s >= 10) {
-        world.rollDice('La salida brilla… pero ¿te reconocerá la realidad como suyo?', (d) => {
-          if (d <= Math.floor(s / 5)) {
-            world.log(`Dado: ${d}. La membrana te ESCUPE de vuelta. Ya eres demasiado de este lado.`, 'danger');
-            world.sanity(-8);
-            if (window.Effects) { Effects.doShake(7, 320); Effects.bubble(world.player.x, world.player.y, 'No… me ha… rechazado.', world.player); }
-            if (window.Sfx) Sfx.play('dano');
-          } else {
-            win();
-          }
-        });
-      } else win();
+      win();
       return;
     }
     if (tipo === 'llave') {
@@ -1678,21 +1591,23 @@
 
     const go = () => {
       const caminata = def._mec === 'caminata';
-      const continua = caminata && world.level.id === 'level-0';
-      if (window.Sfx && !caminata) Sfx.play('puerta');
+      const manila = def._mec === 'manila';
+      const continua = (caminata || manila) && world.level.id === 'level-0';
+      if (window.Sfx && !caminata && !manila) Sfx.play('puerta');
       let destino = def.destino;
       if (destino === '*aleatoria') {
         const ids = Object.keys(world.data.levels).filter((i) => i !== world.level.id);
         destino = world.rng.pick(ids);
       } else if (destino === '*visitada') {
         destino = world.rng.pick(world.visited);
+      } else if (destino.startsWith('*opciones:')) {
+        const opciones = destino.slice('*opciones:'.length).split(',');
+        destino = world.rng.pick(opciones);
       }
       def._destinoResuelto = destino; // para reconocer esta salida al volver
-      // cruzar por donde nadie debería te sintoniza con el lugar
-      if (tipo === 'void' || tipo === 'arriesgada') world.tune(5);
       world.prevStack.push(world.level.id);
       enterLevel(destino, def.texto, {
-        sinRetorno: caminata || esSinRetorno(def),
+        sinRetorno: caminata || manila || esSinRetorno(def),
         sinTarjeta: continua,
       });
     };
@@ -1755,8 +1670,6 @@
           sed: world.player.sed, hambre: world.player.hambre,
           inv: world.player.inv, manos: world.player.manos,
           equipo: world.player.equipo,
-          sintonia: world.player.sintonia, instintos: world.player.instintos,
-          umbrales: world.player.umbrales,
         },
         journal: world.journal,
         visited: world.visited,
@@ -1785,8 +1698,6 @@
       x: 0, y: 0, rx: 0, ry: 0, dir: 'down', flip: false, rot: 2,
       salud: s.player.salud, cordura: s.player.cordura,
       sed: s.player.sed, hambre: s.player.hambre,
-      sintonia: s.player.sintonia || 0, instintos: s.player.instintos || [],
-      umbrales: s.player.umbrales || [],
       inv: s.player.inv, manos: s.player.manos || [null, null],
       equipo: s.player.equipo || { cara: null, cuerpo: null, pies: null },
       luz: false, viva: true,
@@ -1819,9 +1730,9 @@
   }
 
   window.Game = {
-    world, startRun, continueRun, loadSave, Profiles, INSTINTOS,
+    world, startRun, continueRun, loadSave, Profiles,
     tryMove, wait, interact, toggleLuz, useItem, crossExit,
-    girar, avanzar, equipar, desequipar, usarMano, tirarItem, arrojarItem, noclip,
+    girar, avanzar, equipar, desequipar, usarMano, tirarItem, arrojarItem,
     ponerEquipo, quitarEquipo, debugTeleport,
   };
 })();

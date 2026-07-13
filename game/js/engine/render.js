@@ -251,6 +251,21 @@
           for (let fx = 0; fx < 3; fx++)
             if ((fx + fy) % 2 === 0) ctx.fillRect(cx - 7 + fx * 5.5, base - 36 + fy * 7, 3.5, 4);
         break;
+      case 'emergencia': // puerta de emergencia (L0 → L14): rótulo EXIT + baliza roja
+        ctx.fillStyle = '#181210';
+        ctx.fillRect(cx - 11, base - 36, 22, 36);
+        ctx.fillStyle = '#3a2c28';
+        ctx.fillRect(cx - 9, base - 28, 18, 26);
+        ctx.fillStyle = '#c81818';
+        ctx.fillRect(cx - 8, base - 12, 16, 4);
+        ctx.fillStyle = '#2a0808';
+        ctx.fillRect(cx - 11, base - 38, 22, 8);
+        ctx.fillStyle = Math.floor(t / 300) % 2 ? '#ff2020' : '#c81010'; // rótulo parpadeante
+        ctx.font = 'bold 6px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('EXIT', cx, base - 32);
+        ctx.fillStyle = '#ff2020'; ctx.globalAlpha = 0.35 + pulse * 0.35; // baliza
+        ctx.beginPath(); ctx.arc(cx, base - 34, 10, 0, 7); ctx.fill();
+        break;
     }
     ctx.restore();
   }

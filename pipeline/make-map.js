@@ -50,6 +50,56 @@ const esSinRetorno = (s) =>
   s.sinRetorno === true || s.tipo === 'void' ||
   /agujero|caes |caer |caída|desplom|abismo|pozo|trampilla|no.?clip|desmay|despiert/i.test(s.texto || '');
 
+// mismas regex que el juego (mapgen.js→mecanicaDe): mecánicas de salida derivadas
+const mecanicaDe = (s) => {
+  if (s.mecanica) return s.mecanica;
+  const t = (s.texto || '').toLowerCase();
+  if (/(romp|quebr|abre)[^.]*(suelo|piso)|suelo (falso|débil|agrietado)/.test(t)) return 'romper_suelo';
+  if (/(romp|derrib|golpea|atraviesa|agriet)[^.]*(pared|muro)|pared (falsa|débil|agrietada)/.test(t)) return 'romper';
+  if (/caminar sin rumbo|camina[r]? (durante|hasta|lejos)|andar (durante|hasta|sin)|deambul|vagar? (por|durante|hasta)|durante horas|durante días|kilómetros/.test(t)) return 'caminata';
+  return null;
+};
+
+const MEC_NOMBRE = {
+  romper: 'pared agrietada — ESPACIO para romperla (dado; la tubería ayuda)',
+  romper_suelo: 'suelo agrietado — ESPACIO para romperlo (dado; pisotón duele)',
+  caminata: 'caminata — se cruza solo tras cientos de pasos reales',
+  manila: 'Sala Manila — permanencia de 3-5 minutos reales dentro de la sala',
+};
+const RITUAL_NOMBRE = {
+  nave: 'nave espacial de juguete sobre un pedestal',
+  reloj: 'reloj digital 88:88 colgado de la pared',
+  vending: 'máquina expendedora (botones «9» y «8»)',
+  boton: 'panel de control con botón ESCAPE',
+  edificio: 'edificio idéntico a los de la realidad',
+  emergencia: 'puerta roja con rótulo EXIT y luz de emergencia',
+};
+
+// heurística de PENDIENTES: el texto de la wiki describe una acción o condición
+// especial (dormir, beber, manipular, desmayarse…) que hoy se comporta como una
+// puerta corriente — candidatas a recibir su propia mecánica más adelante
+const PENDIENTE_RE = /desmay|despert|despiert|consciencia|dormir|beber |comer |resbal|manipul|experiment|interactu|montaña rusa|subir dos tramos|permanecer|tropezar|tiembla|condiciones desconocidas|tocar |pulsar /i;
+
+// clasifica una salida: qué tiene ya implementado y qué falta por determinar
+function estadoDe(s) {
+  const mec = mecanicaDe(s);
+  if (mec) return { estado: 'mec', etiqueta: MEC_NOMBRE[mec] ?? mec };
+  if (s.ritual) return { estado: 'ritual', etiqueta: RITUAL_NOMBRE[s.ritual] ?? s.ritual };
+  if (s.tipo === 'llave') return { estado: 'mec', etiqueta: 'puertas de acero — exigen una Llave de Nivel (un uso)' };
+  if (s.tipo === 'void' || s.tipo === 'escape' || s.tipo === 'sellada') return { estado: 'tipo', etiqueta: null };
+  if (s.riesgoVoid > 0) return { estado: 'dado', etiqueta: null };
+  if (PENDIENTE_RE.test(s.texto || '')) return { estado: 'pendiente', etiqueta: null };
+  return { estado: 'estandar', etiqueta: null };
+}
+
+// destinos reales de una salida (el sentinel *opciones:a,b conecta con VARIOS)
+function destinosDe(s) {
+  if (!s.destino) return [];
+  if (s.destino.startsWith('*opciones:'))
+    return s.destino.slice('*opciones:'.length).split(',').filter((id) => levels[id]);
+  return levels[s.destino] ? [s.destino] : [];
+}
+
 // ---------- datos embebidos para la interacción ----------
 const DATA = {};
 for (const [id, lv] of Object.entries(levels)) {
@@ -62,23 +112,31 @@ for (const [id, lv] of Object.entries(levels)) {
     bioma: lv.bioma,
     esEscape: !!lv.esEscape,
     url: lv.url,
-    salidas: (lv.salidas || []).map((s) => ({
-      texto: s.texto,
-      tipo: s.tipo,
-      destino: s.destino && levels[s.destino] ? s.destino : null,
-      destinoNombre: s.destino === '*aleatoria' ? 'un nivel al azar'
-        : s.destino === '*visitada' ? 'un nivel ya visitado'
-        : (levels[s.destino]?.wikiTitle ?? null),
-      riesgoVoid: s.riesgoVoid || 0,
-      sinRetorno: esSinRetorno(s),
-    })),
+    salidas: (lv.salidas || []).map((s) => {
+      const { estado, etiqueta } = estadoDe(s);
+      const opciones = s.destino?.startsWith('*opciones:') ? destinosDe(s) : null;
+      return {
+        texto: s.texto,
+        tipo: s.tipo,
+        destino: !opciones && s.destino && levels[s.destino] ? s.destino : null,
+        destinoNombre: s.destino === '*aleatoria' ? 'un nivel al azar'
+          : s.destino === '*visitada' ? 'un nivel ya visitado'
+          : opciones ? null
+          : (levels[s.destino]?.wikiTitle ?? null),
+        opciones, // varios destinos posibles (el azar elige al cruzar)
+        riesgoVoid: s.riesgoVoid || 0,
+        sinRetorno: esSinRetorno(s),
+        estado,
+        etiqueta,
+      };
+    }),
     entradas: [],
   };
 }
 for (const [id, lv] of Object.entries(levels)) {
   for (const s of lv.salidas || []) {
-    if (s.destino && DATA[s.destino]) {
-      DATA[s.destino].entradas.push({
+    for (const destino of destinosDe(s)) {
+      DATA[destino].entradas.push({
         desde: id,
         desdeNombre: lv.wikiTitle,
         texto: s.texto,
@@ -94,8 +152,8 @@ let edges = '';
 for (const [id, lv] of Object.entries(levels)) {
   const p = pos[id];
   for (const s of lv.salidas || []) {
-    if (!s.destino || !levels[s.destino]) continue;
-    const t = pos[s.destino];
+    for (const destino of destinosDe(s)) {
+    const t = pos[destino];
     const x1 = p.x + NW, y1 = p.y + NH / 2, x2 = t.x, y2 = t.y + NH / 2;
     const back = t.x <= p.x;
     const mx = back ? Math.max(x1, x2 + NW) + 70 : (x1 + x2) / 2;
@@ -103,7 +161,8 @@ for (const [id, lv] of Object.entries(levels)) {
     const d = back
       ? `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2 + NW} ${y2}`
       : `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`;
-    edges += `<path class="${clase}" data-from="${id}" data-to="${s.destino}" d="${d}" marker-end="url(#${back ? 'ab' : 'af'})"/>\n`;
+    edges += `<path class="${clase}" data-from="${id}" data-to="${destino}" d="${d}" marker-end="url(#${back ? 'ab' : 'af'})"/>\n`;
+    }
   }
 }
 
@@ -112,11 +171,20 @@ for (const [id, lv] of Object.entries(levels)) {
   const p = pos[id];
   const esc = lv.esEscape;
   const sub = (lv.nombre.split('«')[1] ?? '').replace('»', '') || lv.clase.split('·')[0].trim();
+  // badges de mecánicas: ⚙N = salidas con mecánica especial YA implementada;
+  // ❓N = salidas cuyo texto pide una acción especial aún por determinar
+  const estados = (lv.salidas || []).map((s) => estadoDe(s).estado);
+  const nEsp = estados.filter((e) => e === 'mec' || e === 'ritual' || e === 'dado').length;
+  const nPend = estados.filter((e) => e === 'pendiente').length;
+  let badges = '';
+  if (nEsp) badges += `<text class="badge-ok" x="${NW - 10}" y="22" text-anchor="end">⚙${nEsp}</text>`;
+  if (nPend) badges += `<text class="badge-pend" x="${NW - 10}" y="${nEsp ? 40 : 22}" text-anchor="end">❓${nPend}</text>`;
   nodes += `<g class="nodo${esc ? ' escape' : ''}" data-id="${id}" transform="translate(${p.x},${p.y})">
     <rect width="${NW}" height="${NH}" rx="9" stroke="${esc ? '#4ade80' : colorPeligro(lv.peligro)}"/>
     <text class="tt" x="12" y="24">${lv.wikiTitle}${esc ? ' ⭐' : ''}</text>
     <text class="ts" x="12" y="42">${sub}</text>
     <text class="tp" x="12" y="58" fill="${colorPeligro(lv.peligro)}">Peligro ${lv.peligro}/5 · ${lv.bioma}</text>
+    ${badges}
   </g>\n`;
 }
 
@@ -190,6 +258,8 @@ const html = `<!doctype html>
  .nodo .tt{fill:#f0ead6;font-size:14px;font-weight:700}
  .nodo .ts{fill:#b8b2a0;font-size:11px}
  .nodo .tp{font-size:10px;font-weight:600}
+ .nodo .badge-ok{fill:#7ade80;font-size:12px;font-weight:700}
+ .nodo .badge-pend{fill:#e8b060;font-size:12px;font-weight:700}
  .nodo:hover rect,.nodo.lit rect{filter:drop-shadow(0 0 8px rgba(255,217,112,.7));stroke-width:3}
  .nodo.sel rect{stroke:#ffd970!important;stroke-width:3.5;
   filter:drop-shadow(0 0 12px rgba(255,217,112,.9))}
@@ -200,13 +270,16 @@ const html = `<!doctype html>
 <body>
 <header>
  <h1>🚪 MAPA DEL PILOTO — Backrooms roguelike</h1>
- <p>Pasa el ratón por un nivel para iluminar sus conexiones · haz CLIC para ver cómo se entra y cómo se sale de él.</p>
+ <p>Pasa el ratón por un nivel para iluminar sus conexiones · haz CLIC para ver cómo se entra y cómo se sale de él.
+ Los badges de cada nivel cuentan sus salidas: ⚙ con mecánica especial ya implementada · ❓ con mecánica aún por determinar.</p>
  <div class="leg">
   ${leyendaPeligro}
   <span><i class="raya"></i>salida normal</span>
   <span><i class="raya d"></i>rara / arriesgada / llave</span>
   <span><i class="raya v"></i>camino de vuelta</span>
   <span>⭐ escape</span>
+  <span style="color:#7ade80">⚙ mecánica especial implementada</span>
+  <span style="color:#e8b060">❓ mecánica por determinar</span>
   <input id="buscar" type="text" placeholder="buscar nivel… (ej: poolrooms)" spellcheck="false">
  </div>
 </header>
@@ -264,18 +337,29 @@ function mostrarPanel(id) {
   const d = DATA[id];
   const panel = document.getElementById('panel');
   const salidas = d.salidas.map((s) => {
-    let dest = s.destinoNombre
-      ? (s.destino
-          ? '→ <span class="dest" data-ir="' + s.destino + '">' + s.destinoNombre + '</span>'
-          : '→ ' + s.destinoNombre)
-      : (s.tipo === 'escape' ? '→ LA REALIDAD' : '→ nivel sin cartografiar');
+    let dest;
+    if (s.opciones) {
+      dest = '→ ' + s.opciones.map((o) =>
+        '<span class="dest" data-ir="' + o + '">' + (DATA[o]?.wikiTitle ?? o) + '</span>'
+      ).join(' o ') + ' (el azar elige al cruzar)';
+    } else if (s.destinoNombre) {
+      dest = s.destino
+        ? '→ <span class="dest" data-ir="' + s.destino + '">' + s.destinoNombre + '</span>'
+        : '→ ' + s.destinoNombre;
+    } else {
+      dest = s.tipo === 'escape' ? '→ LA REALIDAD' : '→ nivel sin cartografiar';
+    }
     let notas = '';
+    if (s.estado === 'mec' || s.estado === 'ritual')
+      notas += '<span class="nota" style="color:#7ade80">⚙ mecánica implementada: ' + s.etiqueta + '</span>';
+    if (s.estado === 'pendiente')
+      notas += '<span class="nota" style="color:#e8b060">❓ mecánica POR DETERMINAR: el texto describe una acción especial que hoy funciona como una puerta corriente</span>';
     if (s.tipo === 'arriesgada' && s.riesgoVoid > 0)
-      notas += '<span class="nota">⚠ camino inestable: ' + Math.round(s.riesgoVoid * 100) + '% de caer al Vacío (dado)</span>';
+      notas += '<span class="nota">⚠ camino inestable: ' + Math.round(s.riesgoVoid * 100) + '% de caer al Vacío (dado implementado; el trébol ayuda)</span>';
     if (s.tipo === 'llave') notas += '<span class="nota">🗝 solo se abre con una Llave de Nivel (un uso)</span>';
     if (s.sinRetorno) notas += '<span class="nota">⛔ SIN RETORNO: es una caída — nadie escala eso</span>';
-    if (s.tipo === 'sellada') notas += '<span class="nota">⌀ lleva fuera de los 30 niveles del piloto (cordura −2 al intentarlo)</span>';
-    if (s.tipo === 'escape') notas += '<span class="nota">⭐ VICTORIA… si la realidad te reconoce (tirada contra tu Sintonía)</span>';
+    if (s.tipo === 'sellada') notas += '<span class="nota">⌀ lleva fuera de los niveles del piloto (cordura −2 al intentarlo)</span>';
+    if (s.tipo === 'escape') notas += '<span class="nota">⭐ VICTORIA: cruzar aquí termina la partida con éxito</span>';
     return '<div class="via">«' + s.texto + '»' + chip(s.tipo) + '<br>' + dest + notas + '</div>';
   }).join('') || '<div class="via">Sin salidas catalogadas.</div>';
 

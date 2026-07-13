@@ -168,6 +168,19 @@
       x.fillStyle = col; x.globalAlpha = 0.5;                           // luz bajo la puerta
       x.fillRect(4, h - 3, w - 8, 3);
     }),
+    // puerta de emergencia (L0 → L14): metal oscuro + barra antipánico + rótulo
+    // EXIT sobre baliza roja — se distingue de cualquier otra puerta del juego
+    emergencia: () => lienzo(44, 64, (x, w, h) => {
+      x.fillStyle = '#181210'; x.fillRect(0, 0, w, h);                   // marco oscuro
+      x.fillStyle = '#3a2c28'; x.fillRect(3, 12, w - 6, h - 15);         // hoja
+      x.strokeStyle = '#5a4038'; x.lineWidth = 2;
+      x.strokeRect(7, 18, w - 14, h - 32);                                // panel
+      x.fillStyle = '#c81818';                                            // barra antipánico
+      x.fillRect(6, h - 22, w - 12, 5);
+      x.fillStyle = '#2a0808'; x.fillRect(2, 0, w - 4, 11);               // caja del rótulo
+      x.fillStyle = '#ff2020'; x.font = 'bold 8px monospace'; x.textAlign = 'center';
+      x.fillText('EXIT', w / 2, 8);
+    }),
     ventana: (col) => lienzo(44, 64, (x, w, h) => {
       x.fillStyle = '#2a2a2e'; x.fillRect(0, 0, w, h);
       x.fillStyle = SH(col, 0.9); x.globalAlpha = 0.85;
@@ -907,6 +920,7 @@
         edificio: { p: 'edificio', w: 0.95, h: 1.4, y: 0.7, grosor: 0.12, ladoCol: 0x2c333d, ladoEst: 'metal' },
         ventana: { p: 'ventana', w: 0.9, h: 1.3, y: 0.75, grosor: 0.07, ladoCol: 0x2a2a2e, ladoEst: 'metal' },
         puerta: { p: 'puerta', w: 0.92, h: 1.36, y: 0.68, grosor: 0.08, ladoCol: 0x241c14, ladoEst: 'madera' },
+        emergencia: { p: 'emergencia', w: 0.92, h: 1.36, y: 0.68, grosor: 0.08, ladoCol: 0x181210, ladoEst: 'metal' },
       };
       const spec = SPEC[rit] ?? SPEC[estilo] ?? SPEC.puerta;
       const t2 = pintado('p-' + spec.p + col, () => PINTORES[spec.p](col));
@@ -920,6 +934,13 @@
       m.position.set(ex.x + 0.5, spec.y, paredNorte ? ex.y + spec.grosor / 2 + 0.01 : ex.y + 0.5);
       m.castShadow = true;
       grupo.add(m);
+      // baliza roja de emergencia: la única luz roja fija del juego, para que
+      // esta salida se reconozca desde lejos frente a cualquier otra puerta
+      if (rit === 'emergencia') {
+        const baliza = new THREE.PointLight(0xff2020, 6, 4, 2);
+        baliza.position.set(ex.x + 0.5, spec.y + spec.h / 2 + 0.1, paredNorte ? ex.y + 0.6 : ex.y + 0.5);
+        grupo.add(baliza);
+      }
     });
     yield;
 
@@ -1229,11 +1250,17 @@
       cercanas.splice(i, 0, { ...p, d2 });
       if (cercanas.length > ceilingLights.length) cercanas.pop();
     }
+    const m = world.map.manila;
+    const pal = world.level.paleta;
     ceilingLights.forEach((l, i) => {
       const p = cercanas[i];
       if (!p) { l.intensity = 0; l.visible = false; return; }
       l.visible = true;
       l.position.set(p.x, WALL_H - 0.12, p.z);
+      // Sala Manila: sus fluorescentes viran a un naranja tenue — la calma
+      // que precede a perder la noción del tiempo ahí dentro
+      const enManila = m && p.x >= m.x && p.x < m.x + m.w && p.z >= m.y && p.z < m.y + m.h;
+      l.color.set(enManila ? 0xff8c40 : pal.luz);
       const falla = p.group === flkGrupo && !flkOn;
       const objetivo = (0.82 - 0.12 * fase0) * (falla ? 0.05 : 1);
       l.intensity += (objetivo - l.intensity) * 0.22;

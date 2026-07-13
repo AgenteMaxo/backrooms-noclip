@@ -138,7 +138,7 @@ class Sala {
       salud: 100, sed: 100, cordura: 100, luz: false, escondido: null, muerto: false,
       inv: [], manos: [null, null], equipo: { cara: null, cuerpo: null, pies: null },
       esAdmin: false, muteadoHasta: 0,
-      ultMov: 0, ultChat: 0, canal: null, ofertaEn: null,
+      ultMov: 0, ultChat: 0, canal: null, ofertaEn: null, manila: null,
       // observatorio: cuándo entró al mundo y cuántos informes de posición
       // ilegales acumula (vel = speedhack, muro = noclip) — señal de auditoría
       conectadoEn: Date.now(), rechazos: { vel: 0, muro: 0 },
@@ -294,6 +294,42 @@ class Sala {
     this.proximidad(jug);
     this.supervivencia(jug, d);
     this.caminataAvanza(jug, d);
+    this.manilaAvanza(jug);
+  }
+
+  // Sala Manila: permanencia REAL (minutos de reloj) — ambiental, NO usa
+  // jug.canal (eso bloquearía registrar/esconderse durante minutos enteros).
+  // Cada estancia (entra/sale/reentra) es un intento propio con su tirada.
+  manilaAvanza(jug) {
+    const rect = this.map.manila;
+    if (!rect || jug.muerto) { jug.manila = null; return; }
+    const dentro = jug.x >= rect.x && jug.x < rect.x + rect.w &&
+      jug.y >= rect.y && jug.y < rect.y + rect.h;
+    if (!dentro) { jug.manila = null; return; }
+    if (!jug.manila) {
+      jug.manilaIntento = (jug.manilaIntento || 0) + 1;
+      const seg = MapGen.manilaGoal(this.map.manilaSalida, `${jug.token}::${this.clave}`, jug.manilaIntento);
+      jug.manila = { desde: Date.now(), objetivoMs: seg * 1000, aviso: 0 };
+      return;
+    }
+    const frac = (Date.now() - jug.manila.desde) / jug.manila.objetivoMs;
+    if (frac >= 0.5 && jug.manila.aviso < 1) {
+      jug.manila.aviso = 1;
+      this.enviar(jug.ws, { t: 'aviso', txt: 'Este sitio empieza a difuminarte los sentidos…' });
+    } else if (frac >= 0.8 && jug.manila.aviso < 2) {
+      jug.manila.aviso = 2;
+      this.enviar(jug.ws, { t: 'aviso', txt: 'Cuesta recordar por qué entraste aquí…' });
+    } else if (frac >= 1) {
+      jug.manila = null;
+      const original = this.map.manilaSalida;
+      if (!original || !this.alCruzar) return;
+      let destino = original.destino;
+      if (destino?.startsWith('*opciones:'))
+        destino = this.rng.pick(destino.slice('*opciones:'.length).split(','));
+      const def = { ...original, destino, _destinoResuelto: destino };
+      this.enviar(jug.ws, { t: 'aviso', txt: 'El tiempo se te ha escapado de las manos. Ya no sabes cuánto llevas aquí.' });
+      this.alCruzar(jug, this, def, { sinTarjeta: true });
+    }
   }
 
   // caminata personal por DISTANCIA recorrida (1 «paso» ≈ 1 tile)
@@ -474,11 +510,27 @@ class Sala {
       // La definición pertenece al mapa compartido: no convertir la puerta en
       // un destino fijo para quienes la crucen después.
       def = { ...defOriginal, destino, _destinoResuelto: destino };
+    } else if (defOriginal.destino?.startsWith('*opciones:')) {
+      const opciones = defOriginal.destino.slice('*opciones:'.length).split(',');
+      const destino = this.rng.pick(opciones);
+      def = { ...defOriginal, destino, _destinoResuelto: destino };
     }
     if ((def._mec === 'romper' || def._mec === 'romper_suelo') && !def._abierta) return;
     if (!DATA.levels[def.destino]) {
       this.enviar(jug.ws, { t: 'aviso', txt: 'Ese camino no lleva a ninguna parte (nivel fuera del piloto).' });
       return;
+    }
+    // ---------- riesgoVoid (paridad con crossExit de game.js) ----------
+    // el mismo d20 que resolverCanal (this.rng, semilla de sala): la MISMA
+    // secuencia determinista consumida por todo lo que ocurre en la sala.
+    if (def.tipo === 'arriesgada' && def.riesgoVoid > 0) {
+      let d = this.rng.int(1, 20);
+      if (jug.inv.includes('trebol') || jug.manos.includes('trebol') || Object.values(jug.equipo).includes('trebol'))
+        d = Math.min(20, d + 2);
+      const umbral = Math.round(def.riesgoVoid * 20);
+      const exito = d > umbral; // offline: d <= umbral === caes
+      this.enviar(jug.ws, { t: 'dado', id: jug.id, valor: d, exito });
+      if (!exito) { this.morir(jug, 'el Vacío'); return; }
     }
     if (this.alCruzar) this.alCruzar(jug, this, def);
   }
@@ -774,6 +826,7 @@ class Sala {
     jug.muerto = true;
     jug.escondido = null;
     jug.canal = null;
+    jug.manila = null;
     if (jug.luz) this.luz(jug, false); // la linterna se pierde con el resto
     db.sumarMuerte(jug.token);
     this.enviar(jug.ws, { t: 'botinReset', semilla: this.semilla });

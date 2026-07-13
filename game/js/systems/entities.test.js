@@ -47,7 +47,7 @@ function entity(def, x, y) {
   };
 }
 
-function worldWith(e, player = { x: 6, y: 6, luz: false, sintonia: 0 }) {
+function worldWith(e, player = { x: 6, y: 6, luz: false }) {
   const g = grid();
   let hurtCount = 0;
   const world = {
@@ -60,7 +60,6 @@ function worldWith(e, player = { x: 6, y: 6, luz: false, sintonia: 0 }) {
     log: () => {},
     hurt: () => { hurtCount++; },
     sanity: () => {},
-    instinto: () => false,
     equipado: () => false,
   };
   world.hurtCount = () => hurtCount;
@@ -76,7 +75,7 @@ test('deteccion contacto no cae al radio default de 6 casillas', () => {
     dano: 12,
     deteccion: { tipo: 'contacto', radio: 1 },
   }, 2, 2);
-  const world = worldWith(faceling, { x: 7, y: 2, luz: false, sintonia: 0 });
+  const world = worldWith(faceling, { x: 7, y: 2, luz: false });
 
   Entities.stepAll(world, rng());
 
@@ -92,7 +91,7 @@ test('una entidad no ataca al jugador escondido si no lo detecta', () => {
     dano: 10,
     deteccion: { tipo: 'vista', radio: 6 },
   }, 5, 6);
-  const world = worldWith(hound, { x: 6, y: 6, luz: false, sintonia: 0 });
+  const world = worldWith(hound, { x: 6, y: 6, luz: false });
   world.escondido = { x: 6, y: 6, delatado: false };
 
   Entities.stepAll(world, rng({ chance: false }));
@@ -112,7 +111,7 @@ test('el Cazador entra en caza al despertar', () => {
     deteccion: { tipo: 'global', radio: 99 },
   }, 2, 2);
   hunter.dormida = 1;
-  const world = worldWith(hunter, { x: 8, y: 8, luz: false, sintonia: 0 });
+  const world = worldWith(hunter, { x: 8, y: 8, luz: false });
 
   Entities.stepAll(world, rng());
 
