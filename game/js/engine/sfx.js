@@ -240,7 +240,15 @@
     try {
       if (muted) return;
       const ov = overrides[nombre];
-      if (ov) { const el = ov.cloneNode(); el.volume = Math.min(1, vol * volFx); el.play().catch(() => {}); return; }
+      if (ov) {
+        const el = ov.cloneNode();
+        el.volume = Math.min(1, vol * volFx);
+        // pequeña variación de tono/velocidad para que los pasos (mismo clip
+        // repetido) no suenen a metralleta idéntica en cada zancada
+        if (nombre === 'paso') el.playbackRate = 0.88 + Math.random() * 0.24;
+        el.play().catch(() => {});
+        return;
+      }
       if (!ctx) return;
       SYNTH[nombre]?.(arg);
     } catch (e) {}

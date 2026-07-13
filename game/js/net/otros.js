@@ -157,7 +157,7 @@
       // pasos de los DEMÁS: sonido local si caminan cerca de ti (v25)
       if (w && w.player && !o.escondido) {
         o._paso = (o._paso || 0) + Math.hypot(o.rx - ax, o.ry - ay);
-        if (o._paso > 0.8) {
+        if (o._paso > 1.6) {
           o._paso = 0;
           if (window.Sfx && Math.hypot(o.rx - w.player.rx, o.ry - w.player.ry) < 8)
             Sfx.play('paso', w.level?.estilo?.suelo);

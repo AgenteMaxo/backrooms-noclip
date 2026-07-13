@@ -530,7 +530,9 @@
       // pasos y botín conservan una sola evaluación por frame, aun si el
       // movimiento tuvo que trocearse para informar el rastro al servidor
       pasoAcum += distancia;
-      if (pasoAcum > 0.75) {
+      // umbral ~ media zancada real a VEL_JUGADOR (antes 0.75 daba ~6 pasos/s,
+      // sonaba a metralleta y no guardaba ritmo con el avance del personaje)
+      if (pasoAcum > 1.6) {
         pasoAcum = 0;
         if (window.Sfx) Sfx.play('paso', w.level?.estilo?.suelo);
       }
