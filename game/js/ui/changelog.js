@@ -4,6 +4,12 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
+    { v: 'v28.8', cambios: [
+      'El riesgo de caer al Vacío al cruzar una salida arriesgada ya funciona también en multijugador (antes solo en modo solo).',
+      'Nueva salida de emergencia en Level 0 hacia Level 14: puerta roja con rótulo EXIT y luz de emergencia, distinta a cualquier otra puerta del juego.',
+      'Nueva Sala Manila en Level 0: una sala tranquila con luz anaranjada tenue. Quedarse dentro varios minutos te lleva, sin avisar, a Level 1 o Level 2.',
+      'Retirado el sistema de Sintonía/Instintos (el ojo amarillo y las cartas de habilidad al cruzar ciertos umbrales) en modo solo.',
+    ] },
     { v: 'v28.7', cambios: [
       'Las manchas de humedad del suelo ya no se repiten en un patrón visible, ahora se reparten al azar. (carlosdiezm)',
       'Arreglado: el menú de configuración del mando no se cerraba bien con ESC. (carlosdiezm)',

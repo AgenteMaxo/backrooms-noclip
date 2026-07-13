@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v28.7';
+  window.VERSION_JUEGO = 'v28.8';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -152,7 +152,6 @@
     map: 6,
     log: 7,
     codex: 8,
-    noclip: 10,
     journal: 11,
     chat: 12
   },
@@ -672,7 +671,7 @@
   const btnGamepadDefault = document.getElementById('btn-gamepad-default');
   if (btnGamepadDefault) {
     btnGamepadDefault.onclick = () => {
-      OPTS.gamepadMap = { interact: 0, wait: 2, light: 3, handL: 4, handR: 5, backpack: 1, menu: 9, map: 6, log: 7, codex: 8, noclip: 10, journal: 11, chat: 12 };
+      OPTS.gamepadMap = { interact: 0, wait: 2, light: 3, handL: 4, handR: 5, backpack: 1, menu: 9, map: 6, log: 7, codex: 8, journal: 11, chat: 12 };
       OPTS.cursorSpeed = 8;
       optCursorSpeed.value = 8;
       optCursorSpeedV.textContent = 8;
@@ -695,7 +694,6 @@
       { id: 'log', label: 'Registro (L)' },
       { id: 'journal', label: 'Diario (J)' },
       { id: 'codex', label: 'Códice (C)' },
-      { id: 'noclip', label: 'No-Clip (G)' },
       { id: 'chat', label: 'Chat MMO (T)' },
       { id: 'menu', label: 'Menú / Cerrar' }
     ];
@@ -848,7 +846,6 @@
       Game.interact();
     } else if (ev.code === 'KeyX') Game.wait();
     else if (ev.code === 'KeyF') Game.toggleLuz();
-    else if (ev.code === 'KeyG') Game.noclip();
     else if (ev.code === 'KeyB') world.ui.toggleBackpack();
     else if (ev.code === 'KeyL') world.ui.toggleLog();
     else if (ev.code === 'KeyJ') world.ui.toggleJournal();
@@ -1149,7 +1146,6 @@
       if (justPressed(OPTS.gamepadMap.log)) world.ui.toggleLog();
       if (justPressed(OPTS.gamepadMap.journal)) world.ui.toggleJournal();
       if (justPressed(OPTS.gamepadMap.codex)) world.ui.toggleCodex();
-      if (justPressed(OPTS.gamepadMap.noclip)) Game.noclip();
       if (justPressed(OPTS.gamepadMap.chat)) {
         if (world.online && window.Net) Net.abrirChat();
       }
@@ -1314,8 +1310,6 @@
     } else {
       setTimeout(() => document.getElementById('btn-enter').click(), 50);
     }
-    // depuración visual: ?abrir=instinto fuerza un umbral de Sintonía
-    if (params.get('abrir') === 'instinto') setTimeout(() => Game.world.tune(22), 500);
     // depuración visual: ?abrir=mochila abre el panel tras entrar
     if (params.get('abrir') === 'mochila') {
       setTimeout(() => {
@@ -1388,13 +1382,6 @@
         if (modal.style.display !== 'none') {
           const btn = Math.random() < 0.7 ? document.getElementById('btn-cross') : document.getElementById('btn-stay');
           if (btn && btn.style.display !== 'none') btn.click(); else document.getElementById('btn-stay').click();
-          acciones++;
-          return;
-        }
-        // modal de Instintos (v18): elige la primera carta
-        const instModal = document.getElementById('instinto-modal');
-        if (instModal && instModal.style.display !== 'none') {
-          document.querySelector('.inst-card')?.click();
           acciones++;
           return;
         }

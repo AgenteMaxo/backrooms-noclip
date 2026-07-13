@@ -159,22 +159,8 @@ input[type="range"]::-moz-range-thumb {
 .moodle-1 { border-color: #d9a531; }
 .moodle-2 { border-color: #e0742c; }
 .moodle-3 { border-color: #d94a35; animation: moodle-pulse 1.1s infinite; }
-.moodle-sint { border-color: var(--amarillo); box-shadow: 0 0 10px rgba(217,198,110,.35); }
 @keyframes moodle-pulse { 50% { transform: scale(1.14); box-shadow: 0 0 12px rgba(217,74,53,.55); } }
 
-/* ---------- Instintos (v18) ---------- */
-#instinto-modal { position: absolute; inset: 0; background: rgba(0,0,0,.72);
-  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-  z-index: 19; overflow-y: auto; padding: 24px 12px; -webkit-overflow-scrolling: touch; }
-#instinto-box { max-width: 620px; }
-#instinto-cards { display: flex; gap: 12px; margin: 16px 0 10px; }
-.inst-card { flex: 1; background: #0f0e0a; border: 1px solid var(--borde);
-  border-top: 3px solid var(--amarillo-osc); padding: 14px 12px; cursor: pointer;
-  text-align: center; transition: all .12s; }
-.inst-card:hover { border-color: var(--amarillo); background: #17140c;
-  box-shadow: 0 0 16px rgba(217,198,110,.25); transform: translateY(-2px); }
-.inst-card h4 { color: var(--amarillo); font-size: 15px; margin: 8px 0 6px; }
-.inst-card p { font-size: 13.5px; line-height: 1.4; color: #cfc8b0; }
 /* v15: HUD limpio — solo manos + mochila (todo lo demás es contextual) */
 #hud-manos { position: absolute; right: 14px; bottom: 14px; display: flex;
   gap: 8px; align-items: center; }

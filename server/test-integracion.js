@@ -31,7 +31,8 @@ function elegirNivel() {
       if (map.caminatas && map.caminatas.length) continue;
       const cont = (map.props || []).some((p) => p.contenedor && !p.registrado);
       const salida = map.exits.some((e) =>
-        !e.def._mec && e.def.tipo !== 'void' && DATA.levels[e.def.destino] &&
+        !e.def._mec && e.def.tipo !== 'void' &&
+        !(e.def.tipo === 'arriesgada' && e.def.riesgoVoid > 0) && DATA.levels[e.def.destino] &&
         !/agujero|caes |caer |caída|desplom|abismo|pozo|trampilla/i.test(e.def.texto || ''));
       if (cont && salida) candidatos.push({ id: def.id, area: map.grid.w * map.grid.h });
     } catch (e) { /* nivel no generable: fuera */ }
@@ -279,7 +280,8 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     // --- cruzar una salida y comprobar la puerta de RETORNO ---
     const salida = c.map.exits
       .map((e, i) => ({ e, i }))
-      .filter(({ e }) => !e.def._mec && e.def.tipo !== 'void' && DATA.levels[e.def.destino] &&
+      .filter(({ e }) => !e.def._mec && e.def.tipo !== 'void' &&
+        !(e.def.tipo === 'arriesgada' && e.def.riesgoVoid > 0) && DATA.levels[e.def.destino] &&
         !/agujero|caes |caer |caída|desplom|abismo|pozo|trampilla/i.test(e.def.texto || '') &&
         e.def.destino !== nivelId && alcanz(e.x, e.y))[0];
     ok(!!salida, 'hay una salida normal alcanzable');

@@ -65,7 +65,15 @@
     "texto": "Una rara salida de emergencia que lleva a Level 14",
     "destino": "level-14",
     "tipo": "rara",
+    "ritual": "emergencia",
     "prob": 0.08
+   },
+   {
+    "texto": "Una sala tranquila y aislada, con un tenue patrón manila en las paredes y una única luz de tono anaranjado. Quedarse aquí demasiado tiempo difumina los sentidos… y a veces, es una salida.",
+    "destino": "*opciones:level-1,level-2",
+    "tipo": "rara",
+    "mecanica": "manila",
+    "permanenciaS": [180, 300]
    },
    {
     "texto": "Puertas correderas de cristal, como de invernadero, hacia Level 13",

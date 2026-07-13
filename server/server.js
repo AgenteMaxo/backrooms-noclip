@@ -318,7 +318,7 @@ function cambiarDeSala(jug, salaVieja, defSalida, opts) {
     } else jug.ofertaEn = null;
   }
   jug.x = x; jug.y = y;
-  jug.canal = null; jug.escondido = null;
+  jug.canal = null; jug.escondido = null; jug.manila = null;
   // teleport de sala: caducan los informes de posición en vuelo (v24)
   jug.sec = (jug.sec || 0) + 1;
   jug._posT = Date.now();

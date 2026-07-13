@@ -91,22 +91,14 @@
       return false;
     }
 
-    // Sintonía alta (v18): lo que no es cazador te huele como cosa del lugar
-    // y cada vez le importas menos
-    const sint = world.player.sintonia || 0;
-    if (sint >= 30 && rng && e.def.comportamiento !== 'cazador' &&
-        rng.chance((sint - 20) / 180)) return false;
-
-    // pies de moqueta (−2) y botas reforzadas (−1): te detectan más tarde
-    const rMod = (world.instinto && world.instinto('pies_moqueta') ? -2 : 0) +
-      (world.equipado && world.equipado('botas_reforzadas') ? -1 : 0);
+    // botas reforzadas (−1): te detectan más tarde
+    const rMod = world.equipado && world.equipado('botas_reforzadas') ? -1 : 0;
     const radio = Math.max(1, (d.radio ?? 6) + rMod);
     const ver = () => FOV.los(world.map.grid, e.x, e.y, world.player.x, world.player.y);
     switch (d.tipo) {
       case 'vista': return dd <= radio && ver();
       case 'oscuridad': return dd <= radio && ver() && playerInDark(world);
-      case 'luz': return world.player.luz && dd <= radio &&
-        !(world.instinto && world.instinto('piel_fluorescente')); // te creen una luz más
+      case 'luz': return world.player.luz && dd <= radio;
       case 'adyacente':
       case 'contacto': return dd <= (d.radio || 1);
       case 'sigilo': return dd <= radio && ver();
@@ -133,13 +125,6 @@
       return;
     }
     e.preparando = false;
-
-    // reflejos de errante: 25% de esquivar el golpe que viste venir
-    if (rng && world.instinto && world.instinto('reflejos_errante') && rng.chance(0.25)) {
-      e._atkT = performance.now();
-      world.log(`Te apartas por puro instinto: ${def.nombre} desgarra el aire.`, 'good');
-      return;
-    }
 
     // feedback visual: embestida + flash + sacudida + salpicadura
     e._atkT = performance.now();

@@ -148,7 +148,7 @@
   // aparecen solo cuando el estado empeora; 3 niveles de gravedad por color
   const MOODLES = [
     ['corazon', 'Salud', (p) => p.salud, [60, 35, 15], ['Herido', 'Malherido', 'Crítico'],
-      'Un botiquín (o el instinto Sangre amarilla) la recupera.'],
+      'Un botiquín la recupera.'],
     ['yin', 'Cordura', (p) => p.cordura, [50, 35, 15], ['Inquieto', 'Alterado', 'Mente al límite'],
       'Descansa en niveles seguros, bebe agua de almendras o usa un recuerdo del hogar. A 0, te pierdes para siempre.'],
     ['gota', 'Sed', (p) => p.sed, [50, 30, 10], ['Sediento', 'Muy sediento', 'Deshidratado'],
@@ -159,15 +159,6 @@
   function renderMoodles() {
     const cont = $('moodles');
     cont.innerHTML = '';
-    // Sintonía (v18): el ojo amarillo — siempre visible en cuanto despierta
-    const sint = world.player.sintonia || 0;
-    if (sint >= 10) {
-      const d = document.createElement('div');
-      d.className = 'moodle moodle-sint tip-left';
-      d.dataset.tip = `Sintonía ${sint}/100 — las Backrooms te reclaman. Las entidades corrientes te ignoran más… pero al ESCAPAR la realidad tira un dado contra tu Sintonía. El recuerdo del hogar la baja.`;
-      if (window.Icons) d.appendChild(Icons.img('ojo', 20));
-      cont.appendChild(d);
-    }
     for (const [icono, etiqueta, get, umbrales, nombres, consejo] of MOODLES) {
       const v = get(world.player);
       let lvl = 0;
@@ -339,11 +330,6 @@
       s.dataset.tip = tip;
       cont.appendChild(s);
     };
-    // instintos (buffs de la Sintonía)
-    for (const id of p.instintos || []) {
-      const inst = Game.INSTINTOS?.[id];
-      if (inst) chip(inst.icono, inst.nombre, inst.desc, false);
-    }
     // pasivos por llevarlos encima / puestos
     const PASIVOS = {
       trebol: ['trebol', 'Suerte', '+2 a todas tus tiradas de dado.'],
@@ -362,7 +348,6 @@
     if (p.cordura < 50) chip('yin', 'Mente frágil', `Cordura ${p.cordura}/100. Descansa en niveles seguros o usa un recuerdo del hogar.`, true);
     if (p.sed < 50) chip('gota', 'Sed', `Sed ${p.sed}/100. Bebe agua de almendras.`, true);
     if (p.hambre < 50) chip('pan', 'Hambre', `Hambre ${p.hambre}/100. Encuentra comida.`, true);
-    if ((p.sintonia || 0) >= 20) chip('ojo', `Sintonía ${p.sintonia}`, 'Las Backrooms te reclaman: las entidades te ignoran más… pero escapar es más difícil.', true);
     for (const rid of world.level?.reglas || []) {
       const r = window.Rules?.get(rid);
       if (!r || !r.turno) continue; // solo las que actúan cada turno
@@ -675,37 +660,6 @@
     };
   }
 
-  // ---------- Instintos (v18): elige 1 de 3 al cruzar un umbral de Sintonía ----------
-  function showInstintos(umbral, ofertas, cb) {
-    if (document.pointerLockElement) document.exitPointerLock();
-    world.busy = true;
-    $('instinto-nivel').textContent = umbral;
-    const cont = $('instinto-cards');
-    cont.innerHTML = '';
-    for (const inst of ofertas) {
-      const card = document.createElement('div');
-      card.className = 'inst-card';
-      if (window.Icons) card.appendChild(Icons.img(inst.icono, 26));
-      const h = document.createElement('h4');
-      h.textContent = inst.nombre;
-      card.appendChild(h);
-      const p = document.createElement('p');
-      p.textContent = inst.desc;
-      card.appendChild(p);
-      card.onclick = () => {
-        $('instinto-modal').style.display = 'none';
-        if ($('exit-modal').style.display === 'none' && $('dice-overlay').style.display === 'none' &&
-            $('choice-modal').style.display === 'none' && !backpackAbierta())
-          world.busy = false;
-        if (window.Sfx) Sfx.play('recoger');
-        cb(inst.id);
-      };
-      cont.appendChild(card);
-    }
-    $('instinto-modal').style.display = 'flex';
-    if (window.Sfx) Sfx.play('ui');
-  }
-
   // ---------- elección libre (beber agua, rituales…) ----------
   function showChoice(titulo, texto, opciones) {
     if (document.pointerLockElement) document.exitPointerLock();
@@ -956,7 +910,7 @@
   world.ui = {
     log, updateHUD, flashDamage, showLevelCard, showDice,
     showExitModal, showLevelPicker, showChoice, toggleJournal, showEnd, show, toggleCodex,
-    toggleBackpack, toggleLog, showInstintos, pulsarMano, toggleChangelog,
+    toggleBackpack, toggleLog, pulsarMano, toggleChangelog,
     get flashT() { return flashT; },
   };
 })();
