@@ -205,6 +205,27 @@ class Cliente {
     const anuncio = await C.esperaMsg((m) => m.t === 'anuncio', 4000, nC);
     ok(/RETO/.test(anuncio.txt), 'el anuncio llega a los jugadores de otras salas');
 
+    // ---------- rotación GLOBAL (v30.7): ←/→ recorren TODAS las salas ----------
+    // candidatos vivos: C (level-1), A y D (the-hub) — dos niveles distintos.
+    // OJO: el salto a un objetivo de OTRA sala llega como mensaje 'nivel' con
+    // campo espectador (moverEspectador), no como 't:espectar' (espectarA).
+    const engancha = (m) => (m.t === 'espectar' && m.si === true) ||
+      (m.t === 'nivel' && m.espectador);
+    const idDe = (m) => m.t === 'espectar' ? m.objetivo.id : m.espectador.id;
+    const vistos = new Set();
+    for (let i = 0; i < 3; i++) {
+      n0 = B.buzon.length;
+      B.enviar({ t: 'espectar', dir: 'sig' });
+      const r = await B.esperaMsg(engancha, 5000, n0);
+      vistos.add(idDe(r));
+    }
+    ok(vistos.size === 3 && [A.id, C.id, D.id].every((id) => vistos.has(id)),
+      `dir:'sig' rota por los 3 errantes de 2 niveles distintos (${vistos.size}/3)`);
+    n0 = B.buzon.length;
+    B.enviar({ t: 'espectar', dir: 'ant' });
+    const rAnt = await B.esperaMsg(engancha, 5000, n0);
+    ok(vistos.has(idDe(rAnt)), 'dir:\'ant\' también engancha (rotación inversa)');
+
     // ---------- el objetivo se desconecta: el espectador vuelve al mundo ----------
     n0 = B.buzon.length;
     B.enviar({ t: 'espectar', objetivo: A.id });

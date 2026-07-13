@@ -334,7 +334,13 @@ wss.on('connection', (ws, req) => {
     if (m.t === 'espectar') {
       // modo espectador (v30): solo el guardián
       if (!jug.esAdmin) { sala.enviar(ws, { t: 'aviso', txt: 'Comando desconocido.' }); return; }
-      const r = espectar(jug, sala, m.objetivo);
+      // v30.7: ←/→ rotan entre TODOS los errantes de todas las instancias
+      const objetivo = m.dir ? objetivoGlobal(jug, m.dir === 'sig' ? 1 : -1) : m.objetivo;
+      if (m.dir && objetivo === null) {
+        sala.enviar(ws, { t: 'aviso', txt: 'No hay otros errantes a los que observar.' });
+        return;
+      }
+      const r = espectar(jug, sala, objetivo);
       if (r.error) sala.enviar(ws, { t: 'aviso', txt: r.error });
       return;
     }
@@ -377,6 +383,23 @@ wss.on('connection', (ws, req) => {
 // prepararSala/esSinRetorno/cambiarDeSala Y moverEspectador viven en
 // game/js/sim/sala.js (compartidos con el modo offline local) y llegan por
 // el wrapper ./sala.
+
+// v30.7: siguiente/anterior errante observable de TODAS las salas (todas las
+// instancias y niveles), en orden estable nivel → instancia → id: las flechas
+// del espectador recorren el mundo entero, no solo la sala actual.
+function objetivoGlobal(jug, dir) {
+  const todos = [];
+  for (const s of salasVivas())
+    for (const j of s.jugadores.values())
+      if (!j.espectador && !j.muerto && j.id !== jug.id)
+        todos.push({ j, k: `${s.nivelId}::${String(s.inst).padStart(4, '0')}` });
+  if (!todos.length) return null;
+  todos.sort((a, b) => a.k < b.k ? -1 : a.k > b.k ? 1 : a.j.id - b.j.id);
+  const actual = jug.espectador ? jug.espectador.objetivo : -1;
+  const i = todos.findIndex((t) => t.j.id === actual);
+  const base = i < 0 ? (dir > 0 ? -1 : 0) : i;
+  return todos[((base + dir) % todos.length + todos.length) % todos.length].j.id;
+}
 
 // entra/sale/cambia de objetivo del modo espectador. La comparten el mensaje
 // ws {t:'espectar'} y el botón 👁 del observatorio (/accion). Devuelve

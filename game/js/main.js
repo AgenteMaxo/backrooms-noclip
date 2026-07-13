@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v30.7';
+  window.VERSION_JUEGO = 'v30.8';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -212,7 +212,7 @@
     journal: 11,
     chat: 12
   },
-  cursorSpeed: 8, dado: true,
+  cursorSpeed: 8, dado: true, mostrarFps: false,
   // en táctil el arrastre se siente invertido respecto al ratón en PC (el
   // gesto natural es "arrastro el mundo", no "muevo la mirada"); por defecto
   // solo la primera vez — si el jugador ya guardó una preferencia (incluso
@@ -233,6 +233,37 @@
   optDado.onchange = () => {
     OPTS.dado = optDado.checked;
     try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
+  };
+
+  // contador de FPS en pantalla (v30.7): tick en Ajustes; el propio bucle de
+  // frames lo alimenta (media de ~500 ms para que no baile)
+  const optFpsVer = document.getElementById('opt-fps-ver');
+  const fpsEl = document.createElement('div');
+  fpsEl.id = 'fps-counter';
+  fpsEl.style.cssText = 'position:fixed;top:6px;right:8px;z-index:70;display:none;' +
+    'font:16px VT323,monospace;color:#d9c66e;background:rgba(10,9,6,.6);' +
+    'padding:1px 7px;border:1px solid #3a352a;pointer-events:none;';
+  document.body.appendChild(fpsEl);
+  function aplicarFpsVer() { fpsEl.style.display = OPTS.mostrarFps ? 'block' : 'none'; }
+  if (optFpsVer) {
+    optFpsVer.checked = !!OPTS.mostrarFps;
+    aplicarFpsVer();
+    optFpsVer.onchange = () => {
+      OPTS.mostrarFps = optFpsVer.checked;
+      aplicarFpsVer();
+      try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
+    };
+  }
+  let fpsFrames = 0, fpsDesde = 0;
+  window.contarFrameFps = (t) => {
+    if (!OPTS.mostrarFps) return;
+    fpsFrames++;
+    if (!fpsDesde) fpsDesde = t;
+    if (t - fpsDesde >= 500) {
+      fpsEl.textContent = Math.round(fpsFrames * 1000 / (t - fpsDesde)) + ' fps';
+      fpsFrames = 0;
+      fpsDesde = t;
+    }
   };
 
   const optCamaraModo = document.getElementById('opt-camara-modo');
@@ -672,19 +703,23 @@
   // programáticamente con Net.espectar(id); ←/→ cambian de objetivo, ESC sale.
   function cambiarObjetivoEsp(dir) {
     if (!world.espectador || !window.Net || !Net.activo) return;
-    const lista = (world.otros || []).slice().sort((a, b) => a.id - b.id);
-    if (!lista.length) return;
-    const i = lista.findIndex((o) => o.id === world.espectador.objetivo);
-    const sig = lista[((i < 0 ? 0 : i) + dir + lista.length) % lista.length];
-    if (sig && sig.id !== world.espectador.objetivo) Net.espectar(sig.id);
+    // v30.7: la rotación la resuelve el SERVIDOR sobre TODOS los errantes de
+    // todas las instancias/niveles (antes solo se ciclaba la sala actual)
+    Net.espectar(dir > 0 ? 'sig' : 'ant');
   }
+  let yaEspectando = false; // el bloque de entrada solo la PRIMERA vez
   window.onEspectarCambia = (si, info) => {
     document.body.classList.toggle('espectando', !!si);
     const bar = document.getElementById('espectador-bar');
     if (bar) bar.style.display = si ? 'flex' : 'none';
     const nom = document.getElementById('esp-nombre');
-    if (nom) nom.textContent = si && info ? info.nombre : '';
-    if (si) {
+    // v30.7: la barra muestra también EN QUÉ NIVEL está el observado (el
+    // espectador viaja a su sala, así que world.level ya es el suyo)
+    if (nom) nom.textContent = si && info
+      ? `${info.nombre}${world.level ? ' — ' + (world.level.nombre || world.level.id) : ''}` : '';
+    const entrando = si && !yaEspectando;
+    yaEspectando = !!si;
+    if (entrando) {
       // la vista pasa a ser del nivel, no del guardián: fuera paneles y movimiento
       if (Minimap.visible) Minimap.toggleBig(false);
       world.ui.toggleBackpack(false);
@@ -1319,6 +1354,7 @@
   }
   let lastRenderT = 0;
   function loop(t) {
+    if (window.contarFrameFps) contarFrameFps(t);
     pollGamepad(t);
     
     // Limitación de FPS

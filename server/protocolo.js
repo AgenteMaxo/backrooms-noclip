@@ -82,6 +82,8 @@ function leer(raw) {
       return { t: 'admin', clave: m.clave };
     }
     case 'espectar': { // v30: el guardián observa a un jugador (null = dejar de hacerlo)
+      // v30.7: dir = rotar al siguiente/anterior errante de TODAS las salas
+      if (m.dir === 'sig' || m.dir === 'ant') return { t: 'espectar', dir: m.dir };
       if (m.objetivo === null || m.objetivo === undefined) return { t: 'espectar', objetivo: null };
       const objetivo = m.objetivo | 0;
       if (objetivo <= 0) return null;

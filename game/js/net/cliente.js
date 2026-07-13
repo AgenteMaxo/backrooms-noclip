@@ -455,11 +455,13 @@
     w._caminataAvisos = {};
     w.escondido = null;
     w._ignoraExit = null;
-    // v30: al seguir a tu objetivo a otra sala el 'nivel' trae espectador
+    // v30: al seguir a tu objetivo a otra sala el 'nivel' trae espectador.
+    // v30.7: si sigues espectando, la barra se refresca IGUAL — cambia el
+    // objetivo (rotación global) o el nivel donde está, y ambos se muestran
     const eraEspectador = !!w.espectador;
     w.espectador = m.espectador
       ? { objetivo: m.espectador.id, nombre: m.espectador.nombre } : null;
-    if (window.onEspectarCambia && eraEspectador !== !!w.espectador)
+    if (window.onEspectarCambia && (eraEspectador || w.espectador))
       window.onEspectarCambia(!!w.espectador, w.espectador);
     // el códice local del navegador sigue coleccionando niveles transitados
     try { Game.Profiles.registrarEntrada(m.nivel); } catch (e) {}
@@ -695,7 +697,12 @@
   }
 
   function admin(clave) { enviar({ t: 'admin', clave }); }
-  function espectar(objetivo) { enviar({ t: 'espectar', objetivo: objetivo ?? null }); }
+  function espectar(objetivo) {
+    // 'sig'/'ant' = rotar por TODOS los errantes del mundo (v30.7, lo resuelve
+    // el servidor); un número = observar a ese id; null = volver al mundo
+    if (objetivo === 'sig' || objetivo === 'ant') { enviar({ t: 'espectar', dir: objetivo }); return; }
+    enviar({ t: 'espectar', objetivo: objetivo ?? null });
+  }
   function tp(nivelId) { enviar({ t: 'chat', txt: '/tp ' + nivelId }); }
   function give(itemId) { enviar({ t: 'chat', txt: '/give ' + itemId }); }
 

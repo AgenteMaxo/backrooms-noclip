@@ -18,6 +18,7 @@
   let yawLibre = null;     // v25 online: cámara LIBRE (ratón, estilo Roblox); null = aún sin tocar
   let espAlt = 14;         // v30: altura de la cámara cenital de espectador (5-26)
   let ultimoOrbitoT = 0;   // v26: timestamp del último movimiento manual de cámara (órbita)
+  let ultTCam = 0;         // v30.7: dt real de la cámara (suavizado independiente de FPS)
   // altura de muros: en 3ª persona son de altura real (la cámara va a 1.5 y JAMÁS
   // ve por encima → nunca se rompe la sensación de interior)
   const WALL_H = CAM_MODO === 'tercera' ? 2.3 : 1.2;
@@ -1806,6 +1807,16 @@
       const rot = p.rot ?? 2;
       if (world.moving) camBobT += 0.13;
       const bob = Math.sin(camBobT) * TP.bob * (world.moving ? 1 : 0.12);
+      // v30.7: mientras el RATÓN orbita (point-and-look) la cámara responde
+      // 1:1, SIN suavizado — el retardo de goma venía de encadenar tres lerps
+      // por-frame (yaw 0.55 + posición 0.1 + mirada 0.12), encima dependientes
+      // de los FPS. El resto de movimientos siguen suaves, pero corregidos por
+      // dt para que a 30 fps se sientan igual que a 144.
+      const ahoraCam = performance.now();
+      const dtCam = Math.min(0.1, Math.max(0.005, (ahoraCam - (ultTCam || ahoraCam)) / 1000));
+      ultTCam = ahoraCam;
+      const orbitando = world.online && (ahoraCam - ultimoOrbitoT) < 150;
+      const corrDt = (f) => 1 - Math.pow(1 - Math.min(0.95, f), dtCam * 60);
       // v25 online: cámara LIBRE estilo Roblox — el ratón fija el yaw
       // (yawLibre) y el personaje se mueve relativo a la cámara; sin arrastrar
       // aún, la cámara se queda donde está. Solo (offline): sigue a la espalda.
@@ -1853,7 +1864,9 @@
         }
       }
 
-      camYaw += dyaw * factorSuavidad; // el ratón/seguimiento pide respuesta directa o suave
+      // ratón orbitando = respuesta DIRECTA; lo demás, suave e independiente de FPS
+      if (orbitando) camYaw = yawObjetivo;
+      else camYaw += dyaw * corrDt(factorSuavidad);
       const ox = Math.sin(camYaw) * TP.dist;
       const oz = Math.cos(camYaw) * TP.dist;
       let target = new THREE.Vector3(px + ox, TP.alto + bob, pz + oz);
@@ -1871,12 +1884,12 @@
           target.y = Math.min(target.y, TP.alto + bob);
         }
       }
-      camera.position.lerp(target, TP.suavidad);
+      camera.position.lerp(target, orbitando ? 1 : corrDt(TP.suavidad));
       // mira hacia delante (según la órbita actual: giro suave sin bandazos)
       frame._look = frame._look || new THREE.Vector3(px, TP.lookY, pz);
       frame._look.lerp(
         new THREE.Vector3(px - Math.sin(camYaw) * TP.lookAhead, TP.lookY, pz - Math.cos(camYaw) * TP.lookAhead),
-        0.12
+        orbitando ? 1 : corrDt(0.12)
       );
       camera.lookAt(frame._look);
       // si la cámara queda pegada (muro a la espalda), el personaje se desvanece

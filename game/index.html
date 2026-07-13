@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BACKROOMS MMO</title>
-<link rel="stylesheet" href="css/style.css?v=289">
-<link rel="stylesheet" href="css/title-interface.css?v=289">
+<link rel="stylesheet" href="css/style.css?v=290">
+<link rel="stylesheet" href="css/title-interface.css?v=290">
 </head>
 <body>
 <div id="app">
@@ -211,6 +211,7 @@
       <div class="sound-row"><label>Efectos</label><input type="range" id="snd-fx" min="0" max="100"><span id="snd-fx-v"></span></div>
       <div class="sound-row"><label>Ambiente / música</label><input type="range" id="snd-amb" min="0" max="100"><span id="snd-amb-v"></span></div>
       <div class="sound-row"><label>Tirada de dado</label><label class="chk-row"><input type="checkbox" id="opt-dado"> mostrar animación</label></div>
+      <div class="sound-row"><label>Rendimiento</label><label class="chk-row"><input type="checkbox" id="opt-fps-ver"> mostrar FPS en pantalla</label></div>
       <div class="sound-row">
         <label>Modo de cámara</label>
         <select id="opt-camara-modo">
@@ -393,47 +394,47 @@
 
 <!-- ?v= rompe la caché del edge (Cloudflare cachea .js/.css por defecto aunque
      el origen no lo pida): SUBIR el número en cada versión, junto con VERSION_JUEGO -->
-<script src="js/data.js?v=289"></script>
-<script src="js/engine/rng.js?v=289"></script>
-<script src="js/engine/daily-seed.js?v=289"></script>
-<script src="js/engine/route-seed.js?v=289"></script>
-<script src="js/mapgen/mapgen.js?v=289"></script>
-<script src="js/texture-assets.js?v=289"></script>
-<script src="js/engine/tiles.js?v=289"></script>
-<script src="js/engine/sprites.js?v=289"></script>
-<script src="js/engine/effects.js?v=289"></script>
-<script src="js/audio-manifest.js?v=289"></script>
-<script src="js/assets-manifest.js?v=289"></script>
-<script src="js/engine/sfx.js?v=289"></script>
-<script src="js/engine/fov.js?v=289"></script>
-<script src="js/systems/entities.js?v=289"></script>
-<script src="js/systems/rules.js?v=289"></script>
-<script src="js/engine/render.js?v=289"></script>
-<script src="js/lib/three.min.js?v=289"></script>
-<script src="js/lib/shaders/CopyShader.js?v=289"></script>
-<script src="js/lib/shaders/LuminosityHighPassShader.js?v=289"></script>
-<script src="js/lib/shaders/GammaCorrectionShader.js?v=289"></script>
-<script src="js/lib/postprocessing/EffectComposer.js?v=289"></script>
-<script src="js/lib/postprocessing/RenderPass.js?v=289"></script>
-<script src="js/lib/postprocessing/ShaderPass.js?v=289"></script>
-<script src="js/lib/postprocessing/UnrealBloomPass.js?v=289"></script>
-<script src="js/engine/atmos3d.js?v=289"></script>
-<script src="js/engine/render3d.js?v=289"></script>
-<script src="js/systems/game.js?v=289"></script>
-<script src="js/ui/icons.js?v=289"></script>
-<script src="js/ui/controllers.js?v=289"></script>
-<script src="js/ui/ui.js?v=289"></script>
-<script src="js/ui/title-interface.js?v=289"></script>
-<script src="js/ui/changelog.js?v=289"></script>
-<script src="js/ui/minimap.js?v=289"></script>
-<script src="js/sim/fisica.js?v=289"></script>
+<script src="js/data.js?v=290"></script>
+<script src="js/engine/rng.js?v=290"></script>
+<script src="js/engine/daily-seed.js?v=290"></script>
+<script src="js/engine/route-seed.js?v=290"></script>
+<script src="js/mapgen/mapgen.js?v=290"></script>
+<script src="js/texture-assets.js?v=290"></script>
+<script src="js/engine/tiles.js?v=290"></script>
+<script src="js/engine/sprites.js?v=290"></script>
+<script src="js/engine/effects.js?v=290"></script>
+<script src="js/audio-manifest.js?v=290"></script>
+<script src="js/assets-manifest.js?v=290"></script>
+<script src="js/engine/sfx.js?v=290"></script>
+<script src="js/engine/fov.js?v=290"></script>
+<script src="js/systems/entities.js?v=290"></script>
+<script src="js/systems/rules.js?v=290"></script>
+<script src="js/engine/render.js?v=290"></script>
+<script src="js/lib/three.min.js?v=290"></script>
+<script src="js/lib/shaders/CopyShader.js?v=290"></script>
+<script src="js/lib/shaders/LuminosityHighPassShader.js?v=290"></script>
+<script src="js/lib/shaders/GammaCorrectionShader.js?v=290"></script>
+<script src="js/lib/postprocessing/EffectComposer.js?v=290"></script>
+<script src="js/lib/postprocessing/RenderPass.js?v=290"></script>
+<script src="js/lib/postprocessing/ShaderPass.js?v=290"></script>
+<script src="js/lib/postprocessing/UnrealBloomPass.js?v=290"></script>
+<script src="js/engine/atmos3d.js?v=290"></script>
+<script src="js/engine/render3d.js?v=290"></script>
+<script src="js/systems/game.js?v=290"></script>
+<script src="js/ui/icons.js?v=290"></script>
+<script src="js/ui/controllers.js?v=290"></script>
+<script src="js/ui/ui.js?v=290"></script>
+<script src="js/ui/title-interface.js?v=290"></script>
+<script src="js/ui/changelog.js?v=290"></script>
+<script src="js/ui/minimap.js?v=290"></script>
+<script src="js/sim/fisica.js?v=290"></script>
 <!-- reglas del mundo COMPARTIDAS con el servidor (duales): IA + Sala; el modo
      offline las ejecuta en la pestaña vía el servidor local de net/local.js -->
-<script src="js/sim/entidades.js?v=289"></script>
-<script src="js/sim/sala.js?v=289"></script>
-<script src="js/net/local.js?v=289"></script>
-<script src="js/net/otros.js?v=289"></script>
-<script src="js/net/cliente.js?v=289"></script>
-<script src="js/main.js?v=289"></script>
+<script src="js/sim/entidades.js?v=290"></script>
+<script src="js/sim/sala.js?v=290"></script>
+<script src="js/net/local.js?v=290"></script>
+<script src="js/net/otros.js?v=290"></script>
+<script src="js/net/cliente.js?v=290"></script>
+<script src="js/main.js?v=290"></script>
 </body>
 </html>
