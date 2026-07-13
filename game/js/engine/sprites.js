@@ -795,12 +795,16 @@
     const x = c.getContext('2d');
     x.drawImage(base, 0, 0);
     x.globalCompositeOperation = 'source-atop'; // solo pinta SOBRE el cuerpo
-    x.fillStyle = 'rgba(122,26,18,0.95)';       // manchas de sangre
+    x.fillStyle = 'rgba(122,26,18,0.85)';       // manchas de sangre
     const w = c.width;
+    // manchas chicas (reportado: en un sprite de 48px, el tamaño viejo
+    // cubría ~1/3 del torso y terminaba leyéndose como "otro traje" en vez
+    // de heridas sobre la skin elegida — reducidas a la mitad por lado
+    // (1/4 del área) para que Personalizado/Hazmat sigan reconociéndose)
     for (const [mx, my, mw, mh] of [
-      [w * 0.40, w * 0.42, 5, 7], [w * 0.56, w * 0.50, 6, 5],
-      [w * 0.34, w * 0.62, 5, 5], [w * 0.52, w * 0.74, 7, 4],
-      [w * 0.47, w * 0.30, 4, 4],
+      [w * 0.40, w * 0.42, 3, 4], [w * 0.56, w * 0.50, 3, 3],
+      [w * 0.34, w * 0.62, 3, 3], [w * 0.52, w * 0.74, 4, 3],
+      [w * 0.47, w * 0.30, 3, 3],
     ]) x.fillRect(mx, my, mw, mh);
     x.fillStyle = 'rgba(200,200,215,0.14)';     // palidez general
     x.fillRect(0, 0, w, c.height);
@@ -1190,8 +1194,30 @@
     const limpioId = herido ? baseId.slice(0, -'_herido'.length) : baseId;
     const dir = limpioId.replace('player_', '');
     // v28.14: skin predeterminada — nada de capas/tinte, es un sprite fijo
-    // (hazmat_down/up/side, arriba) que sustituye al cuerpo+capas entero
-    if (apariencia.modo === 'hazmat') return get('hazmat_' + dir + (herido ? '_herido' : ''), frame, flip);
+    // (hazmat_down/up/side, arriba) que sustituye al cuerpo+capas entero.
+    // La variante "_herido" NO se pide directa por get() (bug real: build()
+    // arma cache['hazmat_down_herido'] una sola vez, en frío, a partir del
+    // sprite PROCEDURAL — nadie sube nunca un archivo "hazmat_down_herido.png",
+    // así que get() jamás encuentra un override para ese id y siempre cae al
+    // placeholder viejo con sangre encima, ignorando el hazmat_down.png real
+    // que haya subido el usuario). Se arma en caliente sobre el sprite sano
+    // YA resuelto (que sí respeta overrides[]), cacheado con overrideVersion
+    // para no repetir herir() en cada frame ni quedar pegado a un override
+    // que todavía no había cargado.
+    if (apariencia.modo === 'hazmat') {
+      if (!herido) return get('hazmat_' + dir, frame, flip);
+      const sano = get('hazmat_' + dir, frame, false);
+      if (!sano) return null;
+      const key = 'hazmat_' + dir + '|herido|' + frame + '|' + overrideVersion;
+      let entry = tintadoCache[key];
+      if (!entry) {
+        entry = { canvas: herir(sano), flipped: null };
+        tintadoCache[key] = entry;
+      }
+      if (!flip) return entry.canvas;
+      if (!entry.flipped) entry.flipped = mirror(entry.canvas);
+      return entry.flipped;
+    }
     const cats = ['ojos', 'inferior', 'superior', 'vello', 'cabello']; // orden de dibujo, de atrás a adelante — vello y cabello AL FRENTE de la ropa (si no, el cuello de "superior" tapaba la barba, feo sobre todo mirando "down")
     const piel = apariencia.piel;
     // overrideVersion en la key: el cuerpo base (player_down/up/side.png) y
