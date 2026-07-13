@@ -243,6 +243,10 @@
   text-align: left;
 }
 
+#screen-title.title-interface-enabled .btn-offline {
+  margin: 7px 0 0;
+}
+
 #screen-title.title-interface-enabled #title-net {
   margin: 10px 0 0;
   text-align: left;
