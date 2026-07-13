@@ -16,7 +16,9 @@
   let camRot = 0;          // rotación de cámara en pasos de 90° (0-3), tecla Q (modo alta)
   let camYaw = 0;          // yaw animado (radianes)
   let yawLibre = null;     // v25 online: cámara LIBRE (ratón, estilo Roblox); null = aún sin tocar
+  let espAlt = 14;         // v30: altura de la cámara cenital de espectador (5-26)
   let ultimoOrbitoT = 0;   // v26: timestamp del último movimiento manual de cámara (órbita)
+  let ultTCam = 0;         // v30.7: dt real de la cámara (suavizado independiente de FPS)
   // altura de muros: en 3ª persona son de altura real (la cámara va a 1.5 y JAMÁS
   // ve por encima → nunca se rompe la sensación de interior)
   const WALL_H = CAM_MODO === 'tercera' ? 2.3 : 1.2;
@@ -28,6 +30,7 @@
   let composer = null;           // postprocesado (bloom + gamma); null => render directo
   let bloomPass = null;          // pase de bloom para el pulso dinámico por cordura baja
   let fogBase = 0.08;
+  let nivelClaro = 0;      // [0,1] cuánto se pasa de CLARA la paleta del nivel (v30.2)
   let glCanvas, overlay, octx, W, H;
   let levelKey = null;
   let staticGroup = null;        // suelo/muros/techo/salidas/props (reconstruible)
@@ -817,15 +820,125 @@
         }
         yield;
       }
+    } else if (tiles.wallStyle === 'arbol') {
+      // bosque: árboles secos en 3D REAL — tronco y ramas nudosas como prismas
+      // que se afilan, fusionados por bandas (antes eran billboards planos que
+      // giraban con la cámara). La forma de cada árbol es determinista por
+      // casilla (seededUnit), igual que las manchas y los fluorescentes.
+      const cortezaTex = pintado('p-corteza', () => lienzo(32, 32, (x2, w2, h2) => {
+        x2.fillStyle = SH(pal.pared, 0.45); x2.fillRect(0, 0, w2, h2);
+        for (let i = 0; i < 6; i++) {                        // vetas verticales
+          x2.fillStyle = SH(pal.pared, i % 2 ? 0.32 : 0.6);
+          x2.fillRect((i * 6 + 2) % w2, 0, 2, h2);
+        }
+        x2.fillStyle = SH(pal.pared, 0.85);                  // luz lateral
+        x2.fillRect(9, 0, 1, h2); x2.fillRect(24, 0, 1, h2);
+        x2.fillStyle = '#0e0c0a';                            // nudos
+        x2.fillRect(14, 7, 3, 5); x2.fillRect(26, 21, 3, 4);
+      }));
+      const matArbol = new THREE.MeshLambertMaterial({ map: cortezaTex });
+      // la sombra a los pies iba pintada en el tile 2D: aquí es un decal suave
+      const matSombra = new THREE.MeshBasicMaterial({
+        map: pintado('p-sombra-arbol', () => lienzo(32, 32, (x2, w2, h2) => {
+          const gr = x2.createRadialGradient(16, 16, 2, 16, 16, 15);
+          gr.addColorStop(0, 'rgba(0,0,0,0.42)');
+          gr.addColorStop(1, 'rgba(0,0,0,0)');
+          x2.fillStyle = gr; x2.fillRect(0, 0, w2, h2);
+        })),
+        transparent: true, depthWrite: false,
+      });
+      let aPos = [], aUv = [], aIdx = [], aNor = [];
+      let sPos = [], sUv = [], sIdx = [], sNor = [];
+      const flushArboles = () => {
+        if (sPos.length) {
+          const m = mkFlat(sPos, sUv, sIdx, sNor, matSombra);
+          m.receiveShadow = false;
+          grupo.add(m); bandas.push(m);
+          sPos = []; sUv = []; sIdx = []; sNor = [];
+        }
+        if (aPos.length) {
+          const m = mkFlat(aPos, aUv, aIdx, aNor, matArbol);
+          // sin castShadow: la sombra dura del PointLight sobre miles de ramas
+          // finas pinta manchones negros — la sombra la da el decal del suelo
+          grupo.add(m); bandas.push(m);
+          aPos = []; aUv = []; aIdx = []; aNor = [];
+        }
+      };
+      // prisma cuadrado que se afila de r0 a r1 entre dos puntos (4 caras con
+      // normal explícita vía quad(); sin tapas — la punta es demasiado fina
+      // para verse hueca)
+      const rama = (a, b, r0, r1) => {
+        const ax = b[0] - a[0], ay = b[1] - a[1], az = b[2] - a[2];
+        let ux = -az, uz = ax, ul = Math.hypot(ux, uz);
+        if (ul < 1e-4) { ux = 1; uz = 0; ul = 1; }
+        ux /= ul; uz /= ul;                                  // u ⊥ eje, horizontal
+        let vx = ay * uz, vy = az * ux - ax * uz, vz = -ay * ux;
+        const vl = Math.hypot(vx, vy, vz) || 1;
+        vx /= vl; vy /= vl; vz /= vl;                        // v = eje × u
+        const dirs = [[ux, 0, uz], [vx, vy, vz], [-ux, 0, -uz], [-vx, -vy, -vz]];
+        for (let i = 0; i < 4; i++) {
+          const d0 = dirs[i], d1 = dirs[(i + 1) % 4];
+          quad(aPos, aUv, aIdx, [
+            [a[0] + d0[0] * r0, a[1] + d0[1] * r0, a[2] + d0[2] * r0],
+            [a[0] + d1[0] * r0, a[1] + d1[1] * r0, a[2] + d1[2] * r0],
+            [b[0] + d1[0] * r1, b[1] + d1[1] * r1, b[2] + d1[2] * r1],
+            [b[0] + d0[0] * r1, b[1] + d0[1] * r1, b[2] + d0[2] * r1],
+          ], [0, 0, 1, 1], aNor);
+        }
+      };
+      // crecimiento recursivo: cada rama se quiebra en 1-3 hijas más finas y
+      // cortas con azimut aleatorio — la silueta nudosa del árbol seco del 2D
+      const crecer = (a, dir, len, r, prof, k) => {
+        const b = [a[0] + dir[0] * len, a[1] + dir[1] * len, a[2] + dir[2] * len];
+        rama(a, b, r, r * (prof ? 0.68 : 0.25));
+        if (!prof || r < 0.02) return;
+        const nHijas = prof >= 3 ? 3 : seededUnit(k + ':n') < 0.5 ? 2 : 1;
+        for (let i = 0; i < nHijas; i++) {
+          const azi = seededUnit(k + ':a' + i) * Math.PI * 2;
+          const abre = 0.45 + seededUnit(k + ':o' + i) * 0.55;
+          const dx = dir[0] + Math.cos(azi) * abre;
+          const dy = dir[1] * 0.75 + 0.3;                    // tienden hacia arriba
+          const dz = dir[2] + Math.sin(azi) * abre;
+          const dl = Math.hypot(dx, dy, dz) || 1;
+          crecer(b, [dx / dl, dy / dl, dz / dl],
+            len * (0.6 + seededUnit(k + ':l' + i) * 0.2),
+            r * (0.5 + seededUnit(k + ':r' + i) * 0.16),
+            prof - 1, k + ':' + i);
+        }
+      };
+      for (let y = 0; y < g.h; y++) {
+        for (let x = 0; x < g.w; x++) {
+          if (!esWall(x, y)) continue;
+          const k = `${world.runSeed}:${world.ventanaN || 0}:arbol:${x}:${y}`;
+          const bx = x + 0.5 + (seededUnit(k + ':jx') - 0.5) * 0.32;
+          const bz = y + 0.5 + (seededUnit(k + ':jy') - 0.5) * 0.32;
+          const rs = 0.4 + seededUnit(k + ':s') * 0.14;
+          quad(sPos, sUv, sIdx,
+            [[bx - rs, 0.015, bz + rs], [bx + rs, 0.015, bz + rs],
+             [bx + rs, 0.015, bz - rs], [bx - rs, 0.015, bz - rs]],
+            [0, 0, 1, 1], sNor);
+          // en el interior de una arboleda densa apenas se ve: versión simple
+          const denso = esWall(x, y - 1) && esWall(x, y + 1) && esWall(x - 1, y) && esWall(x + 1, y);
+          const lx = (seededUnit(k + ':lx') - 0.5) * 0.36;   // tronco algo inclinado
+          const lz = (seededUnit(k + ':lz') - 0.5) * 0.36;
+          const dl = Math.hypot(lx, 1, lz);
+          crecer([bx, 0, bz], [lx / dl, 1 / dl, lz / dl],
+            0.7 + seededUnit(k + ':h') * 0.35,
+            0.085 + seededUnit(k + ':r') * 0.05,
+            denso ? 2 : 3, k);
+        }
+        if ((y & 7) === 7) { flushArboles(); yield; }
+      }
+      flushArboles();
     } else {
-      // bosque/exterior: árboles y rocas como billboards verticales
-      const canvas = tiles.wallStyle === 'arbol' ? tiles.arbol : tiles.roca;
+      // exterior: rocas como billboards verticales
+      const canvas = tiles.roca;
       const mat = new THREE.SpriteMaterial({ map: tex(canvas, 'muro-organico'), transparent: true });
       for (let y = 0; y < g.h; y++) {
         for (let x = 0; x < g.w; x++) {
           if (!esWall(x, y)) continue;
           const s = new THREE.Sprite(mat);
-          const escala = tiles.wallStyle === 'arbol' ? 1.5 : 1.25;
+          const escala = 1.25;
           s.scale.set(escala, escala * (canvas.height / canvas.width), 1);
           s.position.set(x + 0.5, escala * 0.48, y + 0.5);
           grupo.add(s);
@@ -1112,14 +1225,22 @@
     if (window.Atmos3D) Atmos3D.buildLevel(world, staticGroup);
 
     const pal = world.level.paleta;
-    const fondo = new THREE.Color(pal.fondo);
+    const fondo = capFondo(new THREE.Color(pal.fondo));
     scene.background = fondo;
     fogBase = 0.08 + world.level.oscuridad * 0.16;
     scene.fog = new THREE.FogExp2(fondo, fogBase);
     const esLevel0 = world.level.id === 'level-0';
-    amb.intensity = esLevel0 ? 0.22 : Math.max(0.12, 0.55 - world.level.oscuridad * 0.4);
-    dlight.intensity = esLevel0 ? 0.14 : 0.35;
-    renderer.toneMappingExposure = esLevel0 ? 0.96 : 1.15;
+    // Paletas casi blancas (poolrooms, nieve, hospitales): la misma energía de
+    // luz que en un nivel normal SATURA el albedo claro y quema el centro de
+    // la imagen. nivelClaro ∈ [0,1] mide cuánto se pasa de claro el suelo y
+    // rebaja proporcionalmente ambiente y exposición (0 en niveles normales).
+    const cSuelo = new THREE.Color(pal.suelo);
+    const lumSuelo = 0.2126 * cSuelo.r + 0.7152 * cSuelo.g + 0.0722 * cSuelo.b;
+    nivelClaro = Math.max(0, Math.min(1, (lumSuelo - 0.55) / 0.35));
+    amb.intensity = esLevel0 ? 0.22
+      : Math.max(0.12, 0.55 - world.level.oscuridad * 0.4) * (1 - 0.35 * nivelClaro);
+    dlight.intensity = esLevel0 ? 0.14 : 0.35 * (1 - 0.3 * nivelClaro);
+    renderer.toneMappingExposure = esLevel0 ? 0.96 : 1.15 - 0.25 * nivelClaro;
     plight.color = new THREE.Color(pal.luz);
     plight.distance = (world.visionActual() + 3) * 1.6;
     plight.castShadow = !esLevel0;
@@ -1136,6 +1257,15 @@
     } else if (viejo) {
       disposeGrupo(viejo, true);
     }
+  }
+
+  // fondos casi blancos (poolrooms): la niebla acumulada contra un fondo de
+  // luminancia ~1 quemaba el horizonte a blanco puro — se capa la luminancia
+  // del color conservando su tono (solo muerde en fondos MUY claros) (v30.2)
+  function capFondo(c) {
+    const l = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+    if (l > 0.8) c.multiplyScalar(0.8 / l);
+    return c;
   }
 
   // termina de golpe un revelado a medias (llega otro ciclo de rebuild)
@@ -1169,6 +1299,13 @@
   // centrado inmediato de cámara al entrar en un nivel nuevo
   function centrarCamara(world) {
     const p = world.player;
+    if (world.espectador) {
+      // v30: espectando el cambio de nivel arranca ya en cenital, sin viaje
+      camYaw = 0; yawLibre = null;
+      camera.position.set(p.rx + 0.5, espAlt, p.ry + 0.5 + espAlt * 0.33);
+      frame._look = new THREE.Vector3(p.rx + 0.5, 0.4, p.ry + 0.5);
+      return;
+    }
     if (CAM_MODO === 'tercera') {
       if (world.online) {
         // online p.rot es θ continuo; la cámara arranca a la espalda y de
@@ -1370,8 +1507,13 @@
     let sid, sflip = false;
     if (CAM_MODO === 'tercera') {
       if (world.online) {
-        // v25: cámara libre — el sprite muestra la cara que toque
-        const rel = Otros.dir4((p.rot || 0) + camYaw);
+        // v25: cámara libre — el sprite muestra la cara que toque.
+        // usa p.rotSprite (última tecla sostenida, main.js) en vez de p.rot
+        // (vector combinado de movimiento real): con dos teclas a la vez
+        // p.rot caía justo en el borde entre dos encuadres y parpadeaba.
+        // La cuantización pasa por Otros.dir4 (empates a 45° simétricos).
+        const rotVisible = p.rotSprite !== undefined ? p.rotSprite : (p.rot || 0);
+        const rel = Otros.dir4(rotVisible + camYaw);
         if (rel === 0) sid = 'player_up';
         else if (rel === 2) sid = 'player_down';
         else { sid = 'player_side'; sflip = rel === 3; }
@@ -1399,11 +1541,12 @@
     playerSprite.material.map = spriteTexFlip(sid, pframe, sflip);
     playerSprite.material.needsUpdate = true;
     playerSprite.position.set(px, SPRITE_H / 2 + 0.02, pz);
-    playerSprite.visible = !world.escondido; // dentro de un mueble no se te ve
+    // dentro de un mueble no se te ve; el espectador (v30) es un fantasma
+    playerSprite.visible = !world.escondido && !world.espectador;
 
     // capa de la máscara de gas (PUESTA en la ranura de cara): PNG opcional
     const conMascara = world.equipado && world.equipado('mascara_gas') && Sprites.tiene(maskId);
-    playerMaskSprite.visible = conMascara && !world.escondido;
+    playerMaskSprite.visible = conMascara && !world.escondido && !world.espectador;
     if (conMascara) {
       const mframe = pframe % Sprites.frameCount(maskId);
       playerMaskSprite.material.map = spriteTexFlip(maskId, mframe, sflip);
@@ -1519,7 +1662,7 @@
     // realimentaría sobre sí mismo y jamás se recuperaría al subir la cordura.
     const cordura = p.cordura ?? 100;
     if (scene.fog && !window.NOFX) {
-      const baseFondo = new THREE.Color(world.level.paleta.fondo);
+      const baseFondo = capFondo(new THREE.Color(world.level.paleta.fondo));
       if (world.level.id === 'level-0') {
         baseFondo.setRGB(0.051 + 0.015 * fase0, 0.043 + 0.025 * fase0, 0.02 + 0.04 * fase0);
       }
@@ -1532,12 +1675,17 @@
       scene.fog.color.copy(baseFondo);
     }
     if (bloomPass && !window.NOFX) {
-      let targetBloom = 0.55, targetThreshold = 0.4;
+      // BASE 0.82 = el umbral de DISEÑO del constructor (v14: solo florecen
+      // los emisivos casi blancos — fluorescentes, boquetes, rótulo EXIT).
+      // La adaptación del PR #17 (v26.2) escribía aquí 0.4 cada frame — ese
+      // 0.4 era el RADIO del constructor, no el umbral — y desde entonces
+      // cualquier pared clara floraba: niveles enteros en blanco nuclear.
+      let targetBloom = 0.55, targetThreshold = 0.82;
       if (cordura < 40) {
         const sc = (40 - cordura) / 40;
         const pulso = Math.sin(t * 0.003) * 0.15 * sc;
         targetBloom = 0.55 + sc * 0.65 + pulso;
-        targetThreshold = 0.4 - sc * 0.22;
+        targetThreshold = 0.82 - sc * 0.3; // con locura baja hasta 0.52: brilla, no ciega
       }
       bloomPass.strength = targetBloom;
       bloomPass.threshold = targetThreshold;
@@ -1550,7 +1698,9 @@
         flicker = Math.random() < 0.35 ? 0.08 : 0.55; // parpadeo severo de locura
       } else if (Math.random() < 0.012) flicker = 0.72;
     }
-    const luzJugador = world.level.id === 'level-0' ? 0.72 : 1.7;
+    // en paletas casi blancas la luz del jugador quema un disco alrededor
+    // (albedo claro × 1.7 satura el ACES): se normaliza con nivelClaro
+    const luzJugador = world.level.id === 'level-0' ? 0.72 : 1.7 * (1 - 0.5 * nivelClaro);
     plight.intensity = plight.intensity * 0.85 + (luzJugador * flicker) * 0.15;
     plight.position.set(px, 1.6, pz);
     plight.distance = (world.visionActual() + 3) * (p.luz ? 2.4 : 1.6);
@@ -1584,6 +1734,9 @@
         const sc = (50 - cordura) / 50;
         targetFogBase = fogBase * (1 + sc * 0.9); // hasta +90% de niebla (claustrofobia)
       }
+      // espectador (v30): desde 14 de altura la niebla normal funde el suelo
+      // a negro — casi fuera, que el guardián vea el plano entero
+      if (world.espectador) targetFogBase = Math.min(fogBase, 0.015);
       scene.fog.density += ((luzOn ? targetFogBase * 0.45 : targetFogBase) - scene.fog.density) * 0.06;
     }
 
@@ -1624,11 +1777,41 @@
     }
     actualizarLucesTecho(world, px, pz, fase0);
 
-    if (CAM_MODO === 'tercera') {
+    // ---------- modo espectador (v30): casa de muñecas ----------
+    // el techo y sus fluorescentes taparían TODO desde una cámara cenital:
+    // sus materiales se apagan mientras dure (se re-aplica cada frame porque
+    // aplicarEstatica los recrea al cambiar de nivel); luz ambiente de apoyo
+    {
+      const espectando = !!world.espectador;
+      if (transitionMats && transitionMats.ceiling) transitionMats.ceiling.visible = !espectando;
+      for (const m of panelMats) if (m) m.visible = !espectando;
+      if (espectando) amb.intensity = Math.max(amb.intensity, 0.55);
+    }
+
+    if (world.espectador) {
+      // --- CÁMARA CENITAL de espectador (v30): sobre el objetivo, con una
+      // inclinación leve para que los billboards sigan leyéndose; la rueda
+      // del ratón ajusta la altura (main.js escribe Render3D.espAlt) ---
+      const alt = espAlt;
+      camera.position.lerp(new THREE.Vector3(px, alt, pz + alt * 0.33), 0.1);
+      frame._look = frame._look || new THREE.Vector3(px, 0.4, pz);
+      frame._look.lerp(new THREE.Vector3(px, 0.4, pz), 0.14);
+      camera.lookAt(frame._look);
+    } else if (CAM_MODO === 'tercera') {
       // --- CÁMARA 3ª PERSONA: pegada a la espalda, baja, inmersiva ---
       const rot = p.rot ?? 2;
       if (world.moving) camBobT += 0.13;
       const bob = Math.sin(camBobT) * TP.bob * (world.moving ? 1 : 0.12);
+      // v30.7: mientras el RATÓN orbita (point-and-look) la cámara responde
+      // 1:1, SIN suavizado — el retardo de goma venía de encadenar tres lerps
+      // por-frame (yaw 0.55 + posición 0.1 + mirada 0.12), encima dependientes
+      // de los FPS. El resto de movimientos siguen suaves, pero corregidos por
+      // dt para que a 30 fps se sientan igual que a 144.
+      const ahoraCam = performance.now();
+      const dtCam = Math.min(0.1, Math.max(0.005, (ahoraCam - (ultTCam || ahoraCam)) / 1000));
+      ultTCam = ahoraCam;
+      const orbitando = world.online && (ahoraCam - ultimoOrbitoT) < 150;
+      const corrDt = (f) => 1 - Math.pow(1 - Math.min(0.95, f), dtCam * 60);
       // v25 online: cámara LIBRE estilo Roblox — el ratón fija el yaw
       // (yawLibre) y el personaje se mueve relativo a la cámara; sin arrastrar
       // aún, la cámara se queda donde está. Solo (offline): sigue a la espalda.
@@ -1676,7 +1859,9 @@
         }
       }
 
-      camYaw += dyaw * factorSuavidad; // el ratón/seguimiento pide respuesta directa o suave
+      // ratón orbitando = respuesta DIRECTA; lo demás, suave e independiente de FPS
+      if (orbitando) camYaw = yawObjetivo;
+      else camYaw += dyaw * corrDt(factorSuavidad);
       const ox = Math.sin(camYaw) * TP.dist;
       const oz = Math.cos(camYaw) * TP.dist;
       let target = new THREE.Vector3(px + ox, TP.alto + bob, pz + oz);
@@ -1694,12 +1879,12 @@
           target.y = Math.min(target.y, TP.alto + bob);
         }
       }
-      camera.position.lerp(target, TP.suavidad);
+      camera.position.lerp(target, orbitando ? 1 : corrDt(TP.suavidad));
       // mira hacia delante (según la órbita actual: giro suave sin bandazos)
       frame._look = frame._look || new THREE.Vector3(px, TP.lookY, pz);
       frame._look.lerp(
         new THREE.Vector3(px - Math.sin(camYaw) * TP.lookAhead, TP.lookY, pz - Math.cos(camYaw) * TP.lookAhead),
-        0.12
+        orbitando ? 1 : corrDt(0.12)
       );
       camera.lookAt(frame._look);
       // si la cámara queda pegada (muro a la espalda), el personaje se desvanece
@@ -1853,6 +2038,9 @@
       yawLibre = (yawLibre === null ? camYaw : yawLibre) + d;
       ultimoOrbitoT = performance.now();
     },
+    // v30 — altura de la cámara cenital de espectador (rueda del ratón)
+    get espAlt() { return espAlt; },
+    set espAlt(v) { espAlt = Math.max(5, Math.min(26, v)); },
     // v25 — pantalla completa real: relanza el render a la resolución nueva
     resize(w, h) {
       if (!renderer) return;

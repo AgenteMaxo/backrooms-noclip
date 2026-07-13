@@ -689,7 +689,7 @@
           drawEntity(e, ax, ay - 6, lit, t);
         }
       }
-      if (Math.round(world.player.y) === y && !world.escondido) {
+      if (Math.round(world.player.y) === y && !world.escondido && !world.espectador) {
         drawPlayer(world.player.rx * TILE - cam.x, world.player.ry * TILE - cam.y, t, world);
       }
     }

@@ -795,27 +795,18 @@
     return img;
   }
 
-  function rutasOverride(id) {
-    const dirs = ['assets/sprites', 'assets/objetos', 'assets'];
-    const exts = ['webp', 'png', 'jpg', 'jpeg'];
-    const out = [];
-    for (const dir of dirs) for (const ext of exts) out.push(`${dir}/${id}.${ext}`);
-    return out;
-  }
-
-  // intenta cargar imagenes externas (hoja horizontal de frames de 48x48).
-  // Si no existe archivo, queda activo el sprite procedural generado.
+  // Carga imágenes externas (hoja horizontal de frames de 48x48) para los ids
+  // pedidos, SOLO si aparecen en el manifiesto de assets reales
+  // (game/js/assets-manifest.js). Sin archivo, queda el sprite procedural.
+  // v30.5: SIN sondeos de red — antes se probaban 12 URLs por id (3 carpetas ×
+  // 4 extensiones) y la consola/red se llenaban de cientos de 404 al abrir la
+  // web. Tras añadir/quitar imágenes en game/assets/:
+  //   node pipeline/build-assets-manifest.js
   function tryOverrides(ids) {
+    const M = (window.ASSETS_MANIFEST || {}).sprites || {};
     for (const id of ids) {
-      if (overrides[id]) continue;
-      const urls = rutasOverride(id);
-      let i = 0, img = null;
-      const siguiente = () => {
-        if (overrides[id] || i >= urls.length) return;
-        img = cargarOverride(id, urls[i++]);
-        img.onerror = siguiente;
-      };
-      siguiente();
+      if (overrides[id] || !M[id]) continue;
+      cargarOverride(id, M[id]);
     }
   }
   // ---------- props del entorno ----------
@@ -990,6 +981,5 @@
     list: () => Object.keys(DEFS),
     CAPA_MASCARA_GAS,
     version: () => overrideVersion,
-    overridePaths: rutasOverride,
   };
 })();

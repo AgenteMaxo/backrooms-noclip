@@ -69,9 +69,23 @@
     const params = new URLSearchParams(location.search);
     salaActual = sala || null;
     ultimoError = null;
+    if (window.MODO_LOCAL) {
+      // MODO OFFLINE = servidor LOCAL (net/local.js): las mismas reglas del
+      // mundo corren en esta pestaña y este cliente ni se entera. Sin ping
+      // (rtt 0), sin reintentos, sin autoActualizar: no hay red que falle.
+      // (si venimos de un intento online fallido, sus reintentos mueren aquí)
+      clearTimeout(reintento);
+      clearInterval(pingTimer);
+      w.local = true;
+      rtt = 0;
+      // en local la puerta de desarrollo ?nivel= está siempre abierta (es tu
+      // propio mundo); online la decide el servidor con MMO_DEV=1
+      ws = Local.conectar(nombre, (m) => recibir(m, w), params.get('nivel') || undefined);
+      return;
+    }
     ws = new WebSocket(urlServidor());
     ws.onopen = () => enviar({
-      t: 'hola', nombre, token: token(), v: 7, // debe coincidir con protocolo.js
+      t: 'hola', nombre, token: token(), v: 8, // debe coincidir con protocolo.js
       nivel: params.get('nivel') || undefined, // puerta de desarrollo (solo MMO_DEV=1)
       sala: salaActual || undefined,
     });
@@ -322,6 +336,11 @@
         w.esAdmin = !!m.si;
         if (window.onAdminCambia) window.onAdminCambia(w.esAdmin);
         break;
+      case 'espectar': // v30: entras/sales del modo espectador (guardián)
+        w.espectador = m.si ? { objetivo: m.objetivo.id, nombre: m.objetivo.nombre } : null;
+        parar();
+        if (window.onEspectarCambia) window.onEspectarCambia(!!m.si, w.espectador);
+        break;
 
       case 'caminata': {
         w.pasosNivel = m.pasos;
@@ -434,6 +453,14 @@
     w._caminataAvisos = {};
     w.escondido = null;
     w._ignoraExit = null;
+    // v30: al seguir a tu objetivo a otra sala el 'nivel' trae espectador.
+    // v30.7: si sigues espectando, la barra se refresca IGUAL — cambia el
+    // objetivo (rotación global) o el nivel donde está, y ambos se muestran
+    const eraEspectador = !!w.espectador;
+    w.espectador = m.espectador
+      ? { objetivo: m.espectador.id, nombre: m.espectador.nombre } : null;
+    if (window.onEspectarCambia && (eraEspectador || w.espectador))
+      window.onEspectarCambia(!!w.espectador, w.espectador);
     // el códice local del navegador sigue coleccionando niveles transitados
     try { Game.Profiles.registrarEntrada(m.nivel); } catch (e) {}
     w.itemsVersion = (w.itemsVersion || 0) + 1;
@@ -456,7 +483,9 @@
     const g = w.map.grid;
     // FOV.compute indexa arrays por tile: SIEMPRE coordenadas enteras (v22:
     // la posición es flotante — un índice fraccionario se escribe en el vacío)
-    w.light = FOV.compute(g, Fisica.tileDe(w.player.x), Fisica.tileDe(w.player.y), w.visionActual());
+    // El espectador (v30) ve amplio: la cámara cenital necesita contexto
+    const radio = w.espectador ? Math.max(14, w.visionActual()) : w.visionActual();
+    w.light = FOV.compute(g, Fisica.tileDe(w.player.x), Fisica.tileDe(w.player.y), radio);
     for (let i = 0; i < w.light.length; i++) if (w.light[i] > 0) w.explored[i] = 1;
   }
 
@@ -514,6 +543,22 @@
   function frame(dt) {
     const w = Game.world;
     if (!listo) return;
+    // ---------- modo espectador (v30): la cámara ES el objetivo ----------
+    // ni input, ni informes, ni pasos: el jugador local se pega a la posición
+    // interpolada del objetivo y el FOV/render siguen la acción solos
+    if (w.espectador) {
+      const o = Otros.lista.find((x) => x.id === w.espectador.objetivo);
+      if (o) {
+        w.player.x = o.rx ?? o.x;
+        w.player.y = o.ry ?? o.y;
+      }
+      const tx = Fisica.tileDe(w.player.x), ty = Fisica.tileDe(w.player.y);
+      if (!tileFov || tileFov[0] !== tx || tileFov[1] !== ty) {
+        tileFov = [tx, ty];
+        fov(w);
+      }
+      return;
+    }
     // Tras un microparón, conservar la trayectoria REAL (incluidas curvas junto
     // a paredes) y reportarla en tramos cortos. El servidor acumula el presupuesto
     // de velocidad de esos 0.6 s, pero mantiene el anti-teleport por informe.
@@ -530,7 +575,9 @@
       // pasos y botín conservan una sola evaluación por frame, aun si el
       // movimiento tuvo que trocearse para informar el rastro al servidor
       pasoAcum += distancia;
-      if (pasoAcum > 0.75) {
+      // umbral ~ media zancada real a VEL_JUGADOR (antes 0.75 daba ~6 pasos/s,
+      // sonaba a metralleta y no guardaba ritmo con el avance del personaje)
+      if (pasoAcum > 1.6) {
         pasoAcum = 0;
         if (window.Sfx) Sfx.play('paso', w.level?.estilo?.suelo);
       }
@@ -648,6 +695,12 @@
   }
 
   function admin(clave) { enviar({ t: 'admin', clave }); }
+  function espectar(objetivo) {
+    // 'sig'/'ant' = rotar por TODOS los errantes del mundo (v30.7, lo resuelve
+    // el servidor); un número = observar a ese id; null = volver al mundo
+    if (objetivo === 'sig' || objetivo === 'ant') { enviar({ t: 'espectar', dir: objetivo }); return; }
+    enviar({ t: 'espectar', objetivo: objetivo ?? null });
+  }
   function tp(nivelId) { enviar({ t: 'chat', txt: '/tp ' + nivelId }); }
   function give(itemId) { enviar({ t: 'chat', txt: '/give ' + itemId }); }
 
@@ -700,7 +753,7 @@
 
   window.Net = {
     iniciar, setInput, setMov, setRot, parar, frame,
-    accion, usar, luzToggle, mochila, admin, tp, give,
+    accion, usar, luzToggle, mochila, admin, tp, give, espectar,
     abrirChat, chatAbierto,
     get activo() { return listo; },
     get id() { return miId; },

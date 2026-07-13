@@ -19,7 +19,7 @@
 //   {t:'pong'}
 'use strict';
 
-const VERSION = 7; // v25: loot/cajas/dados client-side, cámara libre — el server solo valida
+const VERSION = 8; // v30: modo espectador del guardián (mensaje 'espectar')
 const MAX_MSG = 512;          // bytes por mensaje entrante
 const MAX_CHAT = 120;         // caracteres de un chat
 const COOLDOWN_MOVER = 165;   // ms entre pasos (el cliente usa 170: margen de jitter)
@@ -80,6 +80,14 @@ function leer(raw) {
     case 'admin': { // contraseña de guardián desde Ajustes (responde {t:'admin', si})
       if (typeof m.clave !== 'string' || m.clave.length > 64) return null;
       return { t: 'admin', clave: m.clave };
+    }
+    case 'espectar': { // v30: el guardián observa a un jugador (null = dejar de hacerlo)
+      // v30.7: dir = rotar al siguiente/anterior errante de TODAS las salas
+      if (m.dir === 'sig' || m.dir === 'ant') return { t: 'espectar', dir: m.dir };
+      if (m.objetivo === null || m.objetivo === undefined) return { t: 'espectar', objetivo: null };
+      const objetivo = m.objetivo | 0;
+      if (objetivo <= 0) return null;
+      return { t: 'espectar', objetivo };
     }
     case 'ping': { // eco del sello de tiempo: el cliente mide su RTT con el pong
       const out = { t: 'ping' };

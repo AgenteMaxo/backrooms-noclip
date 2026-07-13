@@ -1,0 +1,396 @@
+/*
+ * Interfaz panorámica de la pantalla principal.
+ * Se aplica en escritorio y móvil sin alterar la lógica del juego.
+ */
+
+#screen-title.title-interface-enabled {
+  position: absolute;
+  isolation: isolate;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: hidden;
+  padding:
+    max(18px, env(safe-area-inset-top))
+    max(22px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom))
+    max(22px, env(safe-area-inset-left));
+  background: #050403;
+}
+
+.title-panorama {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 72% 42%, rgba(217, 198, 110, .13), transparent 38%),
+    #090704;
+}
+
+.title-panorama-layer {
+  position: absolute;
+  inset: -5%;
+  opacity: 0;
+  background-position: center;
+  background-size: cover;
+  filter: saturate(.82) contrast(1.06) brightness(.72);
+  transform: scale(1.055) translate3d(0, 0, 0);
+  transition: opacity 1.8s ease;
+  will-change: opacity, transform;
+}
+
+.title-panorama-layer.is-active {
+  opacity: 1;
+  animation: title-panorama-drift 18s ease-in-out infinite alternate;
+}
+
+#screen-title.title-interface-enabled::before,
+#screen-title.title-interface-enabled::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#screen-title.title-interface-enabled::before {
+  z-index: 1;
+  background:
+    linear-gradient(90deg,
+      rgba(3, 3, 2, .98) 0%,
+      rgba(3, 3, 2, .91) 31%,
+      rgba(3, 3, 2, .62) 55%,
+      rgba(3, 3, 2, .24) 78%,
+      rgba(3, 3, 2, .56) 100%),
+    linear-gradient(0deg, rgba(0, 0, 0, .55), transparent 35%, rgba(0, 0, 0, .35));
+}
+
+#screen-title.title-interface-enabled::after {
+  z-index: 1;
+  box-shadow: inset 0 0 140px 35px rgba(0, 0, 0, .78);
+}
+
+#screen-title.title-interface-enabled .title-box {
+  position: relative;
+  z-index: 2;
+  box-sizing: border-box;
+  width: min(610px, 48vw);
+  max-width: min(610px, 48vw);
+  max-height: calc(100dvh - max(36px, env(safe-area-inset-top)) - max(36px, env(safe-area-inset-bottom)));
+  margin: auto 0 auto clamp(8px, 4.5vw, 74px);
+  padding: 20px 24px 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  text-align: left;
+  background: linear-gradient(135deg, rgba(8, 7, 5, .82), rgba(8, 7, 5, .56));
+  border: 1px solid rgba(217, 198, 110, .24);
+  border-left: 3px solid rgba(217, 198, 110, .72);
+  box-shadow: 0 18px 58px rgba(0, 0, 0, .54);
+  -webkit-overflow-scrolling: touch;
+  animation: title-panel-reveal .58s cubic-bezier(.2, .8, .2, 1) both;
+  /* sin barra de scroll visible: el contenido está dimensionado para caber;
+     en pantallas extremas se puede seguir bajando con rueda/dedo */
+  scrollbar-width: none;
+}
+
+#screen-title.title-interface-enabled .title-box::-webkit-scrollbar {
+  display: none;
+}
+
+@supports (backdrop-filter: blur(4px)) {
+  #screen-title.title-interface-enabled .title-box {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+}
+
+/* Tamaños compactos: TODO el menú debe caber en el cuadro SIN barra de
+   scroll en alturas de escritorio habituales (1080/900/768). */
+#screen-title.title-interface-enabled .title-box h1 {
+  margin: 0 0 6px;
+  text-align: left;
+  font-size: clamp(22px, 2.4vw, 32px);
+  line-height: 1.18;
+  letter-spacing: clamp(3px, .5vw, 7px);
+  text-shadow: 0 3px 18px rgba(0, 0, 0, .74);
+}
+
+#screen-title.title-interface-enabled .subtitle {
+  margin: 0 0 10px;
+  text-align: left;
+  font-size: clamp(14px, 1.3vw, 16px);
+  letter-spacing: 2px;
+}
+
+#screen-title.title-interface-enabled .intro-text {
+  max-width: 52ch;
+  margin: 0 0 8px;
+  text-align: left;
+  font-size: clamp(15px, 1.3vw, 17px);
+  line-height: 1.38;
+}
+
+#screen-title.title-interface-enabled #profile-box {
+  margin: 0 0 10px;
+  padding: 10px 12px 9px;
+  background: rgba(10, 9, 6, .72);
+  border: 1px solid rgba(138, 122, 61, .38);
+  border-left: 3px solid rgba(217, 198, 110, .72);
+}
+
+#screen-title.title-interface-enabled .profile-title {
+  margin: 0 0 7px;
+  text-align: left;
+  letter-spacing: 2px;
+}
+
+#screen-title.title-interface-enabled .profile-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
+  margin: 0 0 7px;
+}
+
+#screen-title.title-interface-enabled .profile-row:last-child {
+  margin-bottom: 0;
+}
+
+#screen-title.title-interface-enabled .profile-row .btn-small {
+  flex: 1 1 auto;
+  margin-top: 0;
+}
+
+#screen-title.title-interface-enabled #profile-select,
+#screen-title.title-interface-enabled #profile-name,
+#screen-title.title-interface-enabled #room-input {
+  min-width: 0;
+  min-height: 36px;
+  padding: 6px 9px;
+  color: var(--hueso);
+  background-color: #0d0b07;
+  border-color: rgba(217, 198, 110, .22);
+  font-size: 16px;
+}
+
+#screen-title.title-interface-enabled #profile-select,
+#screen-title.title-interface-enabled #profile-name {
+  flex: 1 1 170px;
+}
+
+#screen-title.title-interface-enabled #btn-profile-create {
+  flex: 0 0 auto;
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+#screen-title.title-interface-enabled #profile-records {
+  margin: 6px 0 8px;
+  text-align: left;
+  line-height: 1.25;
+}
+
+#screen-title.title-interface-enabled .seed-row,
+#screen-title.title-interface-enabled .room-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin: 0 0 9px;
+  text-align: left;
+}
+
+#screen-title.title-interface-enabled .seed-row label,
+#screen-title.title-interface-enabled .room-row label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+#screen-title.title-interface-enabled #vol-slider-title {
+  width: min(160px, 34vw) !important;
+}
+
+#screen-title.title-interface-enabled .btn-small,
+#screen-title.title-interface-enabled .btn-big {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#screen-title.title-interface-enabled .btn-small {
+  min-height: 34px;
+  margin-top: 0;
+  padding: 6px 10px;
+}
+
+#screen-title.title-interface-enabled #btn-start {
+  display: block;
+  width: 100%;
+  min-height: 46px;
+  margin: 2px 0 0;
+  padding: 11px 15px;
+  text-align: left;
+  border-left-width: 4px;
+  line-height: 1.35;
+}
+
+#screen-title.title-interface-enabled #btn-continue {
+  width: 100%;
+  margin-top: 10px;
+  text-align: left;
+}
+
+#screen-title.title-interface-enabled #title-net {
+  margin: 10px 0 0;
+  text-align: left;
+}
+
+#screen-title.title-interface-enabled .hint {
+  margin-top: 10px;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.35;
+  opacity: .8;
+}
+
+#screen-title.title-interface-enabled .btn-music-float {
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+/* El fundido ya existe en el juego; aquí se vuelve más suave y consistente. */
+#fade {
+  background:
+    radial-gradient(circle at center, rgba(12, 10, 6, .25), rgba(0, 0, 0, .96) 72%),
+    #000;
+  transition: opacity .46s cubic-bezier(.2, .75, .2, 1);
+}
+
+#screen-card .level-card,
+#screen-end .end-box {
+  animation: title-card-reveal .42s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+@keyframes title-panorama-drift {
+  from { transform: scale(1.055) translate3d(-.8%, -.4%, 0); }
+  to   { transform: scale(1.105) translate3d(.8%, .6%, 0); }
+}
+
+@keyframes title-panel-reveal {
+  from { opacity: 0; transform: translate3d(-22px, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes title-card-reveal {
+  from { opacity: 0; transform: translate3d(0, 14px, 0) scale(.985); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+/* Tabletas y pantallas estrechas: panel centrado y fondo todavía visible. */
+@media (max-width: 980px), (orientation: portrait) {
+  #screen-title.title-interface-enabled {
+    align-items: center;
+    padding:
+      max(12px, env(safe-area-inset-top))
+      max(14px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(14px, env(safe-area-inset-left));
+  }
+
+  #screen-title.title-interface-enabled::before {
+    background:
+      linear-gradient(90deg, rgba(3, 3, 2, .85), rgba(3, 3, 2, .58), rgba(3, 3, 2, .85)),
+      linear-gradient(0deg, rgba(0, 0, 0, .68), transparent 42%, rgba(0, 0, 0, .44));
+  }
+
+  #screen-title.title-interface-enabled .title-box {
+    width: min(620px, calc(100vw - 28px));
+    max-width: min(620px, calc(100vw - 28px));
+    margin: auto;
+  }
+}
+
+/* Teléfonos horizontales de poca altura. */
+@media (orientation: landscape) and (max-height: 580px) {
+  #screen-title.title-interface-enabled .title-box {
+    width: min(570px, 58vw);
+    max-width: min(570px, 58vw);
+    padding: 13px 15px 12px;
+  }
+
+  #screen-title.title-interface-enabled .intro-text,
+  #screen-title.title-interface-enabled .hint {
+    display: none;
+  }
+
+  #screen-title.title-interface-enabled .title-box h1 {
+    font-size: clamp(21px, 3.4vw, 34px);
+  }
+
+  #screen-title.title-interface-enabled .subtitle,
+  #screen-title.title-interface-enabled #profile-box,
+  #screen-title.title-interface-enabled .seed-row,
+  #screen-title.title-interface-enabled .room-row {
+    margin-bottom: 9px;
+  }
+
+  #screen-title.title-interface-enabled #profile-box {
+    padding: 9px 10px;
+  }
+
+  #screen-title.title-interface-enabled .profile-row {
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  #screen-title.title-interface-enabled .btn-small {
+    min-height: 34px;
+    padding: 6px 9px;
+  }
+
+  #screen-title.title-interface-enabled #btn-start {
+    min-height: 46px;
+    padding: 12px 13px;
+  }
+}
+
+/* Teléfonos verticales y pantallas muy estrechas. */
+@media (max-width: 620px) {
+  #screen-title.title-interface-enabled .title-box {
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+    padding: 16px 15px 14px;
+  }
+
+  #screen-title.title-interface-enabled .title-box h1 {
+    font-size: clamp(22px, 8vw, 34px);
+  }
+
+  #screen-title.title-interface-enabled .profile-row > * {
+    flex: 1 1 100%;
+  }
+
+  #screen-title.title-interface-enabled .room-row label,
+  #screen-title.title-interface-enabled #room-input {
+    width: 100%;
+  }
+
+  #screen-title.title-interface-enabled .hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-panorama-layer,
+  .title-panorama-layer.is-active,
+  #screen-title.title-interface-enabled .title-box,
+  #screen-card .level-card,
+  #screen-end .end-box,
+  #fade {
+    animation: none !important;
+    transition: none !important;
+  }
+}

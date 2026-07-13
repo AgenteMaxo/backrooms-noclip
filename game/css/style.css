@@ -37,7 +37,7 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
   overflow-y: auto; padding: 24px 12px; -webkit-overflow-scrolling: touch; }
 
 /* ---------- título ---------- */
-.title-box { text-align: center; max-width: 640px; padding: 32px; margin: auto; }
+.title-box { text-align: center; max-width: 640px; padding: 26px 32px; margin: auto; }
 .title-box h1 { font-family: var(--font-title); font-size: 38px; letter-spacing: 8px;
   color: var(--amarillo); line-height: 1.3;
   text-shadow: 0 0 24px rgba(217,198,110,.35), 4px 4px 0 #000; margin-bottom: 10px; }
@@ -47,7 +47,20 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
   96% { opacity: .3; } 97% { opacity: 1; }
 }
 .subtitle { color: var(--gris); letter-spacing: 3px; margin-bottom: 28px; font-size: 17px; }
-.intro-text { color: var(--hueso); line-height: 1.6; margin-bottom: 24px; font-size: 19px; }
+.intro-text { color: var(--hueso); line-height: 1.6; margin-bottom: 5px; font-size: 19px; }
+.backrooms-census { display: inline-flex; align-items: center; gap: 9px; min-height: 21px;
+  margin: 0 auto 11px; padding: 1px 9px; border: 1px solid rgba(217,198,110,.22);
+  border-radius: 2px; background: rgba(9,8,5,.58); color: #948c70; font-size: 14px;
+  letter-spacing: .6px; white-space: nowrap; box-shadow: inset 0 0 14px rgba(0,0,0,.45); }
+.census-signal { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%;
+  background: #8f844e; box-shadow: 0 0 7px rgba(217,198,110,.65);
+  animation: census-pulse 2.8s ease-in-out infinite; }
+.backrooms-census.census-offline { color: #716c5c; border-color: rgba(130,125,105,.15); }
+.backrooms-census.census-offline .census-signal { background: #514f46; box-shadow: none; animation: none; }
+@keyframes census-pulse {
+  0%, 100% { opacity: .45; }
+  50% { opacity: 1; box-shadow: 0 0 11px rgba(217,198,110,.9); }
+}
 .seed-row { margin-bottom: 18px; color: var(--gris); font-size: 16px; }
 .seed-row input { background: #0a0906; border: 1px solid var(--borde); color: var(--amarillo);
   font-family: inherit; font-size: 16px; padding: 6px 10px; width: 180px; }
@@ -67,6 +80,13 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
   padding: 7px 16px; cursor: pointer; margin-top: 12px; transition: all .12s; }
 .btn-small:hover { color: var(--hueso); border-color: var(--gris); }
 .btn-small:active { transform: translateY(1px); }
+/* botón discreto de partida en solitario, bajo el DESPERTAR grande */
+.btn-offline { display: block; margin: 7px auto 0; padding: 3px 10px;
+  background: transparent; color: var(--gris); border: 1px solid var(--borde);
+  font-family: inherit; font-size: 13px; letter-spacing: 1px; cursor: pointer;
+  opacity: .8; transition: all .12s; }
+.btn-offline:hover { color: var(--hueso); border-color: var(--gris); opacity: 1; }
+.btn-offline:active { transform: translateY(1px); }
 /* aviso sutil de "hay novedades" (changelog no visto): desaparece al abrirlo */
 .btn-small.novedad { border-color: var(--amarillo); color: var(--amarillo);
   animation: glow-novedad 2.2s ease-in-out infinite; }
@@ -76,6 +96,7 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
 }
 @media (prefers-reduced-motion: reduce) {
   .btn-small.novedad { animation: none; box-shadow: 0 0 10px rgba(217,198,110,.5); }
+  .census-signal { animation: none; }
 }
 
 /* ---------- tarjeta de nivel ---------- */
@@ -164,6 +185,7 @@ input[type="range"]::-moz-range-thumb {
 /* v15: HUD limpio — solo manos + mochila (todo lo demás es contextual) */
 #hud-manos { position: absolute; right: 14px; bottom: 14px; display: flex;
   gap: 8px; align-items: center; }
+.icono-ctrl { image-rendering: pixelated; vertical-align: middle; }
 #hud-equipo { position: absolute; left: 14px; bottom: 14px; display: flex;
   flex-direction: column; gap: 8px; align-items: center; }
 .mano-slot { width: 48px; height: 48px; background: rgba(10,9,6,.72);
@@ -378,7 +400,7 @@ body.fs #game-canvas, body.fs #gl-canvas { border: none; box-shadow: none; }
   #btn-game-menu { top: max(8px, env(safe-area-inset-top)); left: calc(max(8px, env(safe-area-inset-left)) + 72px); }
   #game-log { left: calc(max(8px, env(safe-area-inset-left)) + 110px); top: max(8px, env(safe-area-inset-top)); width: min(42vw, 300px); }
   #moodles { top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); transform: scale(.9); transform-origin: top right; }
-  .title-box { max-width: 96vw; max-height: calc(var(--vh, 1vh) * 96); padding: 18px; overflow: auto; }
+  .title-box { max-width: 96vw; max-height: calc(var(--vh, 1vh) * 96); padding: 12px 18px; overflow: auto; }
   .title-box h1 { font-size: clamp(22px, 7vw, 34px); letter-spacing: clamp(3px, 1.2vw, 8px); }
   .intro-text { font-size: 18px; }
   .room-row input { width: min(180px, 46vw); }
@@ -593,10 +615,12 @@ details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
 
 /* ---------- Ajustes de Responsividad para Alturas Cortas (max-height) ---------- */
 @media (max-height: 800px) {
-  .title-box { padding: 16px 20px; }
+  .title-box { padding: 13px 20px; }
   .title-box h1 { font-size: 30px; letter-spacing: 5px; margin-bottom: 6px; }
   .subtitle { margin-bottom: 16px; font-size: 15px; }
-  .intro-text { margin-bottom: 16px; font-size: 16px; line-height: 1.45; }
+  .intro-text { margin-bottom: 1px; font-size: 16px; line-height: 1.45; }
+  .backrooms-census { min-height: 16px; margin: 0 auto 5px; padding: 0 7px;
+    font-size: 13px; line-height: 14px; }
   #profile-box { padding: 10px 14px; margin-bottom: 12px; }
   .profile-title { margin-bottom: 6px; }
   .seed-row { margin-bottom: 10px; }
@@ -627,6 +651,7 @@ details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
   .title-box h1 { font-size: 24px; letter-spacing: 3px; margin-bottom: 4px; }
   .subtitle { margin-bottom: 8px; font-size: 14px; }
   .intro-text { margin-bottom: 8px; font-size: 14px; line-height: 1.35; }
+  .backrooms-census { display: none; }
   #profile-box { padding: 8px 10px; margin-bottom: 8px; }
   .seed-row { margin-bottom: 6px; }
   .room-row { margin-bottom: 6px; }
@@ -725,3 +750,22 @@ details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
 }
 
 
+/* ---------- modo espectador (v30, solo guardián) ---------- */
+#espectador-bar {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(14, 12, 9, .88); border: 1px solid #7ab8e8; border-radius: 6px;
+  padding: 5px 14px; color: #cfe2f0;
+  font: 19px var(--font-body); letter-spacing: 1px; z-index: 40;
+}
+#espectador-bar .esp-ojo { font-size: 16px; }
+#espectador-bar b { color: #ffe9a0; }
+#espectador-bar button {
+  background: #0a0906; color: #cfe2f0; border: 1px solid #2a4a62; border-radius: 4px;
+  font: 16px var(--font-body); padding: 1px 10px; cursor: pointer;
+}
+#espectador-bar button:hover { border-color: #7ab8e8; }
+/* espectando, el HUD del cuerpo desaparece: solo queda el nivel y su gente */
+body.espectando #hud-manos, body.espectando #hud-equipo,
+body.espectando #moodles, body.espectando #debug-stats,
+body.espectando #touch-controls { display: none !important; }

@@ -34,6 +34,45 @@
   };
 
   // ---------- perfiles de usuario (locales, sin servidor) ----------
+  const esObjetoPerfil = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
+  const enteroPerfil = (v) => Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0;
+
+  function normalizarPerfil(datos) {
+    const records = esObjetoPerfil(datos.records) ? datos.records : {};
+    const descubiertos = esObjetoPerfil(datos.descubiertos) ? datos.descubiertos : {};
+    const codice = {};
+    if (esObjetoPerfil(datos.codice)) {
+      for (const [id, c] of Object.entries(datos.codice)) {
+        if (!esObjetoPerfil(c)) continue;
+        codice[id] = {
+          ...c,
+          veces: enteroPerfil(c.veces),
+          mejorTurnos: Number.isFinite(c.mejorTurnos) && c.mejorTurnos >= 0
+            ? Math.floor(c.mejorTurnos) : null,
+          escapado: c.escapado === true,
+        };
+      }
+    }
+    return {
+      ...datos,
+      creado: typeof datos.creado === 'string' ? datos.creado : new Date().toISOString(),
+      codice,
+      records: {
+        runs: enteroPerfil(records.runs),
+        maxNiveles: enteroPerfil(records.maxNiveles),
+        maxTurnos: enteroPerfil(records.maxTurnos),
+        escapes: enteroPerfil(records.escapes),
+      },
+      historial: Array.isArray(datos.historial)
+        ? datos.historial.filter(esObjetoPerfil).slice(0, 20).map((h) => ({ ...h })) : [],
+      descubiertos: {
+        salidas: esObjetoPerfil(descubiertos.salidas) ? { ...descubiertos.salidas } : {},
+        entidades: esObjetoPerfil(descubiertos.entidades) ? { ...descubiertos.entidades } : {},
+        objetos: esObjetoPerfil(descubiertos.objetos) ? { ...descubiertos.objetos } : {},
+      },
+    };
+  }
+
   const Profiles = {
     _load() {
       try { return JSON.parse(localStorage.getItem('backrooms-profiles')) || { activo: null, perfiles: {} }; }
@@ -143,10 +182,12 @@
     importar(json) {
       try {
         const o = JSON.parse(json);
-        if (!o.nombre || !o.datos || !o.datos.codice) return false;
+        if (typeof o.nombre !== 'string' || !esObjetoPerfil(o.datos)) return false;
+        const nombre = o.nombre.trim().slice(0, 24);
+        if (!nombre) return false;
         const d = this._load();
-        d.perfiles[o.nombre] = o.datos;
-        d.activo = o.nombre;
+        d.perfiles[nombre] = normalizarPerfil(o.datos);
+        d.activo = nombre;
         this._save(d);
         this._descCache = null;
         return true;

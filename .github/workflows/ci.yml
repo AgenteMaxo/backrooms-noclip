@@ -28,8 +28,16 @@ jobs:
       - name: Tests del parser de la wiki
         run: node pipeline/parse.test.js
 
+      - name: Tests de perfiles locales
+        run: node game/js/systems/game.test.js
+
       - name: Auditoría de Level 0 (100 semillas deterministas)
         run: node pipeline/level0-audit.js
+
+      - name: assets-manifest.js está al día con game/assets/
+        run: |
+          node pipeline/build-assets-manifest.js
+          git diff --exit-code game/js/assets-manifest.js
 
       - name: data.js es el generado por build-data.js (no editado a mano)
         run: |

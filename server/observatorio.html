@@ -127,6 +127,7 @@
   <div class="fila">
     <input id="busca" placeholder="filtrar errante o nivel…">
     <button id="pausa">⏸ Pausar</button>
+    <button id="btn-mapa" title="Mapa vivo del grafo de niveles: espectar, retos y anuncios">🗺 SALA DE CONTROL</button>
     <span class="num" id="reloj"></span>
   </div>
   <div id="losetas"></div>
@@ -400,6 +401,7 @@
     arrancar();
   };
   $('clave').onkeydown = (e) => { if (e.key === 'Enter') $('entrar').onclick(); };
+  $('btn-mapa').onclick = () => window.open('/observatorio/mapa', '_blank');
   $('pausa').onclick = () => {
     pausado = !pausado;
     $('pausa').textContent = pausado ? '▶ Reanudar' : '⏸ Pausar';

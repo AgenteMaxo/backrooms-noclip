@@ -268,12 +268,15 @@
   // espíritu que Sprites.tryOverrides, pero un solo cuadrado (sin frames).
   // Se piden al arrancar (main.js), antes de que se pinte ningún panel, así
   // que en la práctica ya están listos para cuando el jugador abre algo.
+  // v30.5: solo se cargan los que EXISTEN según el manifiesto de assets
+  // (regenerar con `node pipeline/build-assets-manifest.js`) — sin 404.
   function tryOverrides(ids) {
+    const M = (window.ASSETS_MANIFEST || {}).iconos || {};
     for (const id of ids) {
-      if (overrides[id]) continue;
+      if (overrides[id] || !M[id]) continue;
       const im = new Image();
-      im.onload = () => { overrides[id] = 'assets/icons/' + id + '.png'; };
-      im.src = 'assets/icons/' + id + '.png';
+      im.onload = () => { overrides[id] = M[id]; };
+      im.src = M[id];
     }
   }
   function img(id, size = 16, flip = false) {

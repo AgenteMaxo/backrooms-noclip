@@ -17,11 +17,14 @@ const N = Math.max(10, parseInt(nArg, 10) || 100);
 const randomMode = args.includes('--random');
 const explicitSeed = args.find((arg) => arg.startsWith('--seed='))?.slice(7);
 const sampleSeed = explicitSeed || (randomMode ? crypto.randomBytes(12).toString('hex') : 'regresion');
+const mecanicasSinCasilla = new Set(['caminata', 'manila']);
+const salidaManila = level.salidas.find((salida) => MapGen.mecanicaDe(salida) === 'manila');
 const apariciones = Object.fromEntries(
   level.salidas
-    .filter((salida) => MapGen.mecanicaDe(salida) !== 'caminata' && salida.tipo !== 'void')
+    .filter((salida) => !mecanicasSinCasilla.has(MapGen.mecanicaDe(salida)) && salida.tipo !== 'void')
     .map((salida) => [salida.destino, 0])
 );
+let aparicionesManila = 0;
 const objetivos = [];
 const distancias = [];
 const [minObjetivo, maxObjetivo] = level.pasosCaminata || [800, 1200];
@@ -31,6 +34,8 @@ function signature(map) {
     spawn: map.spawn,
     exits: map.exits.map((e) => [e.x, e.y, e.def.destino]).sort(),
     walk: map.caminatas.map((e) => e.destino),
+    manila: map.manila ? [map.manila.x, map.manila.y, map.manila.w, map.manila.h] : null,
+    manilaSalida: map.manilaSalida?.destino || null,
   });
 }
 
@@ -49,6 +54,17 @@ for (let i = 0; i < N; i++) {
   assert.equal(map.caminatas.length, 1, 'la salida caminando debe existir siempre');
   assert.ok(objetivo >= minObjetivo && objetivo <= maxObjetivo, 'objetivo fuera del rango configurado');
   assert.equal(signature(map), signature(again), 'la misma semilla debe generar lo mismo');
+  if (salidaManila) {
+    assert.equal(map.manilaSalida?.destino, salidaManila.destino,
+      'la Sala Manila debe conservar su salida aunque no aparezca en esta semilla');
+    if (map.manila) {
+      aparicionesManila++;
+      const r = map.manila;
+      assert.ok(r.w > 0 && r.h > 0 && r.x >= 0 && r.y >= 0 &&
+        r.x + r.w <= map.grid.w && r.y + r.h <= map.grid.h,
+      'la Sala Manila debe ser un rectángulo válido dentro del mapa');
+    }
+  }
 
   const dist = MapGen.bfsDist(map.grid, map.spawn[0], map.spawn[1]);
   for (const ex of map.exits) {
@@ -74,6 +90,8 @@ if (!randomMode && !explicitSeed) {
     const minCount = Math.max(1, Math.floor(esperado - 2 * sigma));
     assert.ok(n >= minCount, `la salida ${destino} aparece demasiado poco (${n}/${N})`);
   }
+  if (salidaManila)
+    assert.ok(aparicionesManila > 0, `la Sala Manila no aparece en ninguna semilla (0/${N})`);
 }
 
 const media = (xs) => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
@@ -84,5 +102,7 @@ if (randomMode && !explicitSeed)
 console.log('Ventana: 150×150 · entidades: 0');
 console.log(`Objetivo de caminata: ${Math.min(...objetivos)}–${Math.max(...objetivos)} (media ${media(objetivos).toFixed(1)})`);
 console.log(`Distancia de salidas físicas: media ${media(distancias).toFixed(1)} casillas`);
+if (salidaManila)
+  console.log(`Sala Manila: ${aparicionesManila}/${N} semillas (${(aparicionesManila / N * 100).toFixed(1)}%)`);
 for (const [destino, n] of Object.entries(apariciones).sort())
   console.log(`  ${destino}: ${n}/${N} semillas (${(n / N * 100).toFixed(1)}%)`);

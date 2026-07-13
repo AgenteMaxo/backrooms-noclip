@@ -1,0 +1,469 @@
+<!doctype html>
+<!-- SALA DE CONTROL — mapa vivo del grafo de niveles para los directos del
+     guardián. Se sirve en /observatorio/mapa; consume /grafo (estático) y
+     /observa (cada 2 s) con la clave de guardián. Clic en un nivel → panel con
+     sus jugadores → botón 👁 Espectar teletransporta al guardián EN el juego
+     junto a ese jugador (cámara cenital, invisible). Sin dependencias. -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Sala de Control — Backrooms MMO</title>
+<style>
+ :root{
+  --amarillo:#d9c66e; --amarillo-osc:#8a7a3d; --hueso:#efe8d0; --gris:#9a9482;
+  --panel:#14120d; --borde:#3a352a; --fondo:#0a0906;
+  --ok:#7fae62; --aviso:#c8964a; --mal:#c05b4a; --azul:#6d95b5;
+ }
+ *{box-sizing:border-box}
+ body{background:var(--fondo);color:var(--hueso);margin:0;height:100vh;display:flex;flex-direction:column;
+  font-family:'Cascadia Mono','Consolas',monospace}
+ [hidden]{display:none!important}
+ header{padding:12px 20px 8px;border-bottom:1px solid var(--borde);background:#0d0b07}
+ h1{font-size:16px;margin:0 0 4px;color:var(--amarillo);letter-spacing:2px}
+ h1 small{color:var(--gris);font-weight:normal;letter-spacing:0}
+ .fila{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 0}
+ input,button{background:#0a0906;border:1px solid var(--borde);color:var(--hueso);
+  font-family:inherit;font-size:12px;padding:6px 10px;border-radius:4px}
+ button{cursor:pointer;color:var(--amarillo)} button:hover{border-color:var(--amarillo)}
+ #error{color:var(--mal);font-size:12px}
+ #estado-linea{color:var(--gris);font-size:11px;margin-left:auto}
+ #anuncio-txt{width:340px}
+ #buscar{width:200px}
+ main{flex:1;display:flex;min-height:0}
+ .wrap{flex:1;overflow:auto;background:radial-gradient(ellipse at 30% 20%, #12100a 0%, #0a0906 70%)}
+ aside{width:400px;border-left:1px solid var(--borde);background:var(--panel);
+  overflow:auto;padding:16px 18px;flex-shrink:0}
+ aside .vacio{color:#6a6455;font-size:13px;line-height:1.6;margin-top:12px}
+ aside h2{font-size:16px;color:var(--amarillo);margin:0 0 2px}
+ aside .sub{color:var(--gris);font-size:12px;margin:0 0 10px}
+ aside h3{font-size:12px;color:var(--gris);letter-spacing:2px;margin:14px 0 6px;
+  border-bottom:1px solid var(--borde);padding-bottom:4px}
+ .peligro-badge{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+ /* fichas de jugador en el panel */
+ .jug{background:#0f0e0a;border:1px solid var(--borde);border-left:3px solid var(--amarillo-osc);
+  padding:8px 10px;margin-bottom:6px;font-size:12.5px;line-height:1.5}
+ .jug b{color:var(--hueso);font-size:13.5px}
+ .jug .meta{color:var(--gris);font-size:11px}
+ .jug .vit b{font-variant-numeric:tabular-nums}
+ .jug .sep{color:var(--gris);margin:0 3px}
+ .jug .acciones{margin-top:5px;display:flex;gap:5px}
+ .jug .acciones button{padding:3px 9px;font-size:11.5px}
+ .jug button.espectar{color:#7ab8e8;border-color:#2a4a62}
+ .jug button.espectar:hover{border-color:#7ab8e8}
+ .jug button.kick:hover{border-color:var(--aviso);color:var(--aviso)}
+ .jug button.ban:hover{border-color:var(--mal);color:var(--mal)}
+ .flags{font-size:14px;margin-left:4px}
+ /* ticker de eventos */
+ #ticker{border-top:1px solid var(--borde);background:#0d0b07;padding:6px 18px;
+  height:118px;overflow-y:auto;font-size:12px;flex-shrink:0}
+ #ticker .ev{padding:1px 0;color:var(--gris)}
+ #ticker .ev .hora{color:#5a543f;font-size:10.5px;margin-right:6px}
+ #ticker .ev.cruce{color:var(--hueso)}
+ #ticker .ev.entra{color:var(--azul)}
+ #ticker .ev.muere{color:var(--mal)}
+ #ticker .ev.escape{color:#4ade80;font-weight:bold}
+ /* toast */
+ #toast{position:fixed;bottom:132px;left:50%;transform:translateX(-50%);
+  background:var(--panel);border:1px solid var(--amarillo);color:var(--hueso);
+  padding:10px 18px;border-radius:6px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9;font-size:13px}
+ #toast.ver{opacity:1}
+ /* ------- SVG ------- */
+ svg{display:block}
+ .arista{fill:none;stroke:#8a8a9a;stroke-opacity:.4;stroke-width:1.6;transition:all .15s}
+ .arista.vuelta{stroke:#b08a4a;stroke-opacity:.45}
+ .t-rara,.t-arriesgada,.t-llave,.t-void{stroke-dasharray:6 4}
+ .t-escape{stroke:#4ade80}
+ .arista.lit{stroke:#ffd970;stroke-opacity:1;stroke-width:2.8;
+  filter:drop-shadow(0 0 5px rgba(255,217,112,.9))}
+ .arista.dim{stroke-opacity:.06}
+ .nodo{cursor:pointer}
+ .nodo rect.caja{fill:#16141c;stroke-width:2;transition:all .15s}
+ .nodo.escape rect.caja{fill:#14261c}
+ .nodo.congente rect.caja{fill:#1d1a10}
+ .nodo .tt{fill:#f0ead6;font-size:14px;font-weight:700}
+ .nodo .ts{fill:#b8b2a0;font-size:11px}
+ .nodo .tp{font-size:10px;font-weight:600}
+ .nodo:hover rect.caja,.nodo.lit rect.caja{filter:drop-shadow(0 0 8px rgba(255,217,112,.7));stroke-width:3}
+ .nodo.sel rect.caja{stroke:#ffd970!important;stroke-width:3.5;
+  filter:drop-shadow(0 0 12px rgba(255,217,112,.9))}
+ .nodo.dim{opacity:.22}
+ .nodo.buscado rect.caja{filter:drop-shadow(0 0 10px rgba(122,222,128,.9));stroke:#4ade80!important}
+ /* badge vivo de jugadores */
+ .badge circle{fill:#3a2f10;stroke:var(--amarillo);stroke-width:1.5}
+ .badge text{fill:#ffe9a0;font-size:13px;font-weight:700}
+ .badge.pulso circle{animation:pulso 1.6s ease-in-out infinite}
+ @keyframes pulso{0%,100%{stroke-opacity:1}50%{stroke-opacity:.25}}
+ .nombres{fill:#c8b866;font-size:10px}
+</style>
+</head>
+<body>
+<header>
+ <h1>🗺 SALA DE CONTROL <small>— Backrooms MMO · mapa vivo del guardián</small></h1>
+ <div class="fila" id="acceso">
+  <input id="clave" type="password" placeholder="clave de guardián" autocomplete="off">
+  <button id="entrar">Abrir la sala</button>
+  <span id="error"></span>
+ </div>
+ <div class="fila" id="controles" hidden>
+  <input id="anuncio-txt" maxlength="200" placeholder="📢 anuncio para TODOS (reto, premio, ganador…)">
+  <button id="btn-anuncio">📢 Anunciar</button>
+  <button id="btn-dejar" title="El guardián vuelve al mundo (deja de espectar)">✕ Dejar de espectar</button>
+  <input id="buscar" placeholder="buscar nivel o errante…" spellcheck="false">
+  <span id="estado-linea"></span>
+ </div>
+</header>
+<main>
+ <div class="wrap" id="wrap"><svg id="mapa"></svg></div>
+ <aside id="panel">
+  <p class="vacio">Haz clic en cualquier nivel del mapa para ver quién camina por él.
+  El badge ámbar cuenta los errantes de cada nivel en tiempo real.
+  Con 👁 Espectar tu personaje del juego (con la clave 🔑 validada en Ajustes)
+  se teletransporta invisible junto a ese jugador, con cámara cenital.</p>
+ </aside>
+</main>
+<div id="ticker"><div class="ev">— los eventos del mundo aparecerán aquí —</div></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const PELIGRO = ['#3fae6a', '#8bb944', '#d9a531', '#e0742c', '#d94a35', '#a12744'];
+  const colorPeligro = (p) => PELIGRO[Math.max(0, Math.min(5, p | 0))];
+  const colorVital = (v) => v > 60 ? 'var(--ok)' : v > 30 ? 'var(--aviso)' : 'var(--mal)';
+
+  let clave = sessionStorage.getItem('obs-clave') || '';
+  let grafo = null;       // /grafo: {niveles}
+  let pos = {}, W = 0, H = 0; // layout calculado
+  let vivo = null;        // último /observa
+  let seleccion = null;   // nivel clicado
+  let timer = null;
+  let prevJug = null;     // id -> {nombre, nivel, muerto} para el ticker
+  let prevEscapes = null;
+
+  // ---------- layout BFS por capas (el de pipeline/make-map.js) ----------
+  const NW = 200, NH = 68, GX = 150, GY = 26;
+  function calcularLayout() {
+    const levels = grafo.niveles;
+    const destinosDe = (lv) => lv.salidas.flatMap((s) => s.destinos);
+    const depth = { 'level-0': 0 };
+    const q = ['level-0'];
+    while (q.length) {
+      const u = q.shift();
+      for (const v of destinosDe(levels[u]))
+        if (levels[v] && depth[v] === undefined) { depth[v] = depth[u] + 1; q.push(v); }
+    }
+    for (const id of Object.keys(levels)) if (depth[id] === undefined) depth[id] = 3;
+    const cols = {};
+    for (const [id, d] of Object.entries(depth)) (cols[d] = cols[d] || []).push(id);
+    const maxD = Math.max(...Object.keys(cols).map(Number));
+    let maxRows = 0;
+    for (let d = 0; d <= maxD; d++) {
+      const list = (cols[d] || []).sort((a, b) => levels[a].peligro - levels[b].peligro);
+      maxRows = Math.max(maxRows, list.length);
+      list.forEach((id, i) => { pos[id] = { x: 40 + d * (NW + GX), y: 40 + i * (NH + GY) }; });
+    }
+    W = 40 * 2 + (maxD + 1) * (NW + GX);
+    H = 80 + maxRows * (NH + GY);
+  }
+
+  // ---------- SVG estático (nodos y aristas; la capa viva solo toca badges) ----------
+  function pintarMapa() {
+    const levels = grafo.niveles;
+    let edges = '', nodes = '';
+    for (const [id, lv] of Object.entries(levels)) {
+      const p = pos[id];
+      for (const s of lv.salidas) for (const destino of s.destinos) {
+        const t = pos[destino];
+        if (!t) continue;
+        const x1 = p.x + NW, y1 = p.y + NH / 2, x2 = t.x, y2 = t.y + NH / 2;
+        const back = t.x <= p.x;
+        const mx = back ? Math.max(x1, x2 + NW) + 70 : (x1 + x2) / 2;
+        const d = back
+          ? `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2 + NW} ${y2}`
+          : `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`;
+        edges += `<path class="arista t-${esc(s.tipo)}${back ? ' vuelta' : ''}" data-from="${esc(id)}" data-to="${esc(destino)}" d="${d}"/>`;
+      }
+    }
+    for (const [id, lv] of Object.entries(levels)) {
+      const p = pos[id];
+      const sub = (lv.nombre.split('«')[1] || '').replace('»', '') || (lv.clase || '').split('·')[0].trim();
+      nodes += `<g class="nodo${lv.esEscape ? ' escape' : ''}" data-id="${esc(id)}" transform="translate(${p.x},${p.y})">
+        <rect class="caja" width="${NW}" height="${NH}" rx="9" stroke="${lv.esEscape ? '#4ade80' : colorPeligro(lv.peligro)}"/>
+        <text class="tt" x="12" y="24">${esc(lv.wikiTitle)}${lv.esEscape ? ' ⭐' : ''}</text>
+        <text class="ts" x="12" y="42">${esc(sub)}</text>
+        <text class="tp" x="12" y="58" fill="${colorPeligro(lv.peligro)}">Peligro ${lv.peligro}/5 · ${esc(lv.bioma)}</text>
+        <g class="badge" data-badge="${esc(id)}" transform="translate(${NW - 4},4)" display="none">
+          <circle r="13"></circle><text text-anchor="middle" dy="4.5">0</text>
+        </g>
+        <text class="nombres" data-nombres="${esc(id)}" x="12" y="${NH + 14}"></text>
+      </g>`;
+    }
+    $('mapa').setAttribute('width', W);
+    $('mapa').setAttribute('height', H);
+    $('mapa').setAttribute('viewBox', `0 0 ${W} ${H}`);
+    $('mapa').innerHTML = edges + nodes;
+    // interacción hover/clic
+    const aristas = [...document.querySelectorAll('.arista')];
+    const nodos = [...document.querySelectorAll('.nodo')];
+    const resaltar = (id) => {
+      const con = new Set([id]);
+      for (const a of aristas) {
+        const toca = a.dataset.from === id || a.dataset.to === id;
+        a.classList.toggle('lit', toca);
+        a.classList.toggle('dim', !toca);
+        if (toca) { con.add(a.dataset.from); con.add(a.dataset.to); }
+      }
+      for (const n of nodos) {
+        const esta = con.has(n.dataset.id);
+        n.classList.toggle('lit', esta && n.dataset.id !== id);
+        n.classList.toggle('dim', !esta);
+      }
+    };
+    const limpiar = () => {
+      if (seleccion) { resaltar(seleccion); return; }
+      for (const a of aristas) a.classList.remove('lit', 'dim');
+      for (const n of nodos) n.classList.remove('lit', 'dim');
+    };
+    for (const n of nodos) {
+      n.addEventListener('mouseenter', () => resaltar(n.dataset.id));
+      n.addEventListener('mouseleave', limpiar);
+      n.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        seleccion = n.dataset.id;
+        for (const x of nodos) x.classList.toggle('sel', x === n);
+        resaltar(seleccion);
+        pintarPanel();
+      });
+    }
+    $('mapa').addEventListener('click', () => {
+      seleccion = null;
+      for (const n of nodos) n.classList.remove('sel');
+      limpiar();
+      pintarPanel();
+    });
+  }
+
+  // ---------- capa viva: badges + panel + ticker ----------
+  function jugadoresDe(nivel) {
+    // agrupa por instancia las salas vivas de ese nivel
+    return (vivo ? vivo.salas : []).filter((s) => s.nivel === nivel && s.jugadores.length);
+  }
+
+  function actualizarBadges() {
+    const porNivel = {};
+    for (const s of (vivo ? vivo.salas : []))
+      porNivel[s.nivel] = (porNivel[s.nivel] || 0) +
+        s.jugadores.filter((j) => !j.espectador).length;
+    for (const g of document.querySelectorAll('[data-badge]')) {
+      const id = g.getAttribute('data-badge');
+      const n = porNivel[id] || 0;
+      g.setAttribute('display', n ? '' : 'none');
+      g.classList.toggle('pulso', n > 0);
+      g.querySelector('text').textContent = n;
+      g.closest('.nodo').classList.toggle('congente', n > 0);
+    }
+    // nombres bajo el nodo (máx 3 + «+N»)
+    for (const t of document.querySelectorAll('[data-nombres]')) {
+      const id = t.getAttribute('data-nombres');
+      const nombres = [];
+      for (const s of jugadoresDe(id))
+        for (const j of s.jugadores) if (!j.espectador) nombres.push(j.nombre);
+      t.textContent = nombres.length
+        ? nombres.slice(0, 3).join(' · ') + (nombres.length > 3 ? ` +${nombres.length - 3}` : '')
+        : '';
+    }
+  }
+
+  function flagsDe(j) {
+    return [j.muerto && '💀', j.escondido && '🫥', j.luz && '🔦',
+      j.espectador && '👁', j.esAdmin && '🔑', j.muteado && '🔇'].filter(Boolean).join(' ');
+  }
+
+  function pintarPanel() {
+    const panel = $('panel');
+    if (!seleccion || !grafo) {
+      panel.innerHTML = '<p class="vacio">Haz clic en cualquier nivel del mapa para ver quién camina por él.</p>';
+      return;
+    }
+    const lv = grafo.niveles[seleccion];
+    const salas = jugadoresDe(seleccion);
+    const filtro = $('buscar').value.trim().toLowerCase();
+    let cuerpo = '';
+    for (const s of salas) {
+      const jugadores = s.jugadores.filter((j) => !filtro || j.nombre.toLowerCase().includes(filtro));
+      if (!jugadores.length) continue;
+      cuerpo += `<h3>INSTANCIA #${s.inst}${s.privada ? ' · privada' : ''} · ${s.jugadores.length} errante${s.jugadores.length === 1 ? '' : 's'} · ${s.entidades.length} entidad${s.entidades.length === 1 ? '' : 'es'}</h3>`;
+      for (const j of jugadores) {
+        cuerpo += `<div class="jug">
+          <b>${esc(j.nombre)}</b> <span class="meta">#${j.id}</span><span class="flags">${flagsDe(j)}</span><br>
+          <span class="vit" title="salud / sed / cordura">
+            ❤<b style="color:${colorVital(j.salud)}">${j.salud}</b><span class="sep">·</span>
+            💧<b style="color:${colorVital(j.sed)}">${j.sed}</b><span class="sep">·</span>
+            🧠<b style="color:${colorVital(j.cordura)}">${j.cordura}</b></span>
+          <span class="meta"> · ${Math.floor(j.conectadoS / 60)} min dentro</span>
+          <div class="acciones">
+            ${j.espectador ? '' : `<button class="espectar" data-id="${j.id}" data-n="${esc(j.nombre)}">👁 Espectar</button>`}
+            <button class="kick" data-id="${j.id}" data-n="${esc(j.nombre)}">kick</button>
+            <button class="ban" data-id="${j.id}" data-n="${esc(j.nombre)}">ban</button>
+          </div>
+        </div>`;
+      }
+    }
+    if (!cuerpo) cuerpo = '<p class="vacio">No hay nadie caminando por este nivel ahora mismo.</p>';
+    panel.innerHTML =
+      `<h2><span class="peligro-badge" style="background:${colorPeligro(lv.peligro)}"></span>` +
+      `${esc(lv.wikiTitle)}${lv.esEscape ? ' ⭐' : ''}</h2>` +
+      `<p class="sub">${esc(lv.nombre)}<br>Peligro ${lv.peligro}/5 · bioma: ${esc(lv.bioma)}</p>` + cuerpo;
+  }
+
+  // ---------- ticker de eventos (diff entre polls) ----------
+  function hora() { return new Date().toLocaleTimeString(); }
+  function evento(clase, txt) {
+    const t = $('ticker');
+    const div = document.createElement('div');
+    div.className = 'ev ' + clase;
+    div.innerHTML = `<span class="hora">${hora()}</span>${esc(txt)}`;
+    t.prepend(div);
+    while (t.children.length > 120) t.removeChild(t.lastChild);
+  }
+  function tickearEventos() {
+    const ahora = new Map(); // id -> {nombre, nivel, nivelNombre, muerto, espectador}
+    for (const s of vivo.salas)
+      for (const j of s.jugadores)
+        ahora.set(j.id, { nombre: j.nombre, nivel: s.nivel, nivelNombre: s.nombre, muerto: j.muerto, espectador: j.espectador });
+    if (prevJug) {
+      for (const [id, a] of ahora) {
+        const p = prevJug.get(id);
+        if (a.espectador) continue; // el guardián fantasma no hace ruido
+        if (!p) evento('entra', `${a.nombre} despierta en las Backrooms (${a.nivelNombre}).`);
+        else {
+          if (p.nivel !== a.nivel) evento('cruce', `${a.nombre} cruza a ${a.nivelNombre}.`);
+          if (!p.muerto && a.muerto) evento('muere', `💀 ${a.nombre} ha muerto en ${a.nivelNombre}.`);
+        }
+      }
+      for (const [id, p] of prevJug)
+        if (!ahora.has(id) && !p.espectador) evento('', `${p.nombre} se desvanece del mundo.`);
+      const escapes = vivo.historico ? vivo.historico.escapes : null;
+      if (escapes !== null && prevEscapes !== null && escapes > prevEscapes)
+        evento('escape', `⭐ ¡ALGUIEN HA ESCAPADO DE LAS BACKROOMS! (${escapes} escapes totales)`);
+      if (escapes !== null) prevEscapes = escapes;
+    } else if (vivo.historico) prevEscapes = vivo.historico.escapes;
+    prevJug = ahora;
+  }
+
+  // ---------- red ----------
+  let toastT = null;
+  function toast(txt) {
+    const el = $('toast');
+    el.textContent = txt;
+    el.classList.add('ver');
+    clearTimeout(toastT);
+    toastT = setTimeout(() => el.classList.remove('ver'), 3500);
+  }
+
+  async function accion(cuerpo) {
+    try {
+      const r = await fetch('/accion', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ clave, ...cuerpo }),
+      });
+      const d = await r.json();
+      toast(d.ok ? d.msg : (d.error || `error ${r.status}`));
+      return !!d.ok;
+    } catch (e) { toast('sin conexión con el servidor'); return false; }
+  }
+
+  async function refrescar() {
+    if (!clave) return;
+    try {
+      const r = await fetch('/observa?clave=' + encodeURIComponent(clave), { cache: 'no-store' });
+      if (!r.ok) {
+        const cuerpo = await r.json().catch(() => ({}));
+        sessionStorage.removeItem('obs-clave');
+        clave = '';
+        clearInterval(timer);
+        $('controles').hidden = true;
+        $('acceso').hidden = false;
+        $('error').textContent = cuerpo.error || `error ${r.status}`;
+        return;
+      }
+      vivo = await r.json();
+      $('estado-linea').textContent =
+        `${vivo.total} errante${vivo.total === 1 ? '' : 's'} · ${vivo.salas.length} salas · actualizado ${hora()}`;
+      actualizarBadges();
+      tickearEventos();
+      if (seleccion) pintarPanel();
+    } catch (e) {
+      $('estado-linea').textContent = 'sin conexión… reintentando';
+    }
+  }
+
+  async function arrancar() {
+    try {
+      const r = await fetch('/grafo?clave=' + encodeURIComponent(clave), { cache: 'no-store' });
+      if (!r.ok) {
+        const cuerpo = await r.json().catch(() => ({}));
+        $('error').textContent = cuerpo.error || `error ${r.status}`;
+        sessionStorage.removeItem('obs-clave');
+        clave = '';
+        return;
+      }
+      grafo = await r.json();
+    } catch (e) { $('error').textContent = 'sin conexión con el servidor'; return; }
+    $('acceso').hidden = true;
+    $('controles').hidden = false;
+    $('error').textContent = '';
+    calcularLayout();
+    pintarMapa();
+    refrescar();
+    clearInterval(timer);
+    timer = setInterval(refrescar, 2000);
+  }
+
+  // ---------- controles ----------
+  $('entrar').onclick = () => {
+    clave = $('clave').value.trim();
+    if (!clave) return;
+    sessionStorage.setItem('obs-clave', clave);
+    arrancar();
+  };
+  $('clave').onkeydown = (e) => { if (e.key === 'Enter') $('entrar').onclick(); };
+  $('btn-anuncio').onclick = async () => {
+    const txt = $('anuncio-txt').value.trim();
+    if (!txt) { $('anuncio-txt').focus(); return; }
+    if (await accion({ accion: 'anuncio', txt })) $('anuncio-txt').value = '';
+  };
+  $('anuncio-txt').onkeydown = (e) => { if (e.key === 'Enter') $('btn-anuncio').onclick(); };
+  $('btn-dejar').onclick = () => accion({ accion: 'espectar-fin' });
+  $('buscar').oninput = () => {
+    const t = $('buscar').value.trim().toLowerCase();
+    for (const n of document.querySelectorAll('.nodo')) {
+      const lv = grafo && grafo.niveles[n.dataset.id];
+      let hit = t && lv && (lv.wikiTitle.toLowerCase().includes(t) ||
+        lv.nombre.toLowerCase().includes(t) || lv.bioma.toLowerCase().includes(t));
+      if (t && !hit && vivo) // también encuentra ERRANTES por nombre
+        hit = jugadoresDe(n.dataset.id).some((s) => s.jugadores.some((j) => j.nombre.toLowerCase().includes(t)));
+      n.classList.toggle('buscado', !!hit);
+    }
+    if (seleccion) pintarPanel();
+  };
+  // delegación: botones del panel (se repinta cada 2 s)
+  $('panel').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const id = +b.getAttribute('data-id'), n = b.getAttribute('data-n');
+    if (b.classList.contains('espectar')) accion({ accion: 'espectar', id });
+    else if (b.classList.contains('kick')) { if (confirm(`¿KICK a ${n}?`)) accion({ accion: 'kick', id }); }
+    else if (b.classList.contains('ban')) { if (confirm(`¿BAN a ${n}?\n\nNo podrá volver a entrar con este navegador.`)) accion({ accion: 'ban', id }); }
+  });
+
+  if (clave) arrancar();
+})();
+</script>
+</body>
+</html>

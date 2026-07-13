@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BACKROOMS MMO</title>
-<link rel="stylesheet" href="css/style.css?v=279">
+<link rel="stylesheet" href="css/style.css?v=289">
+<link rel="stylesheet" href="css/title-interface.css?v=289">
 </head>
 <body>
 <div id="app">
@@ -16,6 +17,10 @@
       <p class="intro-text">Has atravesado la realidad donde no debías.<br>
       Despiertas en moqueta húmeda, bajo un zumbido amarillo.<br>
       Y no estás solo: otros errantes vagan por estos mismos pasillos.</p>
+      <div id="backrooms-census" class="backrooms-census" role="status" aria-live="polite">
+        <span class="census-signal" aria-hidden="true"></span>
+        <span id="backrooms-census-text">Escuchando tras las paredes…</span>
+      </div>
       <div id="profile-box">
         <p class="profile-title">— EXPEDIENTE DE ERRANTE —</p>
         <div class="profile-row">
@@ -45,6 +50,7 @@
         </label>
       </div>
       <button id="btn-start" class="btn-big">DESPERTAR EN LEVEL 0</button>
+      <button id="btn-offline" class="btn-offline" title="Partida en solitario en este navegador, sin conexión">jugar sin conexión (modo solo)</button>
       <p id="title-net" class="warn" style="display:none"></p>
       <button id="btn-continue" class="btn-small" style="display:none">Continuar partida guardada</button>
       <p class="hint">W/A/S/D: moverte · CLIC para enganchar el ratón (Pointer Lock) y girar la cámara, ESC libera (o clic derecho y arrastrar en Ajustes) · ESPACIO: interactuar y esconderse<br>
@@ -84,6 +90,13 @@
         <button id="btn-log-close" class="btn-small">Cerrar (L)</button>
       </div>
       <div id="moodles"></div>
+      <!-- barra del modo espectador (v30, solo guardián) -->
+      <div id="espectador-bar" style="display:none">
+        <span class="esp-ojo">👁</span> ESPECTADOR — <b id="esp-nombre"></b>
+        <button id="esp-prev" title="Errante anterior (←)">◀</button>
+        <button id="esp-next" title="Errante siguiente (→)">▶</button>
+        <button id="esp-salir" title="Volver al mundo (ESC)">✕ salir</button>
+      </div>
       <!-- barras de estado (solo guardián: se habilitan con la contraseña de admin) -->
       <div id="debug-stats" style="display:none">
         <div class="dbg-fila"><span class="dbg-lab">Salud</span><div class="dbg-track"><div id="dbg-salud" class="dbg-fill"></div></div><span class="dbg-v" id="dbg-salud-v"></span></div>
@@ -107,12 +120,12 @@
           <div id="backpack-layout">
             <div class="bp-mano-col">
               <div class="mano-slot bp-mano" id="bp-mano-0" title="Mano izquierda"></div>
-              <span class="bp-label">mano izq.<br>(tecla Q)</span>
+              <span class="bp-label">mano izq.<br>(<span id="bp-key-0">tecla Q</span>)</span>
             </div>
             <div id="backpack-slots"></div>
             <div class="bp-mano-col">
               <div class="mano-slot bp-mano" id="bp-mano-1" title="Mano derecha"></div>
-              <span class="bp-label">mano der.<br>(tecla E)</span>
+              <span class="bp-label">mano der.<br>(<span id="bp-key-1">tecla E</span>)</span>
             </div>
           </div>
           <div id="bp-equipo">
@@ -198,6 +211,7 @@
       <div class="sound-row"><label>Efectos</label><input type="range" id="snd-fx" min="0" max="100"><span id="snd-fx-v"></span></div>
       <div class="sound-row"><label>Ambiente / música</label><input type="range" id="snd-amb" min="0" max="100"><span id="snd-amb-v"></span></div>
       <div class="sound-row"><label>Tirada de dado</label><label class="chk-row"><input type="checkbox" id="opt-dado"> mostrar animación</label></div>
+      <div class="sound-row"><label>Rendimiento</label><label class="chk-row"><input type="checkbox" id="opt-fps-ver"> mostrar FPS en pantalla</label></div>
       <div class="sound-row">
         <label>Modo de cámara</label>
         <select id="opt-camara-modo">
@@ -380,36 +394,44 @@
 
 <!-- ?v= rompe la caché del edge (Cloudflare cachea .js/.css por defecto aunque
      el origen no lo pida): SUBIR el número en cada versión, junto con VERSION_JUEGO -->
-<script src="js/data.js?v=279"></script>
-<script src="js/engine/rng.js?v=279"></script>
-<script src="js/mapgen/mapgen.js?v=279"></script>
-<script src="js/engine/tiles.js?v=279"></script>
-<script src="js/engine/sprites.js?v=279"></script>
-<script src="js/engine/effects.js?v=279"></script>
-<script src="js/audio-manifest.js?v=279"></script>
-<script src="js/engine/sfx.js?v=279"></script>
-<script src="js/engine/fov.js?v=279"></script>
-<script src="js/systems/entities.js?v=279"></script>
-<script src="js/systems/rules.js?v=279"></script>
-<script src="js/engine/render.js?v=279"></script>
-<script src="js/lib/three.min.js?v=279"></script>
-<script src="js/lib/shaders/CopyShader.js?v=279"></script>
-<script src="js/lib/shaders/LuminosityHighPassShader.js?v=279"></script>
-<script src="js/lib/shaders/GammaCorrectionShader.js?v=279"></script>
-<script src="js/lib/postprocessing/EffectComposer.js?v=279"></script>
-<script src="js/lib/postprocessing/RenderPass.js?v=279"></script>
-<script src="js/lib/postprocessing/ShaderPass.js?v=279"></script>
-<script src="js/lib/postprocessing/UnrealBloomPass.js?v=279"></script>
-<script src="js/engine/atmos3d.js?v=279"></script>
-<script src="js/engine/render3d.js?v=279"></script>
-<script src="js/systems/game.js?v=279"></script>
-<script src="js/ui/icons.js?v=279"></script>
-<script src="js/ui/ui.js?v=279"></script>
-<script src="js/ui/changelog.js?v=279"></script>
-<script src="js/ui/minimap.js?v=279"></script>
-<script src="js/sim/fisica.js?v=279"></script>
-<script src="js/net/otros.js?v=279"></script>
-<script src="js/net/cliente.js?v=279"></script>
-<script src="js/main.js?v=279"></script>
+<script src="js/data.js?v=289"></script>
+<script src="js/engine/rng.js?v=289"></script>
+<script src="js/mapgen/mapgen.js?v=289"></script>
+<script src="js/engine/tiles.js?v=289"></script>
+<script src="js/engine/sprites.js?v=289"></script>
+<script src="js/engine/effects.js?v=289"></script>
+<script src="js/audio-manifest.js?v=289"></script>
+<script src="js/assets-manifest.js?v=289"></script>
+<script src="js/engine/sfx.js?v=289"></script>
+<script src="js/engine/fov.js?v=289"></script>
+<script src="js/systems/entities.js?v=289"></script>
+<script src="js/systems/rules.js?v=289"></script>
+<script src="js/engine/render.js?v=289"></script>
+<script src="js/lib/three.min.js?v=289"></script>
+<script src="js/lib/shaders/CopyShader.js?v=289"></script>
+<script src="js/lib/shaders/LuminosityHighPassShader.js?v=289"></script>
+<script src="js/lib/shaders/GammaCorrectionShader.js?v=289"></script>
+<script src="js/lib/postprocessing/EffectComposer.js?v=289"></script>
+<script src="js/lib/postprocessing/RenderPass.js?v=289"></script>
+<script src="js/lib/postprocessing/ShaderPass.js?v=289"></script>
+<script src="js/lib/postprocessing/UnrealBloomPass.js?v=289"></script>
+<script src="js/engine/atmos3d.js?v=289"></script>
+<script src="js/engine/render3d.js?v=289"></script>
+<script src="js/systems/game.js?v=289"></script>
+<script src="js/ui/icons.js?v=289"></script>
+<script src="js/ui/controllers.js?v=289"></script>
+<script src="js/ui/ui.js?v=289"></script>
+<script src="js/ui/title-interface.js?v=289"></script>
+<script src="js/ui/changelog.js?v=289"></script>
+<script src="js/ui/minimap.js?v=289"></script>
+<script src="js/sim/fisica.js?v=289"></script>
+<!-- reglas del mundo COMPARTIDAS con el servidor (duales): IA + Sala; el modo
+     offline las ejecuta en la pestaña vía el servidor local de net/local.js -->
+<script src="js/sim/entidades.js?v=289"></script>
+<script src="js/sim/sala.js?v=289"></script>
+<script src="js/net/local.js?v=289"></script>
+<script src="js/net/otros.js?v=289"></script>
+<script src="js/net/cliente.js?v=289"></script>
+<script src="js/main.js?v=289"></script>
 </body>
 </html>

@@ -169,20 +169,22 @@ const poolLoot = basicos.concat(Object.keys(DATA).filter((id) => !basicos.includ
 assert.strictEqual(new Set(poolLoot).size, ids.length, 'el pool de loot no alcanza todo el catalogo');
 
 for (const id of ids) assert(window.Sprites.tiene(id), `${id}: falta sprite procedural o externo`);
-const rutas = window.Sprites.overridePaths('agua_almendras');
-for (const ruta of [
-  'assets/sprites/agua_almendras.webp',
-  'assets/sprites/agua_almendras.png',
-  'assets/sprites/agua_almendras.jpg',
-  'assets/sprites/agua_almendras.jpeg',
-  'assets/objetos/agua_almendras.webp',
-  'assets/objetos/agua_almendras.png',
-  'assets/objetos/agua_almendras.jpg',
-  'assets/objetos/agua_almendras.jpeg',
-  'assets/agua_almendras.webp',
-  'assets/agua_almendras.png',
-  'assets/agua_almendras.jpg',
-  'assets/agua_almendras.jpeg',
-]) assert(rutas.includes(ruta), `falta ruta de override: ${ruta}`);
+
+// v30.6: los overrides ya no se sondean — el manifiesto de assets reales es
+// el contrato. Debe existir, cada ruta debe apuntar a un archivo real, y un
+// sprite conocido del repo (agua_almendras) debe estar inventariado.
+require('../game/js/assets-manifest.js');
+const MANIFIESTO = window.ASSETS_MANIFEST;
+assert(MANIFIESTO && MANIFIESTO.sprites, 'falta window.ASSETS_MANIFEST (node pipeline/build-assets-manifest.js)');
+{
+  const fsm = require('fs');
+  const pm = require('path');
+  for (const [seccion, entradas] of Object.entries(MANIFIESTO))
+    for (const [id, ruta] of Object.entries(entradas))
+      assert(fsm.existsSync(pm.join(__dirname, '..', 'game', ruta)),
+        `manifiesto desactualizado: ${seccion}/${id} → ${ruta} no existe (node pipeline/build-assets-manifest.js)`);
+}
+assert.strictEqual(MANIFIESTO.sprites.agua_almendras, 'assets/sprites/agua_almendras.png',
+  'agua_almendras debería estar inventariado desde assets/sprites/');
 
 console.log(`OK catalogo completo: ${ids.length} objetos, ${parsedIncluidos.length} paginas wiki incluidas, ${EXCLUIDOS.size} exclusiones verificadas`);
