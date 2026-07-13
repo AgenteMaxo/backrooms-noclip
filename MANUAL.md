@@ -329,6 +329,9 @@ El servidor arranca solo al encender y se reinicia si se cae.
 - `/kick nombre` · `/mute nombre 10` (minutos) · `/ban nombre` (permanente).
 - `/tp 14` (o `/tp level-483`) — teletransporte de guardián a cualquier nivel:
   tu menú de debug para enseñar niveles en directo.
+- `/reiniciar` — reinicia el servidor desde dentro del juego: anuncia a todos,
+  el proceso se apaga limpio y vuelve solo en ~3 segundos (los jugadores
+  reconectan al Level 0; sus fichas y baneos se conservan).
 
 **D. Mantenimiento:**
 - Actualizar a la última versión: `bash /opt/backrooms-mmo/deploy/desplegar.sh`
