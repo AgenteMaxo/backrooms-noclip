@@ -183,23 +183,25 @@ function detecta(sala, e) {
 }
 
 function atacar(sala, e, jug, ahora) {
-  const def = e.def;
-  const avisa = def.comportamiento !== 'cazador' || !e.yaAviso;
-  if (!e.preparando && avisa) {
-    e.preparando = true;
-    e.yaAviso = true;
-    e.prepHasta = ahora + TELEGRAPH_MS;
-    e.prepObjetivo = jug.id;
-    sala.difundir({ t: 'entPrep', uid: e.uid });
-    return;
-  }
-  golpe(sala, e, jug);
+  // Mientras el aviso está activo, el cerebro vuelve a evaluar la entidad
+  // varias veces. Esas evaluaciones no deben convertir el aviso en un golpe
+  // prematuro ni permitir que el Cazador lo omita tras su primer ataque.
+  if (e.preparando) return;
+  e.preparando = true;
+  e.yaAviso = true;
+  e.prepHasta = ahora + TELEGRAPH_MS;
+  e.prepObjetivo = jug.id;
+  sala.difundir({ t: 'entPrep', uid: e.uid });
 }
 
-function golpe(sala, e, jug) {
+function golpe(sala, e, jug, ahora) {
   e.preparando = false;
   e.prepObjetivo = null;
   if (jug.muerto) return; // los cadáveres no se rematan (muertes dobles en BD)
+  if (ahora < (jug.invulnerableHasta || 0)) {
+    sala.difundir({ t: 'entFalla', uid: e.uid });
+    return;
+  }
   const dano = e.def.dano ?? 10;
   jug.salud = Math.max(0, jug.salud - dano);
   sala.difundir({ t: 'entAtaca', uid: e.uid, id: jug.id, dano });
@@ -213,9 +215,9 @@ function golpe(sala, e, jug) {
 function resolverTelegraph(sala, e, ahora) {
   if (!e.preparando || ahora < e.prepHasta) return;
   const obj = sala.jugadores.get(e.prepObjetivo);
-  if (obj && !obj.escondido && !obj.muerto && adyacente(e, obj)) { golpe(sala, e, obj); return; }
+  if (obj && !obj.escondido && !obj.muerto && adyacente(e, obj)) { golpe(sala, e, obj, ahora); return; }
   const otro = jugadorAdyacente(sala, e);
-  if (otro) { golpe(sala, e, otro); return; }
+  if (otro) { golpe(sala, e, otro, ahora); return; }
   e.preparando = false;
   e.prepObjetivo = null;
   sala.difundir({ t: 'entFalla', uid: e.uid });

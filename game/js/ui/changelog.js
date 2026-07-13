@@ -5,17 +5,21 @@
 (function () {
   const CHANGELOG = [
     { v: 'v28.7', cambios: [
-      'El pelo ahora se dibuja por delante de la ropa (antes podía quedar tapado por cuellos o capuchas).',
-    ] },
-    { v: 'v28.6', cambios: [
+
+      { v: 'v28.6', cambios: [
       'Arreglado: la miniatura de "Parte superior" se veía estirada en el personalizador.',
       'Nueva opción "Sin ropa" en la parte superior del personalizador.',
+      'Arreglado (multijugador): algunas entidades podían golpear casi al instante, sin dar tiempo a esquivar el aviso. (josealmon)',
+      'Nueva protección de 3 segundos al entrar por primera vez a cada nivel, para no morir nada más cruzar. (josealmon)',
     ] },
     { v: 'v28.5', cambios: [
       'La ropa (parte superior e inferior) ya puede animarse al caminar, igual que el resto del personaje.',
+      'Arreglado: la música del menú a veces seguía sonando después de empezar la partida.',
+      'Los campos de contraseña ya no se rellenan solos con datos guardados del navegador.',
     ] },
     { v: 'v28.4', cambios: [
       'Ajuste técnico interno en cómo se cargan las prendas de "Parte superior"/"Parte inferior" — sin cambios para el jugador.',
+      'Más retoques en el sprite del jugador.',
     ] },
     { v: 'v28.3', cambios: [
       'La ropa se divide ahora en "Parte superior" y "Parte inferior", cada una con sus propias opciones.',
@@ -23,6 +27,8 @@
     { v: 'v28.2', cambios: [
       'Más colores fantasía para el cabello y el vello facial (rosa, azul, violeta, verde, rojo), además de los naturales.',
       'El personalizador ya no tiene tope fijo de estilos por categoría — se irán sumando más opciones de pelo, ojos, vello y ropa con el tiempo.',
+      'Nuevo HUD vertical de equipamiento (cara/cuerpo/pies) en la esquina inferior izquierda.',
+      'Retoques en el sprite del jugador.',
     ] },
     { v: 'v28.1', cambios: [
       'Personalización ampliada: ahora también podés elegir vello facial (o dejarlo sin barba) y el tono de piel de tu personaje.',
@@ -30,6 +36,45 @@
     { v: 'v28.0', cambios: [
       'Nuevo botón "Personalizar" en el título: elegí estilo y color de pelo, ojos y ropa antes de despertar en Level 0.',
       'Tu apariencia ahora se ve también para los demás jugadores en la partida online.',
+      'Arreglado (multijugador): las salidas de destino aleatorio a veces daban "nivel fuera del piloto" en vez de cruzar de verdad.',
+      'Arreglado (multijugador): las entidades y el propio jugador podían no verse en el render 2D clásico.',
+      'Arreglado: los sonidos MP3 propios ahora respetan el volumen de Efectos.',
+      'Música ambiental real para Level 2 y Level 15, y nuevos efectos de sonido (dado, pasos, registrar contenedores).',
+      'Música de menú en la pantalla de título, con selector para cambiarla o silenciarla.',
+      'Nueva opción de cámara "bloqueada": sigue automáticamente detrás del personaje al caminar hacia adelante.',
+      'Nuevo selector de resolución interna y de límite de FPS en Ajustes.',
+      'La interfaz ya no se recorta en pantallas bajas: los paneles hacen scroll si hace falta.',
+      'El Changelog y el Códice ahora se cierran con ESC o con un botón "X", además de su botón de siempre.',
+      'Nuevos sprites propios para 11 objetos del inventario.',
+    ] },
+    { v: 'v27.11', cambios: [
+      'Arreglado (multijugador): un pequeño tirón o parón del navegador podía hacerte "rebotar" hacia atrás al moverte.',
+    ] },
+    { v: 'v27.10', cambios: [
+      'Arreglado (multijugador): los objetos del suelo ya recogidos no vuelven a aparecer al volver a entrar a la misma sala.',
+      'Los objetos encontrados en multijugador ahora también se registran en el códice.',
+    ] },
+    { v: 'v27.9', cambios: [
+      'Arreglado (multijugador): recoger dos objetos casi seguidos podía hacer que el segundo desapareciera del mundo sin llegar a tu mochila.',
+    ] },
+    { v: 'v27.8', cambios: [
+      'Arreglado: usar la Llave de Nivel y elegir un destino podía dejarte sin el botón CRUZAR en cualquier salida el resto de la partida.',
+    ] },
+    { v: 'v27.7', cambios: [
+      'Nuevos sprites del personaje, y una capa visual sobre él cuando llevas puesta la máscara de gas.',
+      'Los iconos de la mochila y del HUD ahora también admiten arte personalizado.',
+    ] },
+    { v: 'v27.6', cambios: [
+      'Música ambiental real para Level 6 ("Lights Out").',
+    ] },
+    { v: 'v27.5', cambios: [
+      'Arreglado: en móvil los controles táctiles no aparecían nunca.',
+      'Nuevo joystick para moverte libremente en el modo multijugador, y botón de Ajustes táctil.',
+      'Arreglado: moverte "hacia adelante" en el móvil a veces se desviaba en diagonal sin querer.',
+    ] },
+    { v: 'v27.4', cambios: [
+      'Nuevo panel "Observatorio del Guardián": el streamer puede ver en vivo quién juega, moderar (expulsar/banear) y consultar estadísticas del servidor.',
+      
     ] },
     { v: 'v27.2', cambios: [
       'Nueva pestaña Changelog en la pantalla de título: qué ha cambiado en cada versión, resumido.',
@@ -108,6 +153,23 @@
     ] },
   ];
 
+  // aviso de "hay novedades" en el botón de título: compara con la última
+  // versión vista guardada en localStorage, no con VERSION_JUEGO (este script
+  // carga antes que main.js en el orden de <script> de index.html)
+  const CLAVE_VISTO = 'backrooms-changelog-visto';
+  const ultima = CHANGELOG[0].v;
+
+  function marcarNovedadSiHace() {
+    const boton = document.getElementById('btn-changelog');
+    if (boton && localStorage.getItem(CLAVE_VISTO) !== ultima) boton.classList.add('novedad');
+  }
+
+  function marcarVisto() {
+    localStorage.setItem(CLAVE_VISTO, ultima);
+    const boton = document.getElementById('btn-changelog');
+    if (boton) boton.classList.remove('novedad');
+  }
+
   function render(cont) {
     if (!cont || cont.childElementCount) return; // contenido estático: se pinta una sola vez
     const frag = document.createDocumentFragment();
@@ -131,5 +193,6 @@
     cont.appendChild(frag);
   }
 
-  window.Changelog = { render };
+  window.Changelog = { render, marcarVisto };
+  marcarNovedadSiHace();
 })();

@@ -57,10 +57,33 @@ function conectar(token, nombre) {
   };
 }
 
-
 function sumarMuerte(token) { qMuerte.run(token); }
 function sumarEscape(token) { qEscape.run(token); }
 function registrarVisita(token, nivel) { qVisita.run(token, nivel); }
 function ban(token, si = true) { qBan.run(si ? 1 : 0, token); }
 
-module.exports = { conectar, sumarMuerte, sumarEscape, registrarVisita, ban };
+const qResumen = db.prepare(
+  'SELECT COUNT(*) AS n, COALESCE(SUM(muertes),0) AS m, COALESCE(SUM(escapes),0) AS e, ' +
+  'COALESCE(SUM(baneado),0) AS b FROM jugadores'
+);
+const qActivos = db.prepare('SELECT COUNT(*) AS n FROM jugadores WHERE visto > ?');
+const qTopNiveles = db.prepare(
+  'SELECT nivel, SUM(veces) AS visitas, COUNT(*) AS errantes FROM visitas ' +
+  'GROUP BY nivel ORDER BY visitas DESC LIMIT 12'
+);
+
+// resumen histórico para el observatorio: cuánta gente ha pasado por aquí,
+// cuánta murió/escapó y qué niveles pisan de verdad (decisiones de contenido)
+function resumen() {
+  const f = qResumen.get();
+  const dia = Date.now() - 24 * 3600 * 1000;
+  return {
+    registrados: f.n | 0, muertes: f.m | 0, escapes: f.e | 0, baneados: f.b | 0,
+    activos24h: qActivos.get(dia).n | 0,
+    nivelesTop: qTopNiveles.all().map((r) => ({
+      nivel: r.nivel, visitas: r.visitas | 0, errantes: r.errantes | 0,
+    })),
+  };
+}
+
+module.exports = { db, conectar, sumarMuerte, sumarEscape, registrarVisita, ban, resumen };

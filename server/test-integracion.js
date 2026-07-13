@@ -179,6 +179,36 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(!luzDe, 'sin linterna en mano NO se difunde luzDe');
     ok(!!avisoLuz, 'sin linterna en mano llega el aviso explicativo');
 
+    // --- microparón: el cliente integra 0.6 s y manda el rastro en una ráfaga
+    // de tramos cortos. Deben entrar con el presupuesto acumulado, sin snap ---
+    {
+      const g = c.map.grid;
+      let mejor = null;
+      for (let i = 0; i < 24; i++) {
+        const th = i * Math.PI * 2 / 24;
+        let x = c.x, y = c.y;
+        const puntos = [];
+        for (let j = 0; j < 6; j++) {
+          [x, y] = Fisica.mover(g, x, y, Math.sin(th), -Math.cos(th), 0.1, Fisica.VEL_JUGADOR);
+          puntos.push([x, y]);
+        }
+        const d = Fisica.dist(c.x, c.y, x, y);
+        if (!mejor || d > mejor.d) mejor = { d, puntos };
+      }
+      ok(mejor.d > 1.3, `ruta de microparón recorre ${mejor.d.toFixed(2)} tiles`);
+      const n0r = c.rechazos || 0;
+      await espera(650);
+      for (const [x, y] of mejor.puntos) {
+        c.x = x; c.y = y;
+        c.enviar({
+          t: 'p', x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100,
+          rot: 0, sec: c.sec || 0,
+        });
+      }
+      await espera(300);
+      ok((c.rechazos || 0) === n0r, 'microparón de 0.6 s → rastro aceptado sin rubber-band');
+    }
+
     // --- v24, el VALIDADOR: (a) informes más rápidos que la física legal se
     // rechazan (anti-speedhack) — lo aceptado nunca supera vel×t ---
     {

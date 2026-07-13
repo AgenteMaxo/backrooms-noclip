@@ -13,7 +13,22 @@ const db = require('./db');
 
 let siguienteId = 1;
 const ESCONDITES = new Set(['taquilla', 'nevera', 'archivador']);
+
+// registro de chat reciente para el observatorio: anillo global etiquetado con
+// nivel/instancia. El guardián lo lee por /chat; el juego NO lo difunde (el
+// chat sigue siendo de proximidad — esto es solo la vista de moderación).
+const CHAT_LOG_MAX = 400;
+const chatLog = [];
+let chatSeq = 0;
+function registrarChat(nivel, inst, nombre, txt) {
+  chatLog.push({ seq: ++chatSeq, ts: Date.now(), nivel, inst, nombre, txt });
+  if (chatLog.length > CHAT_LOG_MAX) chatLog.shift();
+}
+function chatReciente(nivel, desdeSeq) {
+  return chatLog.filter((c) => (!nivel || c.nivel === nivel) && c.seq > (desdeSeq | 0));
+}
 const REMODEL_ONLINE = false; // ver nota en tick(): apagada hasta reenviar chunks al entrar
+const PROTECCION_ENTRADA_MS = 3000;
 
 // vector cardinal más cercano a un ángulo θ (0=N, π/2=E, π=S, 3π/2=O)
 function cardinalDe(th) {
@@ -72,6 +87,7 @@ class Sala {
     this.ruido = null;
     this.alCruzar = null; // lo inyecta server.js (cambio de sala)
     this.alMorir = null;  // ídem (respawn en Level 0)
+    this.mensajes = 0;    // observatorio: chats emitidos en esta instancia
   }
 
   get llena() { return this.jugadores.size >= P.CAP_SALA; }
@@ -125,12 +141,18 @@ class Sala {
       apariencia: Apariencia.normalizar(apariencia), // v28: visible para otros (censo/entra)
       esAdmin: false, muteadoHasta: 0,
       ultMov: 0, ultChat: 0, canal: null, ofertaEn: null,
+      // observatorio: cuándo entró al mundo y cuántos informes de posición
+      // ilegales acumula (vel = speedhack, muro = noclip) — señal de auditoría
+      conectadoEn: Date.now(), rechazos: { vel: 0, muro: 0 },
       retorno: null, // puerta personal de vuelta (v23; la pone cambiarDeSala)
+      nivelesProtegidos: new Set(),
+      invulnerableHasta: 0,
       // v24 — autoridad del cliente con validación:
       sec: 0,            // nº de teleport: descarta informes en vuelo tras un salto
       _posT: Date.now(), // hora del último informe (presupuesto de velocidad)
       _margen: 0.8,      // cubeta de distancia disponible (anti-speedhack)
     };
+    this.protegerPrimeraVisita(jug);
     this.prepararCaminata(jug);
     this.enviar(ws, {
       t: 'bienvenida', id, nivel: this.nivelId, inst: this.inst,
@@ -143,6 +165,16 @@ class Sala {
     this.difundir({ t: 'entra', id, nombre, x, y, rot: jug.rot, apariencia: jug.apariencia });
     this.jugadores.set(id, jug);
     return jug;
+  }
+
+  // Una sola ventana de seguridad por nivel y por conexión/run. Al conservar
+  // el Set en `jug` durante los cruces, volver por una puerta no la renueva.
+  protegerPrimeraVisita(jug, ahora = Date.now()) {
+    jug.nivelesProtegidos ||= new Set();
+    if (jug.nivelesProtegidos.has(this.nivelId)) return false;
+    jug.nivelesProtegidos.add(this.nivelId);
+    jug.invulnerableHasta = ahora + PROTECCION_ENTRADA_MS;
+    return true;
   }
 
   // La caminata online es PERSONAL: tus pasos reales en el nivel te van
@@ -243,9 +275,14 @@ class Sala {
     const ahora = Date.now();
     const dt = Math.min(1.5, (ahora - (jug._posT ?? ahora)) / 1000);
     jug._posT = ahora;
-    jug._margen = Math.min(1.3, (jug._margen ?? 0.8) + dt * Fisica.VEL_JUGADOR * 1.12);
+    // El cliente integra hasta 0.6 s tras un microparón y envía el rastro en
+    // tramos cortos. La cubeta guarda ese presupuesto, pero cada informe sigue
+    // limitado a 1.3 tiles para que un salto grande no pase por teleport válido.
+    jug._margen = Math.min(3.2, (jug._margen ?? 0.8) + dt * Fisica.VEL_JUGADOR * 1.12);
     const d = Fisica.dist(jug.x, jug.y, m.x, m.y);
-    if (d > jug._margen || !caminoLegal(this.map.grid, jug.x, jug.y, m.x, m.y)) {
+    const excesoVel = d > 1.3 || d > jug._margen;
+    if (excesoVel || !caminoLegal(this.map.grid, jug.x, jug.y, m.x, m.y)) {
+      if (jug.rechazos) jug.rechazos[excesoVel ? 'vel' : 'muro']++;
       jug.sec = (jug.sec || 0) + 1;
       this.enviar(jug.ws, { t: 'mueve', id: jug.id, x: r2(jug.x), y: r2(jug.y), sec: jug.sec });
       return;
@@ -432,7 +469,15 @@ class Sala {
     if (!si) { jug.ofertaEn = null; return; }
     const s = this.salidaCerca(jug, 1.0);
     if (!s || jug.muerto) return;
-    const def = s.ex.def;
+    const defOriginal = s.ex.def;
+    let def = defOriginal;
+    if (defOriginal.destino === '*aleatoria') {
+      const candidatos = Object.keys(DATA.levels).filter((id) => id !== this.nivelId);
+      const destino = candidatos.length ? this.rng.pick(candidatos) : null;
+      // La definición pertenece al mapa compartido: no convertir la puerta en
+      // un destino fijo para quienes la crucen después.
+      def = { ...defOriginal, destino, _destinoResuelto: destino };
+    }
     if ((def._mec === 'romper' || def._mec === 'romper_suelo') && !def._abierta) return;
     if (!DATA.levels[def.destino]) {
       this.enviar(jug.ws, { t: 'aviso', txt: 'Ese camino no lleva a ninguna parte (nivel fuera del piloto).' });
@@ -857,6 +902,8 @@ class Sala {
       return;
     }
     jug.ultChat = ahora;
+    this.mensajes++;
+    registrarChat(this.nivelId, this.inst, jug.nombre, txt);
     // chat de PROXIMIDAD: solo lo oye quien está a ≤14 casillas del que habla
     // (ni siquiera viaja por la red a los demás — nada de espiar el tráfico)
     const raw = JSON.stringify({ t: 'chat', id: jug.id, txt });
@@ -950,6 +997,66 @@ function estado() {
   };
 }
 
+// Observatorio (solo guardián): el detalle que /estado no da — cada jugador
+// con sus barras, inventario, equipo y rechazos del validador. `dicc` traduce
+// ids de objeto a nombre para que el panel no muestre claves crudas.
+// Los tokens NO viajan enteros (son la credencial del jugador): solo 6 chars
+// para correlacionar con la base de datos a mano si hace falta.
+function observa() {
+  const ahora = Date.now();
+  const dicc = {};
+  const conNombre = (id) => {
+    if (id && !dicc[id]) dicc[id] = (DATA.objects[id] && DATA.objects[id].nombre) || id;
+    return id;
+  };
+  // agregado POR NIVEL: reúne todas las instancias/seeds del mismo nivel
+  // (varias salas «level-0::1», «level-0::2»… suman aquí) — jugadores, chat,
+  // instancias abiertas. Es la vista de negocio: qué niveles se juegan.
+  const porNivel = new Map();
+  for (const s of salas.values()) {
+    const k = s.nivelId;
+    if (!porNivel.has(k)) porNivel.set(k, {
+      nivel: k, nombre: s.def.nombre || k, peligro: s.def.peligro,
+      jugadores: 0, mensajes: 0, instancias: 0, privadas: 0,
+    });
+    const a = porNivel.get(k);
+    a.jugadores += s.jugadores.size;
+    a.mensajes += s.mensajes;
+    a.instancias++;
+    if (s.privada) a.privadas++;
+  }
+
+  return {
+    ...estado(),
+    ahora,
+    niveles: [...porNivel.values()].sort((a, b) => b.jugadores - a.jugadores || b.mensajes - a.mensajes),
+    salas: [...salas.values()].map((s) => ({
+      clave: s.clave, nivel: s.nivelId, nombre: s.def.nombre || s.nivelId,
+      peligro: s.def.peligro, privada: s.privada, semilla: s.semilla,
+      inst: s.inst, mensajes: s.mensajes,
+      entidades: s.entidades.filter((e) => e.viva).map((e) => e.id),
+      jugadores: [...s.jugadores.values()].map((j) => ({
+        id: j.id, nombre: j.nombre, token6: String(j.token || '').slice(0, 6),
+        x: r2(j.x), y: r2(j.y),
+        salud: j.salud, sed: j.sed, cordura: j.cordura,
+        luz: !!j.luz, escondido: !!j.escondido, muerto: !!j.muerto,
+        esAdmin: !!j.esAdmin, muteado: j.muteadoHasta > ahora,
+        conectadoS: Math.round((ahora - (j.conectadoEn || ahora)) / 1000),
+        distSala: Math.round(j.distSala || 0),
+        inv: (j.inv || []).map(conNombre),
+        manos: (j.manos || []).map(conNombre),
+        equipo: {
+          cara: conNombre(j.equipo && j.equipo.cara),
+          cuerpo: conNombre(j.equipo && j.equipo.cuerpo),
+          pies: conNombre(j.equipo && j.equipo.pies),
+        },
+        rechazos: j.rechazos || { vel: 0, muro: 0 },
+      })),
+    })),
+    dicc,
+  };
+}
+
 // caudal de salida: se consolida cada 5 s
 setInterval(() => {
   const dt = (Date.now() - metricas.bytesT) / 1000;
@@ -960,4 +1067,4 @@ setInterval(() => {
 
 function todas() { return [...salas.values()]; }
 
-module.exports = { Sala, asignar, tickTodas, estado, todas, SALA_PUBLICA, GRACIA_SALA_VACIA };
+module.exports = { Sala, asignar, tickTodas, estado, observa, chatReciente, todas, SALA_PUBLICA, GRACIA_SALA_VACIA };

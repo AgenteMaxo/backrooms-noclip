@@ -272,7 +272,9 @@ de ESQUINAS el resultado es caótico (60 ms deciden de qué lado de un pilar sal
 2.3 tiles de desviación máx, irreducible). En un cooperativo la autoridad correcta es el
 CLIENTE: integra su física local (input vectorial o intención av/giro con
 `Fisica.GIRO_JUGADOR`) y reporta `{t:'p', x, y, rot, sec}` ~15/s; `sala.posicion()` VALIDA:
-cubeta de velocidad (anti-speedhack, Σdist ≤ vel·Σt·1.12, techo 1.3), `caminoLegal()`
+cubeta de velocidad (anti-speedhack, Σdist ≤ vel·Σt·1.12, techo acumulado 3.2
+para cubrir el `dtNet` de 0.6 s, pero máximo 1.3 por informe); tras un microparón
+el cliente trocea y reporta el rastro real para conservar curvas junto a paredes; `caminoLegal()`
 (anti-noclip: muestreo cada 0.2 tiles con radio 0.22 — atrapa cualquier muro de 1 tile) y
 `sec` (nº de teleport del servidor: esconder/cruzar/rechazo lo suben y los informes en
 vuelo caducan; el cliente lo ecoa). Informe ilegal → 'mueve' con la última posición válida
@@ -280,8 +282,9 @@ vuelo caducan; el cliente lo ecoa). Informe ilegal → 'mueve' con la última po
 propio se ignora. El servidor ya NO integra jugadores (sí entidades); tick a 20 Hz.
 Escondido = el servidor ignora informes (salir con ESPACIO). bots.js genera el mapa desde
 la semilla y camina con la física real (30 bots → 0 rechazos: sin falsos positivos).
-Tests del validador en test-integracion.js: speedhack ~23 t/s → 0.9 tiles aceptados,
-teleport 2.5 → rechazo+sec, escondite funcional. OJO arneses: ESPACIO junto a una taquilla
+Tests del validador en test-integracion.js: speedhack ~23 t/s queda dentro del presupuesto,
+microparón de 0.6 s acepta el rastro y teleport 2.5 → rechazo+sec; escondite funcional.
+OJO arneses: ESPACIO junto a una taquilla
 te ESCONDE (los informes se ignoran) — salir antes de navegar; y para re-ofertar una
 salida hay que alejarse >1 tile de TODAS (histéresis).
 

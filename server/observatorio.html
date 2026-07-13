@@ -1,0 +1,414 @@
+<!doctype html>
+<!-- OBSERVATORIO DEL GUARDIÁN — panel de observabilidad en tiempo real del MMO.
+     Se sirve en /observatorio y consume /observa?clave=<MMO_ADMIN> cada 2 s.
+     Sin dependencias, como todo el proyecto. -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Observatorio — Backrooms MMO</title>
+<style>
+  :root {
+    --fondo: #121006; --panel: #1c1909; --borde: #3a3413;
+    --tinta: #d8cf9d; --apagado: #8a815a; --ambar: #c8b866;
+    --ok: #7fae62; --aviso: #c8964a; --mal: #c05b4a; --azul: #6d95b5;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  [hidden] { display: none !important; }
+  body {
+    background: var(--fondo); color: var(--tinta);
+    font: 14px/1.45 'Segoe UI', system-ui, sans-serif;
+    padding: 16px; max-width: 1400px; margin: 0 auto;
+  }
+  h1 { font-size: 18px; letter-spacing: 2px; color: var(--ambar); }
+  h1 small { color: var(--apagado); font-weight: normal; letter-spacing: 0; }
+  .fila { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+  input, button {
+    background: var(--panel); color: var(--tinta); border: 1px solid var(--borde);
+    border-radius: 4px; padding: 6px 10px; font: inherit;
+  }
+  button { cursor: pointer; } button:hover { border-color: var(--ambar); }
+  #error { color: var(--mal); }
+  /* losetas de métricas globales */
+  #losetas, .losetas { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+  .loseta {
+    background: var(--panel); border: 1px solid var(--borde); border-radius: 6px;
+    padding: 8px 14px; min-width: 108px;
+  }
+  .loseta b { display: block; font-size: 20px; color: var(--ambar); }
+  .loseta span { font-size: 11px; color: var(--apagado); text-transform: uppercase; letter-spacing: 1px; }
+  .loseta.mal b { color: var(--mal); }
+  /* salas */
+  .sala {
+    background: var(--panel); border: 1px solid var(--borde); border-radius: 6px;
+    padding: 10px 12px; margin: 10px 0;
+  }
+  .sala h2 { font-size: 15px; color: var(--ambar); }
+  .sala h2 .meta { color: var(--apagado); font-size: 12px; font-weight: normal; margin-left: 8px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 6px; }
+  th, td { text-align: left; padding: 4px 8px; border-top: 1px solid var(--borde); vertical-align: top; }
+  th { font-size: 11px; color: var(--apagado); text-transform: uppercase; letter-spacing: 1px; border-top: 0; }
+  /* barras de estado */
+  .barra { display: inline-block; width: 52px; height: 7px; background: #000; border-radius: 3px; overflow: hidden; vertical-align: middle; margin-right: 4px; }
+  .barra i { display: block; height: 100%; }
+  .num { font-size: 11px; color: var(--apagado); }
+  .chip {
+    display: inline-block; background: #000; border: 1px solid var(--borde);
+    border-radius: 3px; padding: 1px 6px; margin: 1px 2px 1px 0; font-size: 12px;
+  }
+  .chip.mano { border-color: var(--azul); }
+  .chip.puesto { border-color: var(--ok); }
+  .alerta { color: var(--mal); font-weight: bold; }
+  .flags { font-size: 15px; }
+  .vacio { color: var(--apagado); font-style: italic; }
+  /* gráficos de barras (sin dependencias) */
+  .paneles { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin: 12px 0; }
+  .grafico { background: var(--panel); border: 1px solid var(--borde); border-radius: 6px; padding: 10px 14px; }
+  .grafico h3 { font-size: 12px; color: var(--apagado); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .cfila { display: flex; align-items: center; gap: 8px; margin: 3px 0; font-size: 13px; }
+  .cetq { width: 130px; flex: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tinta); }
+  .cpista { flex: 1; background: #000; border-radius: 3px; height: 16px; overflow: hidden; }
+  .crelleno { display: block; height: 100%; border-radius: 3px; transition: width .4s ease; }
+  .cval { width: 42px; flex: none; text-align: right; color: var(--ambar); font-variant-numeric: tabular-nums; }
+  .seed { font-family: ui-monospace, monospace; font-size: 11px; color: var(--azul); }
+  /* filas compactas: vitales como números de colores */
+  table.compacta th, table.compacta td { padding: 2px 8px; }
+  .vitals b { font-variant-numeric: tabular-nums; }
+  .vitals .sep { color: var(--apagado); margin: 0 2px; }
+  /* moderación: botones que aparecen al pasar el ratón por la fila */
+  .cel-alerta { white-space: nowrap; }
+  /* botones de moderación de la TABLA: siempre visibles (no descuadran) */
+  .mods { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
+  /* variante del GRÁFICO de alertas: aparecen al pasar el ratón por la fila,
+     con el hueco reservado (visibility) para que la barra no salte */
+  .cmods { visibility: hidden; margin-left: 8px; }
+  .cfila:hover .cmods { visibility: visible; }
+  .mod { padding: 1px 7px; font-size: 11px; border-radius: 3px; cursor: pointer;
+    background: #000; border: 1px solid var(--borde); color: var(--tinta); }
+  .mod.kick:hover { border-color: var(--aviso); color: var(--aviso); }
+  .mod.ban:hover { border-color: var(--mal); color: var(--mal); }
+  /* gráfico de chat: filas clicables */
+  .cfila.clic { cursor: pointer; border-radius: 3px; padding: 1px 3px; }
+  .cfila.clic:hover { background: #000; }
+  .cfila.clic .cetq::after { content: ' ▸'; color: var(--apagado); }
+  /* chat en vivo */
+  #chatvivo { background: var(--panel); border: 1px solid var(--azul); border-radius: 6px; margin: 12px 0; }
+  .cv-cab { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--borde); }
+  .cv-cab b { color: var(--azul); }
+  #cv-x { background: #000; border: 1px solid var(--borde); color: var(--tinta); border-radius: 4px; padding: 3px 10px; cursor: pointer; }
+  .cv-lista { max-height: 240px; overflow-y: auto; padding: 8px 12px; font-size: 13px; }
+  .cv-msg { padding: 2px 0; }
+  .cv-hora { color: var(--apagado); font-size: 11px; }
+  .cv-inst { color: var(--azul); font-size: 11px; }
+  .cv-msg b { color: var(--ambar); }
+  .cv-vacio { color: var(--apagado); font-style: italic; }
+  /* toast de resultado de moderación */
+  #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: var(--panel); border: 1px solid var(--ambar); color: var(--tinta);
+    padding: 10px 18px; border-radius: 6px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 9; }
+  #toast.ver { opacity: 1; }
+  #historico td, #historico th { border-top: 1px solid var(--borde); }
+  details { margin: 14px 0; }
+  summary { cursor: pointer; color: var(--ambar); letter-spacing: 1px; }
+  @media (max-width: 800px) { .col-inv { display: none; } }
+</style>
+</head>
+<body>
+<h1>⬢ OBSERVATORIO <small>— Backrooms MMO</small></h1>
+
+<div class="fila" id="acceso">
+  <input id="clave" type="password" placeholder="clave de guardián" autocomplete="off">
+  <button id="entrar">Observar</button>
+  <span id="error"></span>
+</div>
+
+<div id="tablero" hidden>
+  <div class="fila">
+    <input id="busca" placeholder="filtrar errante o nivel…">
+    <button id="pausa">⏸ Pausar</button>
+    <span class="num" id="reloj"></span>
+  </div>
+  <div id="losetas"></div>
+  <div class="paneles" id="paneles"></div>
+  <div id="chatvivo" hidden></div>
+  <div id="salas"></div>
+  <details open>
+    <summary>HISTÓRICO (base de datos)</summary>
+    <div id="historico"></div>
+  </details>
+</div>
+
+<script>
+'use strict';
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let clave = sessionStorage.getItem('obs-clave') || '';
+  let pausado = false, temporizador = null;
+
+  const esc = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  function colorBarra(v) { return v > 60 ? 'var(--ok)' : v > 30 ? 'var(--aviso)' : 'var(--mal)'; }
+  function numColor(v) { return `<b style="color:${colorBarra(v)}">${v}</b>`; }
+  function hms(s) {
+    const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+    return h ? `${h}h ${m}m` : m ? `${m}m ${s % 60}s` : `${s}s`;
+  }
+  function chips(ids, dicc, clase) {
+    const vivos = (ids || []).filter(Boolean);
+    if (!vivos.length) return '<span class="vacio">—</span>';
+    return vivos.map((i) => `<span class="chip ${clase || ''}">${esc(dicc[i] || i)}</span>`).join('');
+  }
+
+  function loseta(valor, nombre, mal) {
+    return `<div class="loseta ${mal ? 'mal' : ''}"><b>${esc(valor)}</b><span>${esc(nombre)}</span></div>`;
+  }
+
+  // gráfico de barras horizontales a partir de [{etq, val, k?}]. Si `clicable`,
+  // cada fila lleva data-chatnivel=k y responde al clic (chat en vivo).
+  function grafico(titulo, filas, color, clicable, extraFn) {
+    const max = Math.max(1, ...filas.map((f) => f.val));
+    const cuerpo = filas.length ? filas.map((f) => `
+      <div class="cfila ${clicable ? 'clic' : ''}" ${clicable ? `data-chatnivel="${esc(f.k)}"` : ''}>
+        <span class="cetq" title="${esc(f.etq)}">${esc(f.etq)}</span>
+        <span class="cpista"><span class="crelleno" style="width:${(f.val / max * 100).toFixed(1)}%;background:${color}"></span></span>
+        <span class="cval">${esc(f.val)}</span>${extraFn ? extraFn(f) : ''}
+      </div>`).join('') : '<p class="vacio">sin datos</p>';
+    return `<div class="grafico"><h3>${esc(titulo)}</h3>${cuerpo}</div>`;
+  }
+
+  // botones kick/ban reutilizables (tabla y gráfico de alertas)
+  function modsBotones(id, nombre, cls) {
+    const n = String(nombre).replace(/"/g, '&quot;');
+    return `<span class="mods ${cls || ''}">` +
+      `<button class="mod kick" data-id="${id}" data-n="${n}">kick</button>` +
+      `<button class="mod ban" data-id="${id}" data-n="${n}">ban</button></span>`;
+  }
+
+  // errantes con rechazos del validador, de mayor a menor (para el gráfico)
+  function alertasOrdenadas(d) {
+    const filas = [];
+    for (const s of d.salas)
+      for (const j of s.jugadores) {
+        const total = j.rechazos.vel + j.rechazos.muro;
+        if (total > 0) filas.push({ etq: `${j.nombre} (${j.rechazos.vel ? 'speed' : ''}${j.rechazos.vel && j.rechazos.muro ? '+' : ''}${j.rechazos.muro ? 'noclip' : ''})`, val: total, id: j.id, nombre: j.nombre });
+      }
+    return filas.sort((a, b) => b.val - a.val).slice(0, 10);
+  }
+
+  function pintar(d) {
+    $('reloj').textContent = `actualizado ${new Date(d.ahora).toLocaleTimeString()} · protocolo v${d.protocolo} · ${d.node}`;
+    $('losetas').innerHTML =
+      loseta(d.total, 'errantes') +
+      loseta(d.salas.length, 'salas vivas') +
+      loseta(d.tick.medioMs + ' ms', 'tick medio', d.tick.medioMs > 25) +
+      loseta(d.tick.maxMs + ' ms', 'tick máx', d.tick.maxMs > 45) +
+      loseta(d.memoriaMB + ' MB', 'memoria') +
+      loseta(d.salidaKBs + ' KB/s', 'salida red') +
+      loseta(hms(d.uptimeS), 'en pie');
+
+    // panorama por nivel: reúne todas las seeds/instancias del mismo nivel
+    const niveles = (d.niveles || []).filter((n) => n.jugadores > 0 || n.mensajes > 0);
+    const nombreNivel = (n) => `${n.nombre}${n.instancias > 1 ? ` (${n.instancias} seeds)` : ''}`;
+    $('paneles').innerHTML =
+      grafico('👥 jugadores por nivel', niveles.map((n) => ({ etq: nombreNivel(n), val: n.jugadores })), 'var(--ambar)') +
+      grafico('💬 chat por nivel (clic → chat en vivo)', niveles.slice().sort((a, b) => b.mensajes - a.mensajes).map((n) => ({ etq: n.nombre, val: n.mensajes, k: n.nivel })), 'var(--azul)', true) +
+      grafico('⚠ alertas por errante (hover → moderar)', alertasOrdenadas(d), 'var(--mal)', false,
+        (f) => modsBotones(f.id, f.nombre, 'cmods'));
+
+    const filtro = $('busca').value.trim().toLowerCase();
+    const salas = d.salas
+      .filter((s) => s.jugadores.length)
+      .filter((s) => !filtro || s.clave.toLowerCase().includes(filtro) ||
+        (s.nombre || '').toLowerCase().includes(filtro) ||
+        s.jugadores.some((j) => j.nombre.toLowerCase().includes(filtro)))
+      .sort((a, b) => b.jugadores.length - a.jugadores.length);
+
+    $('salas').innerHTML = salas.length ? salas.map((s) => {
+      const jugadores = (filtro && !s.clave.toLowerCase().includes(filtro) &&
+        !(s.nombre || '').toLowerCase().includes(filtro))
+        ? s.jugadores.filter((j) => j.nombre.toLowerCase().includes(filtro)) : s.jugadores;
+      const filas = jugadores.map((j) => {
+        const flags = [
+          j.muerto && '💀', j.escondido && '🫥', j.luz && '🔦',
+          j.esAdmin && '🔑', j.muteado && '🔇',
+        ].filter(Boolean).join(' ');
+        const rech = j.rechazos.vel + j.rechazos.muro;
+        const puesto = [j.equipo.cara, j.equipo.cuerpo, j.equipo.pies];
+        const mods = modsBotones(j.id, j.nombre);
+        const alerta = rech
+          ? `<span class="alerta" title="velocidad ${j.rechazos.vel} · muros ${j.rechazos.muro}">⚠ ${rech}</span>`
+          : '<span class="num">0</span>';
+        return `<tr>
+          <td><b>${esc(j.nombre)}</b><span class="num">#${j.id} · ${esc(j.token6)}…</span></td>
+          <td class="vitals">${numColor(j.salud)}<span class="sep">/</span>${numColor(j.sed)}<span class="sep">/</span>${numColor(j.cordura)}</td>
+          <td class="num">${j.x}, ${j.y}<br>${j.distSala} tiles</td>
+          <td>${chips(j.manos, d.dicc, 'mano')}</td>
+          <td class="col-inv">${chips(j.inv, d.dicc)}</td>
+          <td>${chips(puesto, d.dicc, 'puesto')}</td>
+          <td class="num">${hms(j.conectadoS)}</td>
+          <td class="cel-alerta">${alerta}${mods}</td>
+          <td class="flags">${flags}</td>
+        </tr>`;
+      }).join('');
+      return `<div class="sala">
+        <h2>${esc(s.nombre)} <span class="meta">instancia #${s.inst}${s.privada ? ' · privada' : ''}
+          · peligro ${s.peligro ?? '?'} · ${s.jugadores.length} errante${s.jugadores.length === 1 ? '' : 's'}
+          · ${s.entidades.length} entidad${s.entidades.length === 1 ? '' : 'es'}
+          · 💬 ${s.mensajes} · <span class="seed">${esc(s.semilla)}</span></span></h2>
+        <table class="compacta"><tr><th>errante</th><th title="salud / sed / cordura">❤ / 💧 / 🧠</th><th>posición</th>
+          <th>manos</th><th class="col-inv">mochila</th><th>vistiendo</th>
+          <th>tiempo</th><th title="informes de posición rechazados por el validador">⚠ rech.</th><th></th></tr>
+          ${filas}</table>
+      </div>`;
+    }).join('') : '<p class="vacio">No hay nadie caminando por las Backrooms ahora mismo.</p>';
+
+    const h = d.historico;
+    $('historico').innerHTML = `
+      <div class="losetas" style="margin-top:8px">
+        ${loseta(h.registrados, 'errantes registrados')}
+        ${loseta(h.activos24h, 'activos 24 h')}
+        ${loseta(h.muertes, 'muertes')}
+        ${loseta(h.escapes, 'escapes')}
+        ${loseta(h.baneados, 'baneados', h.baneados > 0)}
+      </div>
+      <table style="max-width:520px"><tr><th>nivel</th><th>visitas</th><th>errantes distintos</th></tr>
+        ${h.nivelesTop.map((n) => `<tr><td>${esc(n.nivel)}</td><td>${n.visitas}</td><td>${n.errantes}</td></tr>`).join('')}
+      </table>`;
+  }
+
+  // ---------- toast de resultado ----------
+  let toastT = null;
+  function toast(txt) {
+    let el = $('toast');
+    if (!el) { el = document.createElement('div'); el.id = 'toast'; document.body.appendChild(el); }
+    el.textContent = txt;
+    el.classList.add('ver');
+    clearTimeout(toastT);
+    toastT = setTimeout(() => el.classList.remove('ver'), 3500);
+  }
+
+  // ---------- moderación (kick / ban) ----------
+  async function moderar(id, accion, nombre) {
+    if (!confirm(`¿${accion.toUpperCase()} a ${nombre}?` +
+      (accion === 'ban' ? '\n\nNo podrá volver a entrar con este navegador.' : ''))) return;
+    try {
+      const r = await fetch('/accion', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ clave, accion, id }),
+      });
+      const d = await r.json();
+      toast(d.ok ? d.msg : (d.error || `error ${r.status}`));
+      refrescar();
+    } catch (e) { toast('sin conexión con el servidor'); }
+  }
+
+  // ---------- chat en vivo por nivel ----------
+  let chatV = null; // { nivel, seq, timer }
+  function cerrarChatVivo() {
+    if (chatV) { clearInterval(chatV.timer); chatV = null; }
+    const c = $('chatvivo'); c.hidden = true; c.innerHTML = '';
+  }
+  function abrirChatVivo(nivel) {
+    cerrarChatVivo();
+    const c = $('chatvivo');
+    c.hidden = false;
+    c.innerHTML = `<div class="cv-cab"><b>💬 chat en vivo — ${esc(nivel)}</b>` +
+      `<button id="cv-x">cerrar ✕</button></div>` +
+      `<div class="cv-lista" id="cv-lista"><span class="cv-vacio">esperando mensajes…</span></div>`;
+    $('cv-x').onclick = cerrarChatVivo;
+    chatV = { nivel, seq: 0, timer: null };
+    c.scrollIntoView({ block: 'nearest' });
+    tickChat();
+    chatV.timer = setInterval(tickChat, 1200);
+  }
+  async function tickChat() {
+    if (!chatV) return;
+    try {
+      const r = await fetch(`/chat?clave=${encodeURIComponent(clave)}&nivel=${encodeURIComponent(chatV.nivel)}&desde=${chatV.seq}`, { cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      const lista = $('cv-lista');
+      if (!lista || !d.mensajes.length) return;
+      lista.querySelector('.cv-vacio')?.remove();
+      for (const m of d.mensajes) {
+        chatV.seq = Math.max(chatV.seq, m.seq);
+        const li = document.createElement('div');
+        li.className = 'cv-msg';
+        li.innerHTML = `<span class="cv-hora">${new Date(m.ts).toLocaleTimeString()}</span> ` +
+          `<span class="cv-inst">#${m.inst}</span> <b>${esc(m.nombre)}</b>: ${esc(m.txt)}`;
+        lista.appendChild(li);
+      }
+      while (lista.children.length > 200) lista.removeChild(lista.firstChild);
+      lista.scrollTop = lista.scrollHeight;
+    } catch (e) {}
+  }
+
+  async function refrescar() {
+    if (pausado || !clave) return;
+    try {
+      const r = await fetch('/observa?clave=' + encodeURIComponent(clave), { cache: 'no-store' });
+      if (!r.ok) {
+        const cuerpo = await r.json().catch(() => ({}));
+        sessionStorage.removeItem('obs-clave');
+        clave = '';
+        clearInterval(temporizador);
+        cerrarChatVivo();
+        $('tablero').hidden = true;
+        $('acceso').hidden = false;
+        $('error').textContent = cuerpo.error || `error ${r.status}`;
+        return;
+      }
+      pintar(await r.json());
+      $('error').textContent = '';
+    } catch (e) {
+      $('reloj').textContent = 'sin conexión con el servidor… reintentando';
+    }
+  }
+
+  let listeners = false;
+  function arrancar() {
+    $('acceso').hidden = true;
+    $('tablero').hidden = false;
+    if (!listeners) {
+      // delegación (persiste aunque pintar() rehaga el HTML interno)
+      const clicMod = (e) => {
+        const b = e.target.closest('.mod');
+        if (!b) return false;
+        moderar(+b.getAttribute('data-id'),
+          b.classList.contains('ban') ? 'ban' : 'kick', b.getAttribute('data-n'));
+        return true;
+      };
+      $('salas').addEventListener('click', clicMod);
+      $('paneles').addEventListener('click', (e) => {
+        if (clicMod(e)) return; // botón kick/ban del gráfico de alertas
+        const row = e.target.closest('.cfila.clic[data-chatnivel]');
+        if (row) abrirChatVivo(row.getAttribute('data-chatnivel'));
+      });
+      listeners = true;
+    }
+    refrescar();
+    clearInterval(temporizador);
+    temporizador = setInterval(refrescar, 2000);
+  }
+
+  $('entrar').onclick = () => {
+    clave = $('clave').value.trim();
+    if (!clave) return;
+    sessionStorage.setItem('obs-clave', clave);
+    arrancar();
+  };
+  $('clave').onkeydown = (e) => { if (e.key === 'Enter') $('entrar').onclick(); };
+  $('pausa').onclick = () => {
+    pausado = !pausado;
+    $('pausa').textContent = pausado ? '▶ Reanudar' : '⏸ Pausar';
+    if (!pausado) refrescar();
+  };
+  $('busca').oninput = refrescar;
+
+  if (clave) arrancar();
+})();
+</script>
+</body>
+</html>

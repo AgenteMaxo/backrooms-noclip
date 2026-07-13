@@ -15,6 +15,8 @@
   } catch (e) {}
   let ambientStop = null;
   let ambientAudioEl = null;
+  let menuAudioEl = null;
+  let menuAudioSrc = null;
   let idleStop = null;
   const overrides = {};
   const entityLoops = {};
@@ -238,7 +240,7 @@
     try {
       if (muted) return;
       const ov = overrides[nombre];
-      if (ov) { const el = ov.cloneNode(); el.volume = vol; el.play().catch(() => {}); return; }
+      if (ov) { const el = ov.cloneNode(); el.volume = Math.min(1, vol * volFx); el.play().catch(() => {}); return; }
       if (!ctx) return;
       SYNTH[nombre]?.(arg);
     } catch (e) {}
@@ -593,6 +595,7 @@
       if (ambBus) ambBus.gain.value = volAmb;
     }
     if (ambientAudioEl) ambientAudioEl.volume = Math.min(1, 0.62 * vol * volAmb);
+    if (menuAudioEl) menuAudioEl.volume = Math.min(1, 0.62 * vol * volAmb);
   }
 
   // pad suave para la tarjeta entre niveles y pantallas de fin
@@ -629,19 +632,57 @@
     } catch (e) {}
   }
 
+  function playMenu(src) {
+    // Si viene la misma canción y ya está sonando, no reiniciar
+    if (menuAudioSrc === src && menuAudioEl) return;
+    
+    stopMenu();
+    menuAudioSrc = src;
+    if (!src || muted || !ctx) {
+      return;
+    }
+    try {
+      const el = new window.Audio(src);
+      el.loop = true;
+      el.volume = Math.min(1, 0.62 * vol * volAmb);
+      el.play().then(() => {
+        menuAudioEl = el;
+      }).catch(e => {});
+    } catch (e) {}
+  }
+
+  function stopMenu() {
+    if (menuAudioEl) {
+      try {
+        menuAudioEl.pause();
+        menuAudioEl.src = '';
+      } catch (e) {}
+      menuAudioEl = null;
+    }
+    menuAudioSrc = null;
+  }
+
   function toggleMute() {
     muted = !muted;
     try { localStorage.setItem('backrooms-mute', muted ? '1' : '0'); } catch (e) {}
     if (master) master.gain.value = muted ? 0 : vol;
-    if (muted) for (const loop of Object.values(entityLoops)) if (loop.el) loop.el.pause();
-    if (muted) stopAmbient();
-    else if (window.Game?.world?.level) ambient(window.Game.world.level);
+    if (muted) {
+      for (const loop of Object.values(entityLoops)) if (loop.el) loop.el.pause();
+      stopAmbient();
+      if (menuAudioEl) {
+        try { menuAudioEl.pause(); } catch (e) {}
+        menuAudioEl = null;
+      }
+    } else {
+      if (window.Game?.world?.level) ambient(window.Game.world.level);
+      if (menuAudioSrc) playMenu(menuAudioSrc);
+    }
     return muted;
   }
 
   window.Sfx = {
     unlock, play, cue, cueDist, entityLoop, updateEntityLoops, ambient, stopAmbient, toggleMute, setVolume, idle,
-    level0Flicker,
+    level0Flicker, playMenu, stopMenu,
     get muted() { return muted; },
     get volumen() { return vol; },
     get volumenFx() { return volFx; },

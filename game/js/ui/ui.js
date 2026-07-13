@@ -12,6 +12,11 @@
 
   function show(name) {
     if (name !== 'end') document.body.classList.remove('smiler-death');
+    // el CSS de controles táctiles/aviso de orientación cuelga de estas
+    // clases en <body> (game-active, card-active) — sin esto #touch-controls
+    // se queda en display:none para siempre pese al media query pointer:coarse
+    document.body.classList.toggle('game-active', name === 'game');
+    document.body.classList.toggle('card-active', name === 'card');
     // fundido cosmético; el swap de display es SÍNCRONO (el selftest lo exige)
     const fade = $('fade');
     if (fade && !window.NOFX) {
@@ -66,7 +71,7 @@
   $('btn-log-close').onclick = () => toggleLog(false);
   if (window.Icons) Icons.set($('btn-log'), 'pergamino', 15);
 
-  // ---------- HUD (v15: limpio y contextual — manos + mochila, sin barras) ----------
+  // ---------- HUD (v15+: limpio y contextual — manos, equipo y mochila) ----------
   const ICONOS_INV = {
     agua_almendras: 'refresco', botiquin: 'botiquin', linterna: 'linterna',
     chaqueta: 'chaqueta', amuleto: 'cuadro', llave_nivel: 'llave',
@@ -92,11 +97,11 @@
   function updateHUD() {
     if (!world.player || !world.level) return;
     renderManos();
+    renderEquipo();
     renderMoodles();
     renderDebugStats();
     if ($('backpack-panel').style.display !== 'none') {
       renderBackpack();
-      renderEquipo();
       renderEfectos();
     }
   }
@@ -224,7 +229,11 @@
   }
 
   function highlightSlots(active, itemId) {
-    for (const id of ['bp-mano-0', 'bp-mano-1', 'mano-0', 'mano-1', 'eq-cara', 'eq-cuerpo', 'eq-pies']) {
+    for (const id of [
+      'bp-mano-0', 'bp-mano-1', 'mano-0', 'mano-1',
+      'eq-cara', 'eq-cuerpo', 'eq-pies',
+      'hud-eq-cara', 'hud-eq-cuerpo', 'hud-eq-pies',
+    ]) {
       const el = $(id);
       if (el) el.classList.remove('slot-highlight-valid');
     }
@@ -232,8 +241,10 @@
     const def = world.data.objects[itemId];
     if (!def) return;
     if (def.equipo) {
-      const el = $('eq-' + def.equipo);
-      if (el) el.classList.add('slot-highlight-valid');
+      for (const id of ['eq-' + def.equipo, 'hud-eq-' + def.equipo]) {
+        const el = $(id);
+        if (el) el.classList.add('slot-highlight-valid');
+      }
     } else {
       for (const id of ['bp-mano-0', 'bp-mano-1', 'mano-0', 'mano-1']) {
         const el = $(id);
@@ -287,24 +298,30 @@
   }
 
   // ---------- equipamiento vestible (v20): cara / cuerpo / pies ----------
+  function pintarRanuraEquipo(el, tipo, objetoId, enHud) {
+    if (!el) return;
+    el.innerHTML = '';
+    el.classList.toggle('puesto', !!objetoId);
+    if (objetoId) {
+      const def = world.data.objects[objetoId];
+      if (window.Icons) el.appendChild(Icons.img(ICONOS_INV[objetoId] || 'interrogante', 26));
+      el.title = enHud ? `${def.nombre} (${tipo})` : `${def.nombre} (clic: quitártelo)`;
+    } else {
+      const ph = document.createElement('span');
+      ph.className = 'eq-ph';
+      ph.textContent = tipo;
+      el.appendChild(ph);
+      el.title = enHud
+        ? `${tipo}: no llevas nada`
+        : `Ranura de ${tipo} (arrastra aquí una prenda)`;
+    }
+  }
   function renderEquipo() {
     const eq = world.player.equipo || {};
     for (const tipo of ['cara', 'cuerpo', 'pies']) {
-      const el = $('eq-' + tipo);
-      if (!el) continue;
-      el.innerHTML = '';
-      el.classList.toggle('puesto', !!eq[tipo]);
-      if (eq[tipo]) {
-        const def = world.data.objects[eq[tipo]];
-        if (window.Icons) el.appendChild(Icons.img(ICONOS_INV[eq[tipo]] || 'interrogante', 26));
-        el.title = `${def.nombre} (clic: quitártelo)`;
-      } else {
-        const ph = document.createElement('span');
-        ph.className = 'eq-ph';
-        ph.textContent = tipo;
-        el.appendChild(ph);
-        el.title = `Ranura de ${tipo} (arrastra aquí una prenda)`;
-      }
+      const id = eq[tipo];
+      pintarRanuraEquipo($('eq-' + tipo), tipo, id, false);
+      pintarRanuraEquipo($('hud-eq-' + tipo), tipo, id, true);
     }
   }
 
@@ -622,6 +639,8 @@
     else if (def.tipo === 'arriesgada' && def.riesgoVoid > 0)
       warn.textContent = `⚠ Camino inestable (riesgo de caer al Vacío) → ${destinoNombre ?? '???'}`;
     else warn.textContent = destinoNombre ? `→ ${destinoNombre}` : '→ ¿?';
+    // showLevelPicker oculta CRUZAR; si se eligió nivel (no «quedarse»), nadie lo restauraba
+    $('btn-cross').style.display = '';
     $('btn-cross').onclick = () => { hideExitModal(); Game.crossExit(def); };
     $('btn-stay').onclick = hideExitModal;
   }
@@ -1126,7 +1145,11 @@
         world.busy = false;
     }
   }
-  $('btn-codex-close').onclick = () => toggleCodex(false);
+  if ($('btn-codex-close')) $('btn-codex-close').onclick = () => toggleCodex(false);
+  if ($('btn-codex-close-top')) $('btn-codex-close-top').onclick = () => toggleCodex(false);
+  $('codex-panel').onclick = (ev) => {
+    if (ev.target === $('codex-panel') || ev.target.classList.contains('codex-box-wrapper')) toggleCodex(false);
+  };
 
   // ---------- changelog ----------
   let changelogVisible = false;
@@ -1141,7 +1164,10 @@
         world.busy = false;
     }
   }
-  $('btn-changelog-close').onclick = () => toggleChangelog(false);
+  if ($('btn-changelog-close-top')) $('btn-changelog-close-top').onclick = () => toggleChangelog(false);
+  $('changelog-panel').onclick = (ev) => {
+    if (ev.target === $('changelog-panel') || ev.target.classList.contains('codex-box-wrapper')) toggleChangelog(false);
+  };
 
   // ---------- fin ----------
   function showEnd(victoria, causa) {
