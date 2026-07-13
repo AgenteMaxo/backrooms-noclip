@@ -4,6 +4,13 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
+    { v: 'v28.10', cambios: [
+      'La portada ahora muestra cuántos errantes están conectados en este momento. (josealmon)',
+      'Arreglado (multijugador): cerrar el códice o el changelog con ESC o su tecla podía dejar la cámara sin responder al clic. (Gartixr)',
+      'Arreglado (multijugador): el sprite del personaje parpadeaba entre dos poses al andar en diagonal, y elegía mal el lado con la cámara girada. (Gartixr y carlosdiezm)',
+      'Arreglado (multijugador): los nombres y bocadillos de jugadores situados detrás de la cámara ya no se dibujan delante. (Gartixr)',
+      'Los pasos suenan a un ritmo creíble y proporcional a lo que avanzas (antes sonaban a metralleta), con ligera variación de tono entre zancadas. (Gartixr)',
+    ] },
     { v: 'v28.9', cambios: [
       'Nuevo comando de guardián /reiniciar: reinicia el servidor desde el chat — avisa a todos y el mundo vuelve solo en unos segundos (las fichas de jugador se conservan).',
     ] },
