@@ -437,8 +437,17 @@ function comando(jug, sala, linea) {
       sala.enviar(jug.ws, { t: 'aviso', txt: 'Clave actualizada para esta sesión, pero no se pudo guardar en disco.' });
     }
     console.log(`[admin] ${jug.nombre}#${jug.id} cambió la clave de guardián`);
+  } else if (cmd === '/reiniciar') {
+    // reinicio del PROCESO desde el chat: el guardián avisa a todos, el
+    // proceso sale limpio y systemd (Restart=always) lo revive en ~3 s; los
+    // clientes reconectan solos. El mundo vivo (salas/posiciones) se pierde
+    // —está en memoria—; jugadores, visitas y baneos persisten en mmo.db.
+    for (const s of salasVivas())
+      s.difundir({ t: 'anuncio', txt: 'El guardián reinicia la realidad. Las Backrooms parpadean: volvéis en unos segundos…' });
+    console.log(`[admin] ${jug.nombre}#${jug.id} reinicia el servidor`);
+    setTimeout(() => process.exit(0), 1200); // margen para que el anuncio llegue
   } else {
-    sala.enviar(jug.ws, { t: 'aviso', txt: 'Comandos: /anuncio <txt> · /kick <nombre> · /mute <nombre> [min] · /ban <nombre> · /tp <nivel> · /give <objeto> · /admin-clave <nueva>' });
+    sala.enviar(jug.ws, { t: 'aviso', txt: 'Comandos: /anuncio <txt> · /kick <nombre> · /mute <nombre> [min] · /ban <nombre> · /tp <nivel> · /give <objeto> · /admin-clave <nueva> · /reiniciar' });
   }
 }
 

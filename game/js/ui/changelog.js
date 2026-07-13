@@ -4,6 +4,9 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
+    { v: 'v28.9', cambios: [
+      'Nuevo comando de guardián /reiniciar: reinicia el servidor desde el chat — avisa a todos y el mundo vuelve solo en unos segundos (las fichas de jugador se conservan).',
+    ] },
     { v: 'v28.8', cambios: [
       'El riesgo de caer al Vacío al cruzar una salida arriesgada ya funciona también en multijugador (antes solo en modo solo). (AgenteMaxo)',
       'Nueva salida de emergencia en Level 0 hacia Level 14: puerta roja con rótulo EXIT y luz de emergencia, distinta a cualquier otra puerta del juego. (AgenteMaxo)',
