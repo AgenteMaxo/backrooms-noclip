@@ -16,6 +16,7 @@
   let camRot = 0;          // rotación de cámara en pasos de 90° (0-3), tecla Q (modo alta)
   let camYaw = 0;          // yaw animado (radianes)
   let yawLibre = null;     // v25 online: cámara LIBRE (ratón, estilo Roblox); null = aún sin tocar
+  let ultimoOrbitoT = 0;   // v26: timestamp del último movimiento manual de cámara (órbita)
   // altura de muros: en 3ª persona son de altura real (la cámara va a 1.5 y JAMÁS
   // ve por encima → nunca se rompe la sensación de interior)
   const WALL_H = CAM_MODO === 'tercera' ? 2.3 : 1.2;
@@ -44,6 +45,7 @@
   let itemSprites = new Map();   // index -> sprite
   let otrosSprites = new Map();  // id -> sprite (jugadores remotos del MMO)
   let playerSprite = null;
+  let playerMaskSprite = null;   // capa opcional (máscara de gas) sobre el jugador
   let texCache = new Map();      // clave -> THREE.Texture
   let grain = null;
   let camBobT = 0;
@@ -172,6 +174,19 @@
       x.fillStyle = col; x.globalAlpha = 0.5;                           // luz bajo la puerta
       x.fillRect(4, h - 3, w - 8, 3);
     }),
+    // puerta de emergencia (L0 → L14): metal oscuro + barra antipánico + rótulo
+    // EXIT sobre baliza roja — se distingue de cualquier otra puerta del juego
+    emergencia: () => lienzo(44, 64, (x, w, h) => {
+      x.fillStyle = '#181210'; x.fillRect(0, 0, w, h);                   // marco oscuro
+      x.fillStyle = '#3a2c28'; x.fillRect(3, 12, w - 6, h - 15);         // hoja
+      x.strokeStyle = '#5a4038'; x.lineWidth = 2;
+      x.strokeRect(7, 18, w - 14, h - 32);                                // panel
+      x.fillStyle = '#c81818';                                            // barra antipánico
+      x.fillRect(6, h - 22, w - 12, 5);
+      x.fillStyle = '#2a0808'; x.fillRect(2, 0, w - 4, 11);               // caja del rótulo
+      x.fillStyle = '#ff2020'; x.font = 'bold 8px monospace'; x.textAlign = 'center';
+      x.fillText('EXIT', w / 2, 8);
+    }),
     ventana: (col) => lienzo(44, 64, (x, w, h) => {
       x.fillStyle = '#2a2a2e'; x.fillRect(0, 0, w, h);
       x.fillStyle = SH(col, 0.9); x.globalAlpha = 0.85;
@@ -239,6 +254,16 @@
       x.moveTo(24, 28); x.lineTo(30, 44);
       x.moveTo(16, 20); x.lineTo(12, 6);
       x.stroke();
+    }),
+    // cerco de humedad suelto: un único decal circular con caída de alpha,
+    // reutilizado por TODAS las manchas del suelo (una textura, un material).
+    mancha: () => lienzo(64, 64, (x, w, h) => {
+      const g = x.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, w / 2 - 3);
+      g.addColorStop(0, 'rgba(18,14,7,0.5)');
+      g.addColorStop(0.65, 'rgba(18,14,7,0.25)');
+      g.addColorStop(1, 'rgba(18,14,7,0)');
+      x.fillStyle = g;
+      x.beginPath(); x.arc(w / 2, h / 2, w / 2 - 3, 0, 7); x.fill();
     }),
     escalera: (col) => lienzo(48, 48, (x, w, h) => {
       x.fillStyle = '#0a0806'; x.fillRect(0, 0, w, h);
@@ -390,6 +415,7 @@
     itemSprites.clear();
     otrosSprites.clear();
     playerSprite = null;
+    playerMaskSprite = null;
   }
 
   function quad(pos, uv, idx, corners, uvRect, nor) {
@@ -492,6 +518,23 @@
         b.pos = []; b.uv = []; b.idx = []; b.nor = [];
       }
     };
+    // --- MANCHAS sueltas (v28.1): cercos de humedad dispersos en vez de la
+    // textura macro repitiéndolos cada 2 tiles. Un único decal reutilizado,
+    // por tile se decide con seededUnit (misma técnica que los grupos de
+    // fluorescentes) — determinista y sin crear un RNG por casilla. ~4 % de
+    // las casillas de moqueta_humeda tienen una, con radio/posición al azar.
+    const manchaTex = tiles.manchas ? pintado('p-mancha', PINTORES.mancha) : null;
+    const matMancha = manchaTex ? new THREE.MeshBasicMaterial({ map: manchaTex, transparent: true }) : null;
+    let manchaPos = [], manchaUv = [], manchaIdx = [], manchaNor = [];
+    const flushManchas = () => {
+      if (!manchaPos.length) return;
+      const m = mkFlat(manchaPos, manchaUv, manchaIdx, manchaNor, matMancha);
+      m.receiveShadow = false;
+      grupo.add(m);
+      bandas.push(m);
+      manchaPos = []; manchaUv = []; manchaIdx = []; manchaNor = [];
+    };
+    const UMBRAL_MANCHA = 0.04;
     const aguaPos = [], aguaUv = [], aguaIdx = [], aguaNor = [];
     const plantas = [];
     const esVerde = BIOMAS_VERDES.has(world.level.bioma);
@@ -510,10 +553,23 @@
             [[x, 0.02, y + 1], [x + 1, 0.02, y + 1], [x + 1, 0.02, y], [x, 0.02, y]],
             [0, 0, 1, 1], aguaNor);
         else if (v === T.DECOR && esVerde) plantas.push([x, y]);
+        if (matMancha && v === T.SUELO) {
+          const clave = `${world.runSeed}:${world.ventanaN || 0}:mancha:${x}:${y}`;
+          const u = seededUnit(clave);
+          if (u < UMBRAL_MANCHA) {
+            const r = 0.22 + seededUnit(clave + ':r') * 0.26;
+            const jx = x + 0.5 + (seededUnit(clave + ':x') - 0.5) * 0.5;
+            const jy = y + 0.5 + (seededUnit(clave + ':y') - 0.5) * 0.5;
+            quad(manchaPos, manchaUv, manchaIdx,
+              [[jx - r, 0.02, jy + r], [jx + r, 0.02, jy + r], [jx + r, 0.02, jy - r], [jx - r, 0.02, jy - r]],
+              [0, 0, 1, 1], manchaNor);
+          }
+        }
       }
-      if ((y & 15) === 15) { flushSuelo(); yield; }
+      if ((y & 15) === 15) { flushSuelo(); flushManchas(); yield; }
     }
     flushSuelo();
+    flushManchas();
     if (aguaPos.length)
       grupo.add(mkFlat(aguaPos, aguaUv, aguaIdx, aguaNor, new THREE.MeshLambertMaterial({ map: aguaTex })));
     yield;
@@ -924,6 +980,7 @@
         edificio: { p: 'edificio', w: 0.95, h: 1.4, y: 0.7, grosor: 0.12, ladoCol: 0x2c333d, ladoEst: 'metal' },
         ventana: { p: 'ventana', w: 0.9, h: 1.3, y: 0.75, grosor: 0.07, ladoCol: 0x2a2a2e, ladoEst: 'metal' },
         puerta: { p: 'puerta', w: 0.92, h: 1.36, y: 0.68, grosor: 0.08, ladoCol: 0x241c14, ladoEst: 'madera' },
+        emergencia: { p: 'emergencia', w: 0.92, h: 1.36, y: 0.68, grosor: 0.08, ladoCol: 0x181210, ladoEst: 'metal' },
       };
       const spec = SPEC[rit] ?? SPEC[estilo] ?? SPEC.puerta;
       const t2 = pintado('p-' + spec.p + col, () => PINTORES[spec.p](col));
@@ -937,6 +994,13 @@
       m.position.set(ex.x + 0.5, spec.y, paredNorte ? ex.y + spec.grosor / 2 + 0.01 : ex.y + 0.5);
       m.castShadow = true;
       grupo.add(m);
+      // baliza roja de emergencia: la única luz roja fija del juego, para que
+      // esta salida se reconozca desde lejos frente a cualquier otra puerta
+      if (rit === 'emergencia') {
+        const baliza = new THREE.PointLight(0xff2020, 6, 4, 2);
+        baliza.position.set(ex.x + 0.5, spec.y + spec.h / 2 + 0.1, paredNorte ? ex.y + 0.6 : ex.y + 0.5);
+        grupo.add(baliza);
+      }
     });
     yield;
 
@@ -1262,11 +1326,17 @@
       cercanas.splice(i, 0, { ...p, d2 });
       if (cercanas.length > ceilingLights.length) cercanas.pop();
     }
+    const m = world.map.manila;
+    const pal = world.level.paleta;
     ceilingLights.forEach((l, i) => {
       const p = cercanas[i];
       if (!p) { l.intensity = 0; l.visible = false; return; }
       l.visible = true;
       l.position.set(p.x, WALL_H - 0.12, p.z);
+      // Sala Manila: sus fluorescentes viran a un naranja tenue — la calma
+      // que precede a perder la noción del tiempo ahí dentro
+      const enManila = m && p.x >= m.x && p.x < m.x + m.w && p.z >= m.y && p.z < m.y + m.h;
+      l.color.set(enManila ? 0xff8c40 : pal.luz);
       const falla = p.group === flkGrupo && !flkOn;
       const objetivo = (0.82 - 0.12 * fase0) * (falla ? 0.05 : 1);
       l.intensity += (objetivo - l.intensity) * 0.22;
@@ -1363,6 +1433,14 @@
       playerSprite.scale.set(1, SPRITE_H, 1);
       actorGroup.add(playerSprite);
     }
+    if (!playerMaskSprite) {
+      // capa de la máscara de gas: billboard aparte pegado al del cuerpo, sin
+      // escribir en el depth buffer para que nunca compita con él (v25.1)
+      playerMaskSprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }));
+      playerMaskSprite.scale.set(1, SPRITE_H, 1);
+      playerMaskSprite.renderOrder = 1;
+      actorGroup.add(playerMaskSprite);
+    }
 
     // jugador: orientación del sprite RELATIVA a la cámara
     let sid, sflip = false;
@@ -1390,6 +1468,7 @@
       else if (svy < 0) sid = 'player_up';
       else { sid = 'player_side'; sflip = svx < 0; }
     }
+    const maskId = sid.replace('player_', 'mascara_'); // antes de sumar _herido
     // malherido: el propio sprite lo cuenta (sangre y palidez)
     if (p.salud < 35 && Sprites.tiene(sid + '_herido')) sid += '_herido';
     const pframe = world.moving ? Math.floor(t / 150) % Sprites.frameCount(sid) : 0;
@@ -1397,6 +1476,16 @@
     playerSprite.material.needsUpdate = true;
     playerSprite.position.set(px, SPRITE_H / 2 + 0.02, pz);
     playerSprite.visible = !world.escondido; // dentro de un mueble no se te ve
+
+    // capa de la máscara de gas (PUESTA en la ranura de cara): PNG opcional
+    const conMascara = world.equipado && world.equipado('mascara_gas') && Sprites.tiene(maskId);
+    playerMaskSprite.visible = conMascara && !world.escondido;
+    if (conMascara) {
+      const mframe = pframe % Sprites.frameCount(maskId);
+      playerMaskSprite.material.map = spriteTexFlip(maskId, mframe, sflip);
+      playerMaskSprite.material.needsUpdate = true;
+      playerMaskSprite.position.copy(playerSprite.position);
+    }
 
     // entidades (crear bajo demanda, ocultar si no visibles)
     for (const e of world.entities) {
@@ -1629,12 +1718,50 @@
       // (yawLibre) y el personaje se mueve relativo a la cámara; sin arrastrar
       // aún, la cámara se queda donde está. Solo (offline): sigue a la espalda.
       let yawObjetivo;
-      if (world.online) yawObjetivo = yawLibre === null ? camYaw : yawLibre;
-      else { const [fx3, fz3] = ROT_VEC[rot]; yawObjetivo = Math.atan2(-fx3, -fz3); }
+      let factorSuavidad = world.online ? 0.55 : 0.12;
+      if (world.online) {
+        if (window.OPTS && window.OPTS.camaraModo === 'bloqueada') {
+          // Cámara bloqueada (Seguimiento)
+          const segVal = window.OPTS.camaraSeguimiento !== undefined ? window.OPTS.camaraSeguimiento : 8;
+          const yaOrbitoHacePoco = (performance.now() - ultimoOrbitoT) < 1000;
+
+          // Se considera que camina hacia adelante si se mueve y inputY es negativo (W, W+A, W+D)
+          const caminaAdelante = world.moving && p.inputY < 0;
+
+          if (caminaAdelante) {
+            p.camaraDebeAlinear = true;
+          }
+
+          // Si camina hacia adelante, se alinea inmediatamente. 
+          // Si está quieto pero quedó con realineación pendiente, se alinea suavemente siempre que no haya orbitado de forma manual recientemente.
+          const debeAlinearAhora = caminaAdelante || (p.camaraDebeAlinear && !yaOrbitoHacePoco);
+
+          if (debeAlinearAhora) {
+            yawObjetivo = -p.rot;
+            yawLibre = yawObjetivo;
+            factorSuavidad = segVal / 100;
+          } else {
+            yawObjetivo = yawLibre === null ? camYaw : yawLibre;
+          }
+        } else {
+          yawObjetivo = yawLibre === null ? camYaw : yawLibre;
+        }
+      } else {
+        const [fx3, fz3] = ROT_VEC[rot];
+        yawObjetivo = Math.atan2(-fx3, -fz3);
+      }
       let dyaw = yawObjetivo - camYaw;
       while (dyaw > Math.PI) dyaw -= Math.PI * 2;
       while (dyaw < -Math.PI) dyaw += Math.PI * 2;
-      camYaw += dyaw * (world.online ? 0.55 : 0.12); // el ratón pide respuesta directa
+
+      // Si está realineando y ya se alineó casi del todo, apagar el flag para dejar la cámara libre
+      if (window.OPTS && window.OPTS.camaraModo === 'bloqueada' && p.camaraDebeAlinear) {
+        if (!world.moving && Math.abs(dyaw) < 0.01) {
+          p.camaraDebeAlinear = false;
+        }
+      }
+
+      camYaw += dyaw * factorSuavidad; // el ratón/seguimiento pide respuesta directa o suave
       const ox = Math.sin(camYaw) * TP.dist;
       const oz = Math.cos(camYaw) * TP.dist;
       let target = new THREE.Vector3(px + ox, TP.alto + bob, pz + oz);
@@ -1809,7 +1936,10 @@
     get rot() { return camRot; },
     // v25 — cámara libre (online): el ratón orbita; el movimiento es relativo a ella
     get yaw() { return camYaw; },
-    orbita(d) { yawLibre = (yawLibre === null ? camYaw : yawLibre) + d; },
+    orbita(d) {
+      yawLibre = (yawLibre === null ? camYaw : yawLibre) + d;
+      ultimoOrbitoT = performance.now();
+    },
     // v25 — pantalla completa real: relanza el render a la resolución nueva
     resize(w, h) {
       if (!renderer) return;

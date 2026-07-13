@@ -1,0 +1,1369 @@
+[
+ {
+  "title": "Level 0",
+  "display": "Level 0: \"The Lobby\"",
+  "class": "Class Custom Image | sec:Unstable | ent:Devoid of Entities}",
+  "cats": "Levels, The Main Nine, Safe, Cluster I",
+  "desc": "Level 0 is an expansive non-Euclidean space resembling the back rooms of a dated retail outlet. The level is known most prominently for its disorienting layout and distinct yellowed wallpaper. All rooms in Level 0 share the same superficial features, with worn, moist carpeting, scattered electrical outlets, and inconsistently placed fluorescent lighting. Aside from these qualities, no two rooms in the level are the same, with each area differing significantly in shape and layout. The constant hum-buzz emitted by the ceiling lights permeates every area of Level 0, being notably louder and more obtrusive than ordinary fluorescent lighting. The buzz tends to induce throbbing migraines in most individuals, which persist for an extended period of time even after one has exited the level. As the level is devoid of hostile threats, the only danger that Level 0 poses is the evident lack of available resources, as many fall victim to dehydration, exhaustion, or starvation. Linear space and topology are significantly altered within Level 0, with it being possible to walk in a straight line, return to the starting point, and end up in a different set of rooms than one was in beforehand. Such properties cause the level to be extremely disorienting in layout, with research suggesting that the confusion may be the underlying cause of loss of mental stability among individuals. Due to the bar",
+  "entities": [
+   "Phenomenon 15"
+  ],
+  "exits": [
+   {
+    "t": "Wandering far and long enough, which may cause the hallways to gradually transition into Level 1's garages;",
+    "targets": [
+     "Level 1"
+    ]
+   },
+   {
+    "t": "Breaking through a wall, which will lead one into Level 483;",
+    "targets": [
+     "Level 483"
+    ]
+   },
+   {
+    "t": "Breaking through the floor, which may lead one to Level 27, seldom The Void;",
+    "targets": [
+     "Level 27",
+     "The Void"
+    ]
+   },
+   {
+    "t": "Entering a rare emergency exit, which may lead one to Level 14;",
+    "targets": [
+     "Level 14"
+    ]
+   },
+   {
+    "t": "And glass sliding doors resemblant of those within a greenhouse, which lead one to Level 13.",
+    "targets": [
+     "Level 13"
+    ]
+   }
+  ],
+  "image": "Thebackrooms.jpg",
+  "url": "https://backrooms.fandom.com/wiki/Level_0"
+ },
+ {
+  "title": "Level 14",
+  "display": "Level 14: \"Inhospitality\"",
+  "class": "sin clase",
+  "cats": "Levels, Cluster I, Class 4, Dangerous",
+  "desc": "What's behind that door? Survival Difficulty: Class 4 》Unsafe 》Unstable 》Dangerous Entities and Hazards Level 14 is the 15th level of the Backrooms. Description: Level 14 takes the form of a regular, well-equipped hospital comprising infinitely segmented areas that contain shadowy hallways and unsettling rooms. Once someone enters the level, they will hear the constant sound of distant footsteps and whispers, which can cause disorientation and unceasing paranoia. The air is reported to be heavy with the scent of antiseptic and decay. Throughout their journey, they will be hunted down by hostile entity known as The Hunter. It is theorized that a colony used to live in Level 14 as various remnants of civilization can be found in the level. It is unknown why the colony's existence withered away, but the most popular theory is that The Hunter ended up killing the inhabitants. The name of this colony was later revealed to be T.14.R.G. (The Level 14 Research Group). Its main objective was to gather as much information as possible about Level 14. In rare cases, the old, rusty hospital equipment in Level 14 may suddenly spring to life, malfunctioning and causing harm to anybody nearby. These include faulty machinery, flying scalpels, stethoscopes, and syringes, among other things. Certain floor tiles of Level 14 may collapse and give way unexpectedly, revealing hidden passageways or le",
+  "entities": [
+   "Entity 2"
+  ],
+  "exits": [
+   {
+    "t": "Overtime, wanderers may find a bright, glowing window; entering it will bring you to Level 777;",
+    "targets": [
+     "Level 777"
+    ]
+   },
+   {
+    "t": "To leave Level 14, you must follow some arrows on the floor pointing to the main hospital exit. Exiting this way leads you back to Level 130;",
+    "targets": [
+     "Level 130"
+    ]
+   },
+   {
+    "t": "Going through a rare futuristic-looking door will lead one to Level 15;",
+    "targets": [
+     "Level 15"
+    ]
+   },
+   {
+    "t": "Traveling too far into the hospital may lead one to Level 16.",
+    "targets": [
+     "Level 16"
+    ]
+   },
+   {
+    "t": "Toying with hospital equipment might send one to Level 268.",
+    "targets": [
+     "Level 268"
+    ]
+   }
+  ],
+  "image": "Level14picture2.png",
+  "url": "https://backrooms.fandom.com/wiki/Level_14"
+ },
+ {
+  "title": "Level 16",
+  "display": "Level 16: \"J. Barry Mental Asylum\"",
+  "class": "Class 2 | sec:null | ent:",
+  "cats": "Cluster I, Mental Hazards, Levels, Frontrooms",
+  "desc": "__NOTOC__",
+  "entities": [
+   "Phenomenon 35",
+   "Entity 9",
+   "Entity 2"
+  ],
+  "exits": [
+   {
+    "t": "Exceedingly dark and cramped areas lead to Level 0.7.",
+    "targets": [
+     "Level 0.7"
+    ]
+   },
+   {
+    "t": "A door difficult to open located deep into the hospital's basement will lead one to Level 3.",
+    "targets": [
+     "Level 3"
+    ]
+   },
+   {
+    "t": "Going through a medical office door may lead one to Level 4.",
+    "targets": [
+     "Level 4"
+    ]
+   },
+   {
+    "t": "Random doors may lead to Level 14.",
+    "targets": [
+     "Level 14"
+    ]
+   },
+   {
+    "t": "Various factors may cause the hallways to fade into Level 17.",
+    "targets": [
+     "Level 17"
+    ]
+   },
+   {
+    "t": "Pressing the buttons \"9\" and \"8\" on the vending machine in the break room will transport one to Level 98.",
+    "targets": [
+     "Level 98"
+    ]
+   },
+   {
+    "t": "Severe cognitive collapse or sudden lose of body control may cause one to awaken in Level 144.",
+    "targets": [
+     "Level 144"
+    ]
+   },
+   {
+    "t": "Following shifting retrofuturistic passages in the Novelty Zone causes the asylum’s architecture to dissolve, depositing the wanderer into Level 400.",
+    "targets": [
+     "Level 400"
+    ]
+   },
+   {
+    "t": "Finding a wheelchair moving on its own is a sign one is going to be teleported to Level 223.",
+    "targets": [
+     "Level 223"
+    ]
+   },
+   {
+    "t": "Toying with hospital equipment might take one to Level 268.",
+    "targets": [
+     "Level 268"
+    ]
+   },
+   {
+    "t": "If a wanderer attempts to escape through a broken window during a distortion event, they may fall into Level 777.",
+    "targets": [
+     "Level 777"
+    ]
+   },
+   {
+    "t": "Finding a hidden light blue 1970s Cadillac with a photograph on the windshield of an advertisement to a motel in the parking lot of the level will transport one to Level 69.",
+    "targets": [
+     "Level 69"
+    ]
+   }
+  ],
+  "image": "16Photo.png",
+  "url": "https://backrooms.fandom.com/wiki/Level_16"
+ },
+ {
+  "title": "Level 144",
+  "display": "Level 144: \"THE GRAVEYARD OF WANDERERS.\"",
+  "class": "sin clase",
+  "cats": "Levels, Dangerous, Darkness, Environmental Hazards, Glitched Levels",
+  "desc": "Level 144 is an endless series of unstable rolling hills and lifeless dirt, iron gates and dead trees spread sparsely across, surrounding the many mangled graveyards. The weather is perpetually cloudy, and acidic rain showers fall from the endless cloudscape that envelopes its limitless hills. The air is thick with so many toxins, it becomes difficult to breathe. All that exists on the level becomes glitched and fragmented eventually. Some pieces float mid-air and appear where they shouldn't be. All resources that Level 144 could ever comprise are dangerous. The most common ones are Cashew Water, Liquid Pain, and Devil's Ambrosia. Long stays within Level 144 pose many dangers to the body and the mind. The sudden shifts between flashing lights with constant movement and utter stillness cause conditions such as color blindness, myopia, and epilepsy. Other diseases triggered include dementia, Huntington's disease, and migraines. Such conditions result from both the atmosphere and the surface, which retain a wide variety of substances that affect the human mind in unexpected ways. Level 144 manifests a multitude of other threats; one of the most formidable is \"The Divine Curse,\" cataloged as Phenomenon 70. Upon occurrence, the entire level falls apart, and multiple regions and objects turn harshly disorganized, unstable, and glitched, repeatedly teleporting and breaking. When it ce",
+  "entities": [
+   "Foams",
+   "Entity 10",
+   "Entity 3",
+   "Tornadoes",
+   "Entity 8",
+   "Entity 4",
+   "Entity 5",
+   "The Armless"
+  ],
+  "exits": [
+   {
+    "t": "No-clipping into an affected object after Phenomena 70 has a small chance of leading to Level 137.",
+    "targets": [
+     "No-Clipping",
+     "Level 137"
+    ]
+   },
+   {
+    "t": "Killing a Raven, or being consumed by the Hurricane will lead to the Void.",
+    "targets": [
+     "the Void"
+    ]
+   },
+   {
+    "t": "Being corrupted has a 2% chance of leading to Level 690.",
+    "targets": [
+     "Level 690"
+    ]
+   },
+   {
+    "t": "In what is perhaps a more punishing fate, a rare tunnel may lead to Level 488.",
+    "targets": [
+     "Level 488"
+    ]
+   },
+   {
+    "t": "Reach the cloudscape. Find salvation.",
+    "targets": [
+     "Level 385"
+    ]
+   },
+   {
+    "t": "Finding a rare tunnel leading underground will take one to Level 899.",
+    "targets": [
+     "Level 899"
+    ]
+   },
+   {
+    "t": "Having a mental meltdown has a 1.7% chance of leading to Level 138.",
+    "targets": [
+     "Level 138"
+    ]
+   },
+   {
+    "t": "Song: \"Old Doll\", stolen borrowed from Level 224;",
+    "targets": [
+     "Level 224"
+    ]
+   }
+  ],
+  "image": "Level_-121_New.webp",
+  "url": "https://backrooms.fandom.com/wiki/Level_144"
+ },
+ {
+  "title": "Level 385",
+  "display": "Level 385: \"Troubled Towers\"",
+  "class": "Class Custom Image | sec:Sustained Communities | ent:Devoid of Harmful Entities",
+  "cats": "Safe, Levels, Cluster I, Frigid, Safe Levels, Darkness, Environmental Hazards, Sky, Threat 3",
+  "desc": "Level 385 takes on the appearance of an unending cloudscape, with tall, tower-like buildings; these towers form a sandwich-like structure; each floor has a white roof and ground; there are no walls; instead, the floors are held together by four black beams at every corner, which help in keeping the tower together. There is a 3-meter space separating each floor and ceiling. The towers' roofs and flooring resemble flat, rectangular surfaces. Each of the towers rises above the clouds. Level 385's towers differ in width, height, angle, etc. Some of the towers seem to extend infinitely upward; however, their lower area is limited by the clouds. As one goes up in the towers of Level 385, similar to the Frontrooms, the area will become colder; however, on Level 385, the area will cool down rapidly, with stashes of snow, snowflakes, and blocks of ice appearing as one ascends. Level 385's towers may include nourishment, water, and various other items frequently encountered in wooden crates. All items present within the Backrooms might be found. The exits located on the towers' floor frequently indicate the level that they lead; for example, an office chair with droplets of water throughout likely indicates Level 4. While a sewer tunnel could result in Level 34, wanderers should do their best to determine which levels the exits will bring them to. Another important fact about these is th",
+  "entities": [],
+  "exits": [
+   {
+    "t": "Entrances to a myriad of other Backrooms levels are encountered frequently on the floors of Level 385.",
+    "targets": [
+     "Backrooms Wiki"
+    ]
+   },
+   {
+    "t": "Falling off a tower will lead to the Void.",
+    "targets": [
+     "the Void"
+    ]
+   },
+   {
+    "t": "If a tower collapses, all wanderers, entities, and objects present in the tower at the moment of the collapse will be sent to Level 84.",
+    "targets": [
+     "Level 84"
+    ]
+   },
+   {
+    "t": "Staring at a window on the Rooftops for 4 hours straight may cause the window to become an exit to Level 993.",
+    "targets": [
+     "Level 993"
+    ]
+   },
+   {
+    "t": "Going too up in Level 385, however not enough to reach the Altures, has a 1.7% chance of leading to Level 74.",
+    "targets": [
+     "Level 74"
+    ]
+   },
+   {
+    "t": "Mistakenly no-clipping into a painting of a hill in the Rooftops will lead to Level 382.",
+    "targets": [
+     "Level 382"
+    ]
+   },
+   {
+    "t": "Finding a building in Level 385 bearing a strong resemblance to the Frontrooms' skyscrapers and noclipping into it will lead to Level 11.3.",
+    "targets": [
+     "The Frontrooms",
+     "Level 11.3"
+    ]
+   }
+  ],
+  "image": "The Rooftops Level 385.png",
+  "url": "https://backrooms.fandom.com/wiki/Level_385"
+ },
+ {
+  "title": "Level 1",
+  "display": "Level 1: \"Parking Zone\"",
+  "class": "Class 1 | sec:Stable | ent:Minimal Entity Count}",
+  "cats": "Levels, The Main Nine, Safe, Cluster I",
+  "desc": "__NOTOC__ Level 1 is the second level of the Backrooms, and one of the only levels wanderers can enter directly through the Frontrooms. General Description Level 1 resembles a typical parking garage, with concrete pillars, hanging fluorescent lights, and stairwells present at regular intervals. Though it is a parking lot, the number of cars is minimal, with roughly five cars in any 100-square-kilometer plot at the level at a time. Cars on the level have no brand or license plates and are typically red, blue, white, or black. All cars are faulty, but the alloy they are made of, a mixture of carbon, iron, platinum, and titanium, is a valuable metal which can be collected for weaponry or armor. This alloy is named tripse and is often traded for other items held in high regard. Oftentimes, puddles on the floor composed of Almond Water will evaporate and condense into a thick fog, reducing visibility for wanderers who traverse through these parts; curiously, these puddles never seem to fully evaporate, instead lingering permanently. Level 1 has a consistent and reliable source of electricity for both the lights and various wall outlets, which help many groups survive. Due to the ease of reaching this level, many wanderers opt to either join or form a group to ensure their survival. However, this level contains various dangers that wanderers must be wary of. Examples include blackout",
+  "entities": [
+   "Entity 9",
+   "Entity 5",
+   "Entity 8",
+   "Entity 6",
+   "Entity 4",
+   "Entity 2"
+  ],
+  "exits": [
+   {
+    "t": "Wanderers can exit Level 1 by simply continuing to explore, as it usually leads to Level 2 or back to Level 0 via staircases or hallways.",
+    "targets": [
+     "Level 2",
+     "Level 0"
+    ]
+   },
+   {
+    "t": "An unlocked door may lead to Level 2.",
+    "targets": [
+     "Level 2"
+    ]
+   },
+   {
+    "t": "The Hub can be accessed from this level by walking up two flights of stairs and then immediately walking back down. Due to the non-Euclidean properties, wanderers will then be met with a split passage",
+    "targets": [
+     "The Hub"
+    ]
+   },
+   {
+    "t": "No-clipping through walls that have outlets may lead to Level 188.",
+    "targets": [
+     "Level 188"
+    ]
+   }
+  ],
+  "image": "Level_1_Rewrite.jpg",
+  "url": "https://backrooms.fandom.com/wiki/Level_1"
+ },
+ {
+  "title": "Level 483",
+  "display": "Level 483: \"Grayscale Halls\n\"",
+  "class": "Class 2 | sec:Unstable} | ent:<span style=\"font-family:Rubik Glitch\">Devoid of Entities</span>",
+  "cats": "Levels, Class 2, Cluster I",
+  "desc": "Level 483, also known as the “Grayscale Halls,” is an expansive, winding system of concrete hallways. The hotel is characterized by its disorienting grayscale color and its rotting wallpaper. Typically, doors in Level 483 open to dark, pitch black rooms that are fit with a multitude of soaked furniture. However, the doors may also lead to other places. Hallways are variable in length, albeit typically under a mile long. Fixtures such as ceiling lamps, inoperable machinery such as fire alarms and thermostats, fire extinguishers, and blank paintings are scattered throughout in inconsistent patterns. The level has a faint humming sound originating from the ceiling lamps that remains constant. In addition, running or dripping water, knocking, scratching, and flickering can be seldom heard in certain corridors. Despite most of these noises implying the existence of sentient life, it is frankly impossible. Level 483 is affected by the property known as Alone, which separates all wanderers and entities from one another. Level 483's temperatures remain at a constant 23°F (-5°C). Strangely, despite being below the freezing temperature of water, it is impossible for water or other substances to freeze. Most hallways are connected to each other in an uneven grid structure, the same for the occasional dead end or curve. Amenities commonly found in hotels, such as janitor's closets, ice mac",
+  "entities": [
+   "Entity 9",
+   "Entity 6",
+   "Entity 3"
+  ],
+  "exits": [
+   {
+    "t": "Wandering far enough leads back to Level 80",
+    "targets": [
+     "Level 80"
+    ]
+   },
+   {
+    "t": "Climbing a rare ladder here will send the wanderer to one of the cabins in the Level 626.",
+    "targets": [
+     "Level 626"
+    ]
+   },
+   {
+    "t": "Touching a toy spacecraft found sitting on a pedestal in a hotel room will automatically transport into Level 140.",
+    "targets": [
+     "Level 140"
+    ]
+   },
+   {
+    "t": "Certain doors may lead to Level 6, The Whiteout, Level 305, seldom The Void.",
+    "targets": [
+     "Level 6",
+     "Level 484",
+     "Level 305",
+     "The Void"
+    ]
+   },
+   {
+    "t": "Going through a blue door that's covered in frost will take one to Level 483.3.",
+    "targets": [
+     "Level 483.3"
+    ]
+   },
+   {
+    "t": "Going through a door emitting blue light behind it will take one to Level 306.",
+    "targets": [
+     "Level 306"
+    ]
+   },
+   {
+    "t": "Rare doors with numbers on them designated to that level (i.e 399) may lead to the designated level.",
+    "targets": [
+     "Level 399"
+    ]
+   },
+   {
+    "t": "Note how, albeit it's exit being mentioned above, this does not apply to Level 6.",
+    "targets": [
+     "Level 6"
+    ]
+   },
+   {
+    "t": "Holes and pitfall in the floor lead to The Void. If tripping and falling into a hole is accidental, it is not uncommon for one to self-accelerate past The Void entirely.",
+    "targets": [
+     "The Void",
+     "The Broken"
+    ]
+   },
+   {
+    "t": "Extremely rare, one-way holes in the walls lead to Level 186.",
+    "targets": [
+     "Level 186"
+    ]
+   },
+   {
+    "t": "in rare cases, after falling into a hole, it may lead to Level 995",
+    "targets": [
+     "Level 995"
+    ]
+   },
+   {
+    "t": "???",
+    "targets": [
+     "Level 483.5"
+    ]
+   }
+  ],
+  "image": "-1.jpg",
+  "url": "https://backrooms.fandom.com/wiki/Level_483"
+ },
+ {
+  "title": "Level 27",
+  "display": "Level 27: \"Ligneous Desolation\"",
+  "class": "Class 1 | sec:null | ent:Devoid of Entities}",
+  "cats": "Levels, Cluster I",
+  "desc": "Level 27, commonly referred to as \"Ligneous Desolation\" or more casually \"The Woodrooms\", is a presumably endless, labyrinthine complex of wooden rooms and hallways, varying minutely in design. Upon entering the level, one may find it difficult to maintain an accurate sense of direction due to the nature of its layout; its winding corridors often cause confusion and disorientation among even the most seasoned of explorers, with no useful supplies present whatsoever to assist. Rooms and corridors branch off in numerous directions, some leading to dead-ends or looping back upon themselves. The level's layout seems to shift and change, making it quite difficult to create a reliable map or navigate in a straight line. The level's methods of architecture are as of yet undetermined, but appear to be a strange amalgam of natural and manmade techniques. Analysis has indicated that the wood used in its construction is of an unknown strain, with its advanced state of decay seemingly dating back much further than the level's modern architecture would imply. The carpeting throughout Level 27 is a drab gray, in stark contrast to the wooden walls and floors. It appears to be made of a more modern synthetic material, and its presence adds another layer of mystery to the level's design, leading some to believe that it serves a more sinister purpose, possibly hiding or disguising something bene",
+  "entities": [],
+  "exits": [],
+  "image": "The woodrooms 2.png",
+  "url": "https://backrooms.fandom.com/wiki/Level_27"
+ },
+ {
+  "title": "Level 13",
+  "display": "☂️ Level 13: \"Vitrum Madness\" 🏡",
+  "class": "Class 1 | sec:null | ent:Psychological Hazards",
+  "cats": "Class 1, Levels, Cluster I",
+  "desc": "Level 13 is entirely comprised of interconnected, linear corridors with architecture similar to conservatories. The location seems to function as a location to host special events, as one may expect an abundance of furniture in Level 13. Common appliances such as chairs, tables, pots with vegetation found in the Frontrooms, and LED lights are present. The flooring consists of a straight stone pathway positioned in the middle, with smaller pathways that connect with it; there is a high possibility to trip, as the surface seems to be rocky. Separation in between corridors may occur occasionally, divided by walls constructed out of glass panes or wood planks; the presence of these borders may also imply the occupancy of a nearby engine room, producing faint noises which presumably originate from these inaccessible areas. Level 13's overall edifice is seemingly afloat amongst an empty, obscure sky. However, no such support that prevents the structure from collapsing has ever been observed. Such conditions may simply prohibit any views of the foundation; yet, on several occasions, the fog within the sky may steadily diminish. This means that if the occurrence of such abnormality does not exist, it may allow these supports to be seen. Instances of wanderers observing the pillars remain divisive; entire theses and explorations have been concocted to simply confirm the existence of the",
+  "entities": [
+   "the Frontrooms"
+  ],
+  "exits": [
+   {
+    "t": "Persons may end up in Level 14 under unknown conditions, as no endeavor has been found to consistently work;",
+    "targets": [
+     "Level 14"
+    ]
+   },
+   {
+    "t": "A sudden loss of consciousness may signify an awaiting exit to Level 45, following many cases of wanderers who had gone through the same situation.",
+    "targets": [
+     "Level 45"
+    ]
+   },
+   {
+    "t": "Unstable flooring indicated by visible, odd textures the floor possesses may lead to Level 1 if one can noclip through it;",
+    "targets": [
+     "Level 1"
+    ]
+   },
+   {
+    "t": "An extremely rare circumstance where the space within shakes turbulently has a small chance of transferring one to Level 909;",
+    "targets": [
+     "Level 909"
+    ]
+   },
+   {
+    "t": "Certain areas within Level 13 bears a chance of abruptly sending one to Level 996, though these occurrences are extremely rare;",
+    "targets": [
+     "Level 996"
+    ]
+   },
+   {
+    "t": "Falling to the vacant, foggy void the interior of Level 13 floats upon may lead one to The Void, and rarely its sub-levels;",
+    "targets": [
+     "The Void"
+    ]
+   },
+   {
+    "t": "Any openings on the roof or walls may lead one to Level 173, although most reports state a complete disappearance of the person who leaped through the hole.",
+    "targets": [
+     "Level 173"
+    ]
+   }
+  ],
+  "image": "Level-13-initial-preview.png",
+  "url": "https://backrooms.fandom.com/wiki/Level_13"
+ },
+ {
+  "title": "Level 2",
+  "display": "Level 2: \"Pipe Dreams\"",
+  "class": "Class Custom Image | sec:null | ent:Low Entity Count",
+  "cats": "Levels, The Main Nine, Cluster I, Dangerous",
+  "desc": "Level 2 is a vast network of interconnected utility tunnels, maintenance shafts, and rusting pipes. Unlike the typically inconstant-level environments of the Backrooms, space in Level 2 does not physically shift live, lending much of the level a relative ease of navigation. The level’s architecture, which can differ from place to place, remains largely uniform in its diversity and appearance across areas. Its layout, however, reportedly becomes more complex the farther one travels from the entrance, with corridors that run up and down and may impede travel or cause injury, especially in dark areas. Fortunately, however, there have been no reports of entities lurking around these areas, most likely due to the heat and extreme humidity. The supply of provisions and hydration is heavily limited in Level 2 despite the number of water pipes in the level. Because no machinery or boiler rooms required for these pipes to function have been discovered, and because of the humid temperatures in various areas of the level, rust, bacteria, and other pathogens can overwhelm the insides of these pipes, which may contain Almond Water. Unknown diseases, mutated bacteria, and viruses have been discovered within these networks, meaning that the source of most epidemics in the Backrooms is usually Level 2. These pathogens typically spread through direct contact or by consuming water from pipes. Th",
+  "entities": [
+   "Entity 5",
+   "Entity 8",
+   "Entity 3",
+   "Entity 10",
+   "Entity 2"
+  ],
+  "exits": [
+   {
+    "t": "Fire exits could lead one back to Level 1 or forward to either Level 3.",
+    "targets": [
+     "Level 1",
+     "Level 3"
+    ]
+   },
+   {
+    "t": "Entering a golden door marked with the symbol \"Φ\" will lead one to Level Phi.",
+    "targets": [
+     "Level Phi"
+    ]
+   },
+   {
+    "t": "Certain hallways of Level 2 possess a chance of leading to Level 4 or Level 27.",
+    "targets": [
+     "Level 4",
+     "Level 27"
+    ]
+   },
+   {
+    "t": "Coming across a sewer tunnel leads to Level 34.",
+    "targets": [
+     "Level 34"
+    ]
+   },
+   {
+    "t": "The gradual increase of neon lighting signifies that an exit to Level 699 is near.",
+    "targets": [
+     "Level 699"
+    ]
+   }
+  ],
+  "image": "Spoopy level2.png",
+  "url": "https://backrooms.fandom.com/wiki/Level_2"
+ },
+ {
+  "title": "The Hub",
+  "display": "The Hub",
+  "class": "sin clase",
+  "cats": "Levels, Anomalous Levels",
+  "desc": "The Hub is a sprawling subterranean complex of brick tunnels, serving as a nexus between Backrooms levels. The Hub is known to contain entrances to a vast majority of levels, locked behind scattered steel doors which appear at inconstant, everchanging positions. The entire level is illuminated by orange-yellow lights, evenly spaced throughout the tunnel. It is worth note that these lights may shift hue on occasion, turning a striking shade of red or orange. Whilst this phenomenon is inherently harmless, it is disorienting to most. A smooth asphalt road lines the bottom of the tunnel, with a thin sidewalk on either side of it. Large concrete slabs make up the vast portion of the walls and ceiling, broken up only by the occasional sign or door. In certain areas, large metallic pipes line the roof of the tunnel, filled sparingly with a mixture partly composed of various liquid substances found throughout The Backrooms. The tunnels twist and bend in various directions, creating a confusing, winding layout. Geometry is shifting and inconstant, much like Level 0 and the like; making it difficult for one to properly map The Hub. Doors within The Hub appear at irregular positions - some may be adjacent, whilst others could be hundreds of miles apart. Each door is made up of an indeterminable metallic substance, marked with the number or name of the level, as well as a small engravement",
+  "entities": [
+   "Entity 3",
+   "Entity 3-A",
+   "Entity 10",
+   "Entity 8",
+   "Entity 4"
+  ],
+  "exits": [
+   {
+    "t": "Unlocking and entering a door with a Level Key will take one to that respective level.",
+    "targets": [
+     "Object 2"
+    ]
+   },
+   {
+    "t": "As listed in the Entrances section, several factors may cause The Hub's tunnels to fade into Level 37 or Level 154.",
+    "targets": [
+     "Level 37",
+     "Level 154"
+    ]
+   },
+   {
+    "t": "There is a chance of entering into the The Unconscious Hub upon a dream, or directly entering via a lucid dream.",
+    "targets": [
+     "The Unconscious Hub"
+    ]
+   }
+  ],
+  "image": "Tunnel.webp",
+  "url": "https://backrooms.fandom.com/wiki/The_Hub"
+ },
+ {
+  "title": "Level 188",
+  "display": "Level 188: \"The Windows\"",
+  "class": "class | sec:null | ent:",
+  "cats": "Levels, Cluster I, Safe",
+  "desc": "Level 188 is an enclosed edifice, with architecture resembling that of a hotel. A large courtyard-like area is present in the center of the level, surrounded on all sides by numerous small square-shaped windows on each wall. Most windows in Level 188 are obscured by curtains; however, certain windows may become visible on occasion, each seemingly looking into a different location entirely. For the sake of ease, these visible windows will hereafter be referred to as “open”, and the obscured windows as “closed”. One can enter the interior corridors of Level 188 via a stairwell present near one end of the center courtyard. These hallways, each interconnected to reach five floors, loop around the level and lead to the interior rooms behind each window; these rooms can be entered via unmarked doors present on each hallway. Most of these doors can be entered, leading to a typical, albeit small, hotel-like interior. However, an anomalous effect becomes apparent once one attempts to enter a room with an “open” window. When a window is “open” and displaying a separate location behind it, the door leading to it will be locked by unknown means. In all known cases, any attempts to forcefully open these locked doors have failed; currently, there is no known method of entering rooms with “open” windows. Conversely, it is unknown as to what occurs when opening the curtains in a room with a “c",
+  "entities": [
+   "Entity 2"
+  ],
+  "exits": [],
+  "image": "Level 188 classic.jpg",
+  "url": "https://backrooms.fandom.com/wiki/Level_188"
+ },
+ {
+  "title": "Level 80",
+  "display": "Time Is Ticking..",
+  "class": "Class Custom Image | sec:Stable | ent:Low Entity Count}",
+  "cats": "Class Ψ, Cluster I, Levels, Mental Hazards",
+  "desc": "L‎ o‎ o‎ k‎ i‎ n‎ g‎ ‎‎ ‎ a‎ t‎ ‎ ‎ t‎ h‎ e‎ ‎ ‎ c‎ l‎ o‎ c‎ k‎ s‎ .‎ .‎ . I don’t know how long I’ve been here. I genuinely cannot tell if it’s been minutes, hours, or something that no longer has a name. Almost right away, my watch stopped working, but not in the usual way. It seemed like the second hand moved forward and backward a few times before going away completely. When I blinked, it was ticking again as if nothing had happened. Sometimes I hear footsteps. Not behind me. Not ahead of me. Things sound like they're not quite happening as they should, like an echo that forgot what it was meant to echo. A note found on the floor in Level 80. The symbol was printed on the note by M.E.G. > Clocks Of Torture Level 80, also known as \"A Lost Perception Between Time And Reality\", is what appears to be a seemingly long but never seem to be a seemingly infinite, perplexing level. It appears to be a wooden cabin that houses many clockwork-related structures and objects. This level poses a threat because it manipulates time, memory, and reality itself, similar to levels characterized by hostile environments or dangerous entities.",
+  "entities": [],
+  "exits": [
+   {
+    "t": "Getting in touch with a modern digital clock will lead you to Level 2, which has a 30 chance to happen, otherwise sending you to Level 555.",
+    "targets": [
+     "Level 2",
+     "Level 555"
+    ]
+   }
+  ],
+  "image": "1130-2.gif",
+  "url": "https://backrooms.fandom.com/wiki/Level_80"
+ },
+ {
+  "title": "Level 626",
+  "display": "Level 626: \"Forest of Psychosis\"",
+  "class": "Class Ψ} | sec:null | ent:",
+  "cats": "Levels, Cluster I, Dangerous, Forest, Mental Hazards",
+  "desc": "Level 626, informally known as \"Forest of Psychosis\" or simply \"Psychosis Forest\" is a sprawling, dense purple rainforest that is estimated to extend approximately 20 million mi². The forest is made up of tall trees that span from 20 to 130 feet high; the tree types found in this level consist of pine, birch, oak, and fir trees. Notably, most of Level 626's trees are fire-resistant and are practically indestructible, although some speculate that powerful entities may be able to destroy them. Attempts at destroying the trees have resulted in equipment shattering into pieces on impact. However, this does not apply to fallen trees and logs. Aside from trees, other natural terrain is also present, including rocks, fallen trees, rivers, potholes and lakes. Man-made structures are also present, including abandoned cabins, watchtowers, tunnels, piles of logs and fungi farms, indicating previous human habitation. Unique lakes, rivers and ponds dot the level, with purple water being the most abundant. While the water itself is drinkable, it is not entirely clean, and may cause one to contract several infections without proper sanitation. Additionally, certain bodies of water possess an anomaly. If such water comes into contact with a wanderer, it exerts an attractive force, suspected to be gravitational in nature, that can pull wanderers in, leading to drowning. Such pools are dubbed si",
+  "entities": [
+   "Entity 3",
+   "Entity 4",
+   "Entity 10",
+   "Phenomenon 35"
+  ],
+  "exits": [
+   {
+    "t": "One may exit to Level 483 by finding a trap door in the basement of some cabins and climbing down the ladder set in the trapdoor. However, cabins that include a ladder are uncommon.",
+    "targets": [
+     "Level 483"
+    ]
+   },
+   {
+    "t": "Walking too far along a purple cloverfield path may lead to Level 626.2.",
+    "targets": [
+     "Level 626.2"
+    ]
+   },
+   {
+    "t": "Finding an extremely rare passage and walking towards it may lead to Level 630.",
+    "targets": [
+     "Level 630"
+    ]
+   }
+  ],
+  "image": "Level 626.webp",
+  "url": "https://backrooms.fandom.com/wiki/Level_626"
+ },
+ {
+  "title": "Level 140",
+  "display": "Level 140: \"Dead Space\"",
+  "class": "Class_Custom_Image | sec:Deteriorating Security | ent:I Hope This Hurts.",
+  "cats": "Levels, Space, Horror, Backrooms Investigation Foundation, Our Home, Kuryente, Cluster I",
+  "desc": "",
+  "entities": [
+   "Object 6",
+   "Entity 88",
+   "Entity 5",
+   "Phenomenon 35",
+   "Entity 71",
+   "Entity 6"
+  ],
+  "exits": [
+   {
+    "t": "Any interactions with [FILE MISSING] that lead in death will bring wanderers to Level 203. This is still a matter of theory, however, as no deaths by the entity have been reported.",
+    "targets": [
+     "Level 203"
+    ]
+   },
+   {
+    "t": "Finding the boarding room and noclipping through the door will send wanderers to Level 24. Other space-like levels, such as P0LARI5 have also been entered through this method.",
+    "targets": [
+     "Level 24",
+     "P0LARI5"
+    ]
+   }
+  ],
+  "image": "Minus100Inside.png",
+  "url": "https://backrooms.fandom.com/wiki/Level_140"
+ },
+ {
+  "title": "Level 6",
+  "display": "Level 6: \"Lights Out\"",
+  "class": "sin clase",
+  "cats": "Levels, The Main Nine, Cluster I, Class Undetermined",
+  "desc": "Level 6 is a sprawling, barren tundra shrouded in perpetual darkness. Littering the forest floor are a diverse number of brush crops along with other natural vegetation, the majority of which are wilting due to extended dehydration. The landscape is covered in a wide variety of rock formations, typically consisting of jagged boulders scattered throughout the terrain. Some rocks have unusual markings or sharp, crystalline structures, suggesting unnatural origins. As the ground is unstable and prone to collapse, it is easy for one to lose their footing within the level; as a result, many large pitfalls are strewn about the terrain, which render large portions of the level entirely unnavigable. Most methods of communication are entirely fruitless within the level, as electronic devices do not function and radio signals are dysfunctional. Portable light sources also do not function within Level 6, with fires, flashlights, and other lighting being extinguished upon entry, making it impossible to combat the level's oppressive darkness. Throughout the extensive wilderness, one may come across large valleys between the mountain peaks. The ground of these clearings are mostly covered in yellow-brown grass emitting a repulsive stench. In some of these large clearings, there may be massive stone obelisks containing texts written in indecipherable glyphs and lexicons. What purpose said obe",
+  "entities": [
+   "Entity 333",
+   "Entity 10"
+  ],
+  "exits": [
+   {
+    "t": "Tripping on a fallen branch, which may lead one to Level 6.1;",
+    "targets": [
+     "Level 6.1"
+    ]
+   },
+   {
+    "t": "Entering a hole, which will lead one to Level 8;",
+    "targets": [
+     "Level 8"
+    ]
+   },
+   {
+    "t": "As well as wandering far enough, or finding a seemingly anomalous light source, which lead one to Level 7.",
+    "targets": [
+     "Level 7"
+    ]
+   }
+  ],
+  "image": "Lights Out.webp",
+  "url": "https://backrooms.fandom.com/wiki/Level_6"
+ },
+ {
+  "title": "Level 484",
+  "display": "Level 484: \"The Whiteout\"",
+  "class": "sin clase",
+  "cats": "Levels, Cluster I, Wikidot Ports",
+  "desc": "As seen by the ladders, tools, white paint, and other construction materials strewn all over the level, The Whiteout is a massive, white house undergoing renovation. Each area is distinct in its own way, even if the space is repetitive and straightforward. The rooms vary in terms of size, shape, and interior furnishings. Despite their striking similarities, they never seem to be the same. They resemble hallways, bathrooms, living rooms, and kitchens. Spatial and temporal abnormalities reside in some places, with objects in these spots phasing or shifting location. They are the alleged outcomes of deeds committed by The Maker, the only known residing entity on the level. When we were first sent there in 2016 in order to map the level, we counted 52 rooms of all kinds, 21 corridors and 5 staircases. Over five years later we came back there again after reports stating that our maps were incorrect. We determined that the level now consists of 77 rooms, 35 corridors and 9 staircases. We came to the conclusion that The Whiteout is constantly increasing its size over time. Every year from that discovery, small groups of 4-7 Compass Point Team members are sent to see what changed on the level and update the map. A few mysteries still remain, like the identity of the Maker and his purpose for expanding these rooms. My team was sent there multiple times for that very reason, but we never",
+  "entities": [],
+  "exits": [],
+  "image": "The Whiteout.jpeg",
+  "url": "https://backrooms.fandom.com/wiki/Level_484"
+ },
+ {
+  "title": "Level 305",
+  "display": "Level 305: \"Reflections\"",
+  "class": "Class Custom Image | sec:<span style=\"font-family:Mate SC;\">Psychologically manipulateing</span> | ent:<span style=\"font-family:Mate SC;\">High Entity Count </span>",
+  "cats": "Glitched Levels, Cluster I, Levels, Dangerous",
+  "desc": "Level 305 is the 306th level of the backrooms. Description Level 305, colloquially referred to as \"Reflections,\" is an infinite labyrinthine complex comprising crystal clear mirrors, concrete floors, and dimly lit lights. Additionally, the fluorescent lights are known to produce a quiet hum-buzz that increases and decreases its volume at random. The level tends to have a frigid temperature of around 0°C; however, the temperature may rarely drop down to -5°C, which causes all mirrors to form thin ice sheets. Recently, M.E.G. researchers discovered that Level 305 has phenomenal \"glitches\" that affect mirrors throughout the maze. When the mirrors appear \"glitchy,\" it is recommended to avoid touching them, as reports have stated that wanderers who touched them become physically inverted in a slow yet painful process. Mirrors within the level are occasionally cracked or completely shattered. As a result, travelers should avoid them at all costs due to the ruptured mirrors serving as an entrance to The Void. Throughout Level 305, electronics such as radios, telephones, and disassembled Wi-Fi routers are scattered across the concrete floor. Oddly enough, despite their wear and tear and lack of wires, they are still somewhat functional. Parallel with Level 3 and many other levels, the somewhat functional Wi-Fi routers are an excellent source of cellular signal with the password being i",
+  "entities": [
+   "Entity 8",
+   "Entity 4",
+   "Entity 64",
+   "Entity 3"
+  ],
+  "exits": [
+   {
+    "t": "Entering a blood covered door will take one to Level 410.",
+    "targets": [
+     "Level 410"
+    ]
+   },
+   {
+    "t": "Following a blue glint will eventually lead one to Level 306.",
+    "targets": [
+     "Level 306"
+    ]
+   },
+   {
+    "t": "One may end up on Level 17 by walking for an undetermined period of time.",
+    "targets": [
+     "Level 17"
+    ]
+   },
+   {
+    "t": "Finding a door with bars and entering it will lead one to Level 3.",
+    "targets": [
+     "Level 3"
+    ]
+   },
+   {
+    "t": "No-clipping through a mirror that has a white neon light above it will take one to Level 256.",
+    "targets": [
+     "Level 256"
+    ]
+   },
+   {
+    "t": "No-clipping through a neon mirror has a slim chance of taking you to Level 699.",
+    "targets": [
+     "Level 699"
+    ]
+   }
+  ],
+  "image": "Mirror.jpg",
+  "url": "https://backrooms.fandom.com/wiki/Level_305"
+ },
+ {
+  "title": "Level 306",
+  "display": "Level 306: \"Blue Lucidity\"",
+  "class": "sin clase",
+  "cats": "Class 1e - Environmental, Levels, Cluster I, Safe, Environmental Hazards",
+  "desc": "The supermoon paints the city with a brilliance of blue as it lingers above the horizon. As the light bounces its way into the alleyways, the red lamps awaken, serving to fight against the monotony of the imposing blue brick sea. In the Dazzle, I Feel As One. Threat Index: Class 1e - Environmental >> Abstract Anomalies >> Unstable >> Low Number of Environmental Hazards Level 306, named by nomads as \"Blue Abstraction\", \"Blue Brilliance\", or \"Blue Lucidity\", is known for its emotional connections it has with wanderers. Description Level 306 is a packed town situated on an indefinite hilly expanse. The town is composed of rather small buildings, which may include but not limited to: houses, apartments, retail outlets, restaurants, libraries, plazas, and churches. The layout of the conurbation is awkward, varying from cul-de-sac to grid unexpectedly, and districts being placed sporadically. Additionally, Level 306 features a conglomerate of varying infrastructure and architecture, generally resembling European architecture that is no younger than the 21st century or no older than the Middle Ages. Mixed in with the dated architecture of the city are more modern technology, including automobiles, electric grids, streetlights, plumbing, and electric appliances. The city is poorly adapted to the topographically hilly terrain that it resides on. Cliffs and valleys may split buildings or",
+  "entities": [
+   "Entity 63",
+   "Phenomenon 35",
+   "Entity 4",
+   "Entity 22",
+   "Entity 62"
+  ],
+  "exits": [],
+  "image": "91.webp",
+  "url": "https://backrooms.fandom.com/wiki/Level_306"
+ },
+ {
+  "title": "Level 399",
+  "display": "Level 399: The Neon Paradise",
+  "class": "sin clase",
+  "cats": "Levels, Cluster I, Secret Levels, Class Habitable",
+  "desc": "Level 399 is split into 3 main areas: The Rosatin Hotel The first area of Level 399, the Rosatin Hotel, is a large expanse encapsulating 400 floors, containing 1,000 rooms each (400,000 rooms in total). The level is split into 2 different areas, the first being the iconic pink building and the second being a vast plane of solid pink clouds. Both sections are a comfortable 72°F (~22°C). Any damage done to the level will heal itself afterwards; how long it takes to heal depends on the severity of the damage. For example, slight damage towards the level will instantly heal, while a large portion of damage will take up to 3 months to heal. The Rosatin Hotel is the first area one typically encounters in Level 399, and therefore is home to the largest human population. The Neon Natatorium takes the appearance of an apparently boundless complex composing of vast, brilliant, purple poolrooms. Most of the objects in this level, like vending machines, lanterns, chairs, and so on are considered \"futuristic\" themed, with a pitch black primary color and neon purple outline. There is an abundance of many useful supplies, notable ones being Almond Water, Mixologist's Delight, Moth Jelly, etc. These items have been known to expire, so it’s best to check the expiration date before consumption. Windows can be found typically near pools. Looking out through these windows will display a black or d",
+  "entities": [],
+  "exits": [],
+  "image": "The promised Land.png{{!",
+  "url": "https://backrooms.fandom.com/wiki/Level_399"
+ },
+ {
+  "title": "Level 186",
+  "display": "Level 186: \"Famine Forest\"",
+  "class": "Class 4 | sec:Extreme Hunger | ent:",
+  "cats": "Levels, Cluster I, Dangerous, Forest",
+  "desc": "Level 186 is a seemingly endless dead forest devoid of any grass or leaves. Its expanse is sometimes hilly to varying degrees, although never being mountainous. One can almost always readily traverse the level without having to make any detours, though it is nonetheless very easy to lose one's sense of direction due to the largely similar-looking terrain. The ground itself comprises rough, oftentimes gravelly dirt that is incapable of hosting any plant growth. Fallen branches commonly populate the forest floor, though there have been no reported instances of the branches actually falling. The dead trees are fireproof and do not rot, although the absence of leaves suggests that the foliage did at some point. However, it is commonly thought that the trees were always like this and this is simply the inherent state of the level. Meanwhile, the level's sky remains in constant daylight yet is obscured by an all-encompassing fog. The temperature is moderate and remains consistent, although the level is still quite dry despite the moisture that should be in the air. Wanderers within Level 186 sometimes experience auditory hallucinations of branches cracking out of sight. These often startle anyone who hears them and can easily cause paranoia, especially after prolonged exposure. Moreover, it is even possible for the imagined sounds to do the very opposite over time and lure people int",
+  "entities": [],
+  "exits": [
+   {
+    "t": "Climbing through a rare floating window complete with a frame will send one to Level 188. However, these windows are occasionally too high to reach.",
+    "targets": [
+     "Level 188"
+    ]
+   },
+   {
+    "t": "Rare tree hollows lead to Level 192.",
+    "targets": [
+     "Level 192"
+    ]
+   },
+   {
+    "t": "Scarce pits in the ground drop into Level 202.1.",
+    "targets": [
+     "Level 202.1"
+    ]
+   },
+   {
+    "t": "One may rarely come across a unique tree growth resembling fence posts; touching these will teleport one into Level 204.",
+    "targets": [
+     "Level 204"
+    ]
+   },
+   {
+    "t": "Noclipping through a puddle sends one to Level 908.",
+    "targets": [
+     "Level 908"
+    ]
+   }
+  ],
+  "image": "Dead Forest.jpg",
+  "url": "https://backrooms.fandom.com/wiki/Level_186"
+ },
+ {
+  "title": "Level 995",
+  "display": "Level 995: \"Karmaland Amusement Park\"",
+  "class": "sin clase",
+  "cats": "Class Variable, Levels, Cluster I",
+  "desc": "__NOTOC__",
+  "entities": [
+   "Level 83.1"
+  ],
+  "exits": [],
+  "image": "Carnival995.jpg",
+  "url": "https://backrooms.fandom.com/wiki/Level_995"
+ },
+ {
+  "title": "Level 483.5",
+  "display": "‎",
+  "class": "Class Custom Image | sec:Unusual Properties | ent:Mysterious Entities",
+  "cats": "Levels, Sub-Levels",
+  "desc": "Level 483.5, referred to as \"Inverted Corridors\" or simply \"Inverted,\" is a particularly hazardous sub-level closely associated with Level 483. The level is not difficult to access, although it has been proven difficult to exit. Only one individual, Chaosraider98, has described the level in detail. He unexpectedly entered the level during an exploration and has been unable to return to normal levels since. This level is solely capable of being described utilizing retrieved photographs, audio logs, and posts on various internet platforms. According to Chaosraider98, the level consists of an expansive assortment consisting of haphazardly positioned hallways that typically finish in t-junctions. The walls are lined with wooden doors that are randomly arranged and generally positioned five to ten feet apart from one another. Level 483.5 contains the most common sorts of furniture, such as tables, chairs, pictures, and potted plants. The aforementioned pictures display practically nothing, as they all depict a dark nothingness with no distinguishing characteristics. The disorganized doors that are located within Level 483.5 usually remain locked, though one may occasionally stumble upon an opened door. These doors lead to inconsistent rooms with seemingly random functions. The rooms are arranged illogically. For example, a bedroom may be next to a kitchen, which is near a home offic",
+  "entities": [
+   "Entity 2"
+  ],
+  "exits": [
+   {
+    "t": "The only known way to exit Level 483.5 is by no-clipping, however, the chance of one successfully no-clipping is very low. This has a chance of leading to any level, although it may also serve as a ga",
+    "targets": [
+     "The Void"
+    ]
+   }
+  ],
+  "image": "153.webp",
+  "url": "https://backrooms.fandom.com/wiki/Level_483.5"
+ },
+ {
+  "title": "Level 777",
+  "display": "Level 777: \"True Scopophobia\"",
+  "class": "sin clase",
+  "cats": "Levels, Cluster I, Class Undetermined, Horror",
+  "desc": "Threat Index: Class Undetermined >> Mysterious Properties >> Unknown Information >> Unknown Entities Remaining as one of the least understood and least well-known levels of the Backrooms, entry to the 778th level of the Backrooms is highly unadvised, due to the survivability rate for those who enter being astronomically low.",
+  "entities": [],
+  "exits": [
+   {
+    "t": "Entering a tunnel will eventually bring you to Level 690;",
+    "targets": [
+     "Level 690"
+    ]
+   },
+   {
+    "t": "Jumping or walking down into a dark, descending spiral stairway hidden behind a closet door will safely land one in Level 450.",
+    "targets": [
+     "Level 450"
+    ]
+   }
+  ],
+  "image": "Scopophobia.webp",
+  "url": "https://backrooms.fandom.com/wiki/Level_777"
+ },
+ {
+  "title": "Level 130",
+  "display": "Level 13?",
+  "class": "Class Custom Image | sec:Stable | ent:Low Entity Count",
+  "cats": "Levels, Class 2, Cluster I, Dangerous",
+  "desc": "Level 13, otherwise known as \"The Infinite Apartments\" or \"Vintage Apartments,\" is a seemingly never-ending apartment complex featuring multiple system hallways. The building has an extensive number of floors that are accessible through stairwells. The building's design is reminiscent of traditional 1980s architecture, with a distinctive kind of wallpaper with a color scheme resembling mono-yellow Level 0, a unique carpet pattern, and fluorescent bulbs. The condition is rather old and unclean, having tears, dusty, cracked, and occasionally possessed small holes. Each building has its internal stairway system for general accessibility, arranged randomly. Elevators perform the same, although they can only transport up several floors or to another level, usually back to Level 3 or up to Level 14. The current estimate is roughly one thousand stories, with the possibility of more. The floor appears more unsteady as you ascend, seeming more deserted. The layout seems to be created by overlapping and stacking buildings. As a result of the perplexing architecture, the hallways between buildings might be incompatible, resulting in dead ends and making it impossible to explore another area further. However, most buildings are logically linked as certain hallways may twist and bend to join them. Light flickering and outages can occur and typically affect all hallway lights, leaving the ar",
+  "entities": [
+   "Entity 9",
+   "Entity 3",
+   "Entity 8",
+   "Entity 10",
+   "Entity 5",
+   "Entity 4",
+   "Entity 2"
+  ],
+  "exits": [
+   {
+    "t": "Elevators may occasionally take to Level 3, Level 4, Level 5, and Level 14.",
+    "targets": [
+     "Level 3",
+     "Level 4",
+     "Level 5",
+     "Level 14"
+    ]
+   },
+   {
+    "t": "A rarely spotted fire exit door in the hallway leads to Level 11.",
+    "targets": [
+     "Level 11"
+    ]
+   },
+   {
+    "t": "Warp tears inside the walls may convey one into Level 21.",
+    "targets": [
+     "Level 21"
+    ]
+   },
+   {
+    "t": "Kevin I. captured the image of Level 11 during the journey to The Apartments.",
+    "targets": [
+     "Level 11"
+    ]
+   },
+   {
+    "t": "I begin to see tears in the wallpaper, along with little holes visible from another room and a crack that stretches to the ceiling. I feel the old, dusty flat when I put my finger on the wall. The wal",
+    "targets": [
+     "Level 0"
+    ]
+   },
+   {
+    "t": "As I make my way back to the base, I find Maddy standing at the entrance where we came from Level 11, looking at the fire escape door.",
+    "targets": [
+     "Level 11"
+    ]
+   },
+   {
+    "t": "Level 130 is the 131st level of The Backrooms.",
+    "targets": [
+     "Backrooms Wiki"
+    ]
+   },
+   {
+    "t": "Elevators may occasionally take to Level 3, Level 4, Level 5, and Level 14.",
+    "targets": [
+     "Level 3",
+     "Level 4",
+     "Level 5",
+     "Level 14"
+    ]
+   },
+   {
+    "t": "A rarely spotted fire exit door in the hallway leads to Level 11.",
+    "targets": [
+     "Level 11"
+    ]
+   },
+   {
+    "t": "Warp tears inside the walls may convey one into Level 21.",
+    "targets": [
+     "Level 21"
+    ]
+   }
+  ],
+  "image": "Level130-3.png",
+  "url": "https://backrooms.fandom.com/wiki/Level_130"
+ },
+ {
+  "title": "Level 15",
+  "display": "Level 15: \"Futuristic Halls\"",
+  "class": "Class 1e} | sec:null | ent:",
+  "cats": "Levels, Cluster I, Environmental Hazards",
+  "desc": "Level 15, informally known as the \"Futuristic Halls,\" is a labyrinthine structure made of futuristic corridors. These corridors generally exude a \"futuristic\" aesthetic due to the association travelers create between Level 15 and the archetype of an innovative utopia that circulates in The Frontrooms. The interior features white walls that are composed of lightweight building materials, including aluminum alloys, composite materials, stainless steel, and other such mediums. These materials are known to exhibit excellent strength-to-weight ratios, corrosion resistance, and structural integrity. The flooring is usually ceramic with occasional carpet or non-slip coatings. This level has an infamous isolation effect similar to that of Level 0, meaning no two wanderers can meet with each other. A constant buzz echoes through the hallways of Level 15. Some of these sounds have documented mechanical origins, but most are considered inexplicable natural ambience. The ambience is occasionally interrupted by sounds of distant beeping (please scroll to the end of this page and play the audio sample). The hallways are consistent in size and outlook, but there are documented areas that are incredibly spacious, like parts of a futuristic mall. Level 15 has some other macroscopic patterns. The level lacks any sort of life whatsoever, suggesting that this level is more so an embodiment of pure",
+  "entities": [],
+  "exits": [
+   {
+    "t": "A blue door sends one to Level 0.8.",
+    "targets": [
+     "Level 0.8"
+    ]
+   },
+   {
+    "t": "Wanderers have speculated that a control panel will occasionally contain a button labeled \"ESCAPE.\" Pressing the button will result in a nearby locked gateway available, leading to Level 3.",
+    "targets": [
+     "Level 3"
+    ]
+   },
+   {
+    "t": "Descending an office staircase may take you to Level 4.",
+    "targets": [
+     "Level 4"
+    ]
+   },
+   {
+    "t": "Breaking a window can result in transportation to Level 11.",
+    "targets": [
+     "Level 11"
+    ]
+   },
+   {
+    "t": "Walking into a futuristic door labeled \"Medical Center\" will send you to Level 14.",
+    "targets": [
+     "Level 14"
+    ]
+   },
+   {
+    "t": "Going through a hospital door will lead to Level 16.",
+    "targets": [
+     "Level 16"
+    ]
+   },
+   {
+    "t": "Staying in dark areas for an extended period may cause you to pass out and wake up in Level 58 or Level 6.",
+    "targets": [
+     "Level 58",
+     "Level 6"
+    ]
+   },
+   {
+    "t": "Following a trail of skidmarks will eventually lead one to an open garage door leading to Level 69.",
+    "targets": [
+     "Level 69"
+    ]
+   },
+   {
+    "t": "Going through a door labelled \"The Archives\" will lead to Level 80.",
+    "targets": [
+     "Level 80"
+    ]
+   },
+   {
+    "t": "Certain doors may take to Level 339.",
+    "targets": [
+     "Level 339"
+    ]
+   },
+   {
+    "t": "A series of hallways hidden in a secret chamber labelled \"Project TCCS\" will take one to Level 443.",
+    "targets": [
+     "Level 443"
+    ]
+   },
+   {
+    "t": "Finding space turf and clipping into it will bring one to Level 818.",
+    "targets": [
+     "Level 818"
+    ]
+   },
+   {
+    "t": "Finding a sticky red substance, you may find a way to the dark caverns of Level 990.",
+    "targets": [
+     "Level 990"
+    ]
+   },
+   {
+    "t": "Should a wanderer slip on a puddle of spilt Almond Water in one of the narrower hallways before hitting their head on the ceramic flooring, they may be transported to any of the following levels depen",
+    "targets": [
+     "Object 1"
+    ]
+   },
+   {
+    "t": "Should said almond water be the Blue variant, they'll be taken to Level 32",
+    "targets": [
+     "Level 32"
+    ]
+   },
+   {
+    "t": "Should said almond water be the Green variant, they'll be taken to Level 48",
+    "targets": [
+     "Level 48"
+    ]
+   },
+   {
+    "t": "Should said almond water be the Red variant, they'll be taken to Level 427",
+    "targets": [
+     "Level 427"
+    ]
+   },
+   {
+    "t": "Should the wanderer slip on the substance intentionally thinking its almond water in an attempt to be transported to one of the listed levels above, but the substance turn out to be Cashew Water, rath",
+    "targets": [
+     "Object 44",
+     "The_Game"
+    ]
+   }
+  ],
+  "image": "Level15-1-cc.jpg",
+  "url": "https://backrooms.fandom.com/wiki/Level_15"
+ },
+ {
+  "title": "Level 268",
+  "display": "Level 268: \"Brutally Cramped\"",
+  "class": "sin clase",
+  "cats": "Levels, Frigid, Cluster I, Dangerous, Industrial",
+  "desc": "The walls creep closer Left, right, front, back, and center You hardly squeeze through Level 268 is the 269th level of the Backrooms. ⨠ DESCRIPTION Comprising extensive, directionless monotonous concrete halls whose walls clench, Level 268 garnered a reputation for its claustrophobic expanse. Some hallways' narrowness force wanderers to walk sideways to traverse it. The level's sub-zero temperatures plagues wanderers with hypothermia and some wet surfaces, which remain liquid despite the low temperatures, can be dangerously slippery. Fluorescent lights illuminate the halls of Level 268, emitting an irritating buzzing noise. The level exhibits varying appearances and odors throughout its expanse; one area may be in pristine condition, while another may be in disrepair. Some hallways in the level lack illumination. The level posits an unconventional layout, bewildering many wanderers. The layout presents inconsistency throughout the level. The complexity of the level gives the impression of non-Euclidean geometry, but actual non-Euclidean geometry is non-existent in Level 268. Wanderers usually have temporarily weakened cognitive capabilities due to the complexity of traversing the level. Level 268's architecture largely resembles the Brutalist architectural movement in the Frontrooms, hence its name. Super-reinforced concrete comprises the walls of the level, having near-indestr",
+  "entities": [
+   "Hydrolitis Plague",
+   "Entity 3",
+   "Entity 4",
+   "Entity 5",
+   "Entity 22",
+   "Entity 35",
+   "Entity 38",
+   "Entity 44",
+   "Entity 36",
+   "Entity 2",
+   "Level 268.1"
+  ],
+  "exits": [
+   {
+    "t": "If it resembles a parking space, it leads to Level 22;",
+    "targets": [
+     "Level 22"
+    ]
+   },
+   {
+    "t": "If it resembles a warehouse, it leads to Level 20;",
+    "targets": [
+     "Level 20"
+    ]
+   },
+   {
+    "t": "If it resembles a factory, it leads to Level 23;",
+    "targets": [
+     "Level 23"
+    ]
+   },
+   {
+    "t": "If ice and snow are present, it leads to Level 108;",
+    "targets": [
+     "Level 108"
+    ]
+   },
+   {
+    "t": "If it resembles a sports facility such as a basketball court, it may lead to Level 176;",
+    "targets": [
+     "Level 176"
+    ]
+   },
+   {
+    "t": "If it has no architectural consistency whatsoever, cannot be discerned as any spaces mentioned above, it most likely leads to Level 1;",
+    "targets": [
+     "Level 1"
+    ]
+   },
+   {
+    "t": "Did you know that consistently questioning the level's nature might send wanderers to Level 47?",
+    "targets": [
+     "Level 47"
+    ]
+   },
+   {
+    "t": "Entering a door with a sign on it with the English word \"Next\" etched on it, leads to Level 269;",
+    "targets": [
+     "Level 269"
+    ]
+   },
+   {
+    "t": "Descending a staircase sends one to either Level 914, or an indoor space in Level 67;",
+    "targets": [
+     "Level 914",
+     "Level 67"
+    ]
+   },
+   {
+    "t": "Entering an orange door sends one to either Level 38 or Level 38.1;",
+    "targets": [
+     "Level 38",
+     "Level 38.1"
+    ]
+   },
+   {
+    "t": "A large square room with a patch of grass leads one to Level 10;",
+    "targets": [
+     "Level 10"
+    ]
+   },
+   {
+    "t": "Finding a door in a dark room that is only illuminated by a ray of sunlight will lead one to Level 268.1;",
+    "targets": [
+     "Level 268.1"
+    ]
+   },
+   {
+    "t": "Finally, noclipping thorugh a hallway with a multitude of leaking pipes sends one to Level 0.8.",
+    "targets": [
+     "Level 0.8"
+    ]
+   }
+  ],
+  "image": "Republic of Aurielle New.png",
+  "url": "https://backrooms.fandom.com/wiki/Level_268"
+ },
+ {
+  "title": "Level 45",
+  "display": "Level 45: \"Otherworldly Timberland\"",
+  "class": "Class Variable} | sec:null | ent:",
+  "cats": "Levels, Cluster I, Forest",
+  "desc": "The Extraterrestrial Forest Level 45 is the 46th level of the Backrooms.",
+  "entities": [
+   "Entity 3",
+   "Entity 8",
+   "Entity 4",
+   "Entity 5",
+   "Hydrolitis Plague",
+   "M.E.G.",
+   "Level 45",
+   "Level 8",
+   "Backrooms Wiki",
+   "The Hive"
+  ],
+  "exits": [
+   {
+    "t": "Wandering deeper and deeper into the hazardous caves may lead one to The Hive. This method is strongly discouraged and shall not be attempted under any circumstances.",
+    "targets": [
+     "The Hive"
+    ]
+   },
+   {
+    "t": "Locating and Noclipping through a Cherry Blossom will take you to Level 110.",
+    "targets": [
+     "Level 110"
+    ]
+   },
+   {
+    "t": "Nocliping through a door will take you to Level 974.",
+    "targets": [
+     "Level 974"
+    ]
+   },
+   {
+    "t": "Reaction to intoxication from overdoses of Neon Water and miraculously surviving the disorientating influence will bring one to Level 7. Do not attempt this, as most often victims will die if not drin",
+    "targets": [
+     "Level 7"
+    ]
+   },
+   {
+    "t": "Noclipping into unstable trees consistently bring wanderers to Level 0.",
+    "targets": [
+     "Level 0"
+    ]
+   },
+   {
+    "t": "Certain unforeseen areas in Level 45's caves can transition and lead to Level 8.",
+    "targets": [
+     "Level 8"
+    ]
+   },
+   {
+    "t": "Dry areas in this level may lead one to Level 46.",
+    "targets": [
+     "Level 46"
+    ]
+   },
+   {
+    "t": "Discovering a sewer system in the caves of Level 45 will lead to Level 49.",
+    "targets": [
+     "Level 49"
+    ]
+   },
+   {
+    "t": "Broken-down neon signs with the word 'Range' are typically a surefire way to reach Level 73.",
+    "targets": [
+     "Level 73"
+    ]
+   },
+   {
+    "t": "Certain tight caverns lead to level 64.",
+    "targets": [
+     "level 64"
+    ]
+   }
+  ],
+  "image": "1b76bf959aa077d46752ea87cb562906.jpg",
+  "url": "https://backrooms.fandom.com/wiki/Level_45"
+ },
+ {
+  "title": "Level 909",
+  "display": "Level 909: \"The Last Snow\"ㅤ",
+  "class": "sin clase",
+  "cats": "Class Undetermined, Levels, Format Screws, Cluster I",
+  "desc": "Survival Difficulty: Class Undetermined 》Mysterious Properties 》Uncertainty 》Wᴉup ⅄onɹ Mᴉʇɥ Oulʎ Level 909 is the 910th level of the Backrooms. It is comprised of 2 sections with a versatile range of aspects. ---- ---- 【🏠❄️】",
+  "entities": [],
+  "exits": [
+   {
+    "t": "Falling through a patch of snow located outside the Lantern Walk will transfer one to Level 910.",
+    "targets": [
+     "Level 910"
+    ]
+   }
+  ],
+  "image": "Level 909 preview.png",
+  "url": "https://backrooms.fandom.com/wiki/Level_909"
+ },
+ {
+  "title": "Level 996",
+  "display": "Level 996: “White Torture”",
+  "class": "Class Ψ | sec:null | ent:",
+  "cats": "Levels, Levels, Cluster I, Mental Hazards, Dangerous",
+  "desc": "Level 996, otherwise known as “White Torture”, is divided into 2 contrasting areas. Each area is comprehensively different, although they share the same similarities such as its color; the scarceness of entities; perplexing architecture that nullifies the intended purpose; its isolating nature; and the abundance of food. These areas are somewhat connected, as entrances to these areas are quite common. Gravity in Level 996 is much weaker than in other levels, making it feasible to jump from a high distance and land on the ground unscathed. The gravity in Level 996 has been measured to be 2.047 m/s², instead of the typical 9.807 m/s². Any supplies carried by a wanderer will be absent when one immediately enters the level. Although residing in Level 996 is possible, it is not feasible to permanently call Level 996 home. Multiple people had gone missing, and a few had turned into Insanity while on the level. It is presumed the extended period of the isolating nature of Level 996 can be the provocation. Hallucinations are quite common in Level 996, more commonly family and friends back in the Frontrooms or the Backrooms alike. Due to this, psychotic breaks and mental breakdowns might occur, which can lead one to turn into Insanity.",
+  "entities": [
+   "Entity 3",
+   "Phenomenon 35"
+  ],
+  "exits": [
+   {
+    "t": "Wandering far enough into the Building will eventually lead one to a location which fade in Level 0 due to a variety of factors;",
+    "targets": [
+     "Level 0"
+    ]
+   },
+   {
+    "t": "Noclipping through a wall plastered with desert wallpaper will lead one to Level 997.",
+    "targets": [
+     "Level 997"
+    ]
+   },
+   {
+    "t": "Areas in which if one enters them will unknowingly lead them to Level 141.",
+    "targets": [
+     "Level 141"
+    ]
+   },
+   {
+    "t": "If you endure this hell, you might get sent to Level 700.",
+    "targets": [
+     "Level 700"
+    ]
+   }
+  ],
+  "image": "Level 996 House.png",
+  "url": "https://backrooms.fandom.com/wiki/Level_996"
+ }
+]

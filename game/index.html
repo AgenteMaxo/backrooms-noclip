@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BACKROOMS MMO</title>
-<link rel="stylesheet" href="css/style.css?v=262">
+<link rel="stylesheet" href="css/style.css?v=280">
 </head>
 <body>
 <div id="app">
@@ -36,12 +36,12 @@
       <div class="seed-row">
         <input id="seed-input" type="hidden">
         <label><span data-icon="altavoz" data-icon-size="13"></span> <input type="range" id="vol-slider-title" min="0" max="100" step="1" style="vertical-align:middle;width:110px"></label>
-        <button id="btn-sound-menu-title" class="btn-small" style="margin-left:8px;margin-top:0"><span data-icon="engranaje" data-icon-size="13"></span> Sonido</button>
+        <button id="btn-sound-menu-title" class="btn-small" style="margin-left:8px;margin-top:0"><span data-icon="engranaje" data-icon-size="13"></span> Ajustes</button>
         <button id="btn-gamepad-title" class="btn-small" style="margin-left:8px;margin-top:0">Mando</button>
       </div>
       <div class="room-row">
         <label>Sala privada opcional:
-          <input id="room-input" type="password" spellcheck="false" autocomplete="off" placeholder="vacío = pública" maxlength="32">
+          <input id="room-input" type="password" spellcheck="false" autocomplete="new-password" placeholder="vacío = pública" maxlength="32">
         </label>
       </div>
       <button id="btn-start" class="btn-big">DESPERTAR EN LEVEL 0</button>
@@ -50,6 +50,9 @@
       <p class="hint">W/A/S/D: moverte · CLIC para enganchar el ratón (Pointer Lock) y girar la cámara, ESC libera (o clic derecho y arrastrar en Ajustes) · ESPACIO: interactuar y esconderse<br>
       T: hablar · Q/E: usar manos · F: linterna · B: mochila · M: mapa · L: registro · C: códice · ESC: ajustes</p>
     </div>
+    <button id="btn-music-menu" class="btn-music-float" title="Música del menú">
+      <span data-icon="nota" data-icon-size="16"></span>
+    </button>
   </div>
 
   <!-- Tarjeta de entrada a nivel -->
@@ -73,6 +76,7 @@
     <div id="game-wrap">
       <canvas id="gl-canvas" width="960" height="600" style="display:none"></canvas>
       <canvas id="game-canvas" width="960" height="600"></canvas>
+      <button id="btn-esc" title="Ajustes (ESC)"></button>
       <button id="btn-log" title="Registro completo (L)"></button>
       <div id="log-panel" style="display:none">
         <h3><span data-icon="pergamino" data-icon-size="14"></span> Registro</h3>
@@ -86,6 +90,11 @@
         <div class="dbg-fila"><span class="dbg-lab">Comida</span><div class="dbg-track"><div id="dbg-comida" class="dbg-fill"></div></div><span class="dbg-v" id="dbg-comida-v"></span></div>
         <div class="dbg-fila"><span class="dbg-lab">Bebida</span><div class="dbg-track"><div id="dbg-bebida" class="dbg-fill"></div></div><span class="dbg-v" id="dbg-bebida-v"></span></div>
         <div class="dbg-fila"><span class="dbg-lab">Cordura</span><div class="dbg-track"><div id="dbg-cordura" class="dbg-fill"></div></div><span class="dbg-v" id="dbg-cordura-v"></span></div>
+      </div>
+      <div id="hud-equipo">
+        <div class="eq-hud-slot" id="hud-eq-cara"><span class="eq-ph">cara</span></div>
+        <div class="eq-hud-slot" id="hud-eq-cuerpo"><span class="eq-ph">cuerpo</span></div>
+        <div class="eq-hud-slot" id="hud-eq-pies"><span class="eq-ph">pies</span></div>
       </div>
       <div id="hud-manos">
         <div class="mano-slot" id="mano-0" title="Mano izquierda"></div>
@@ -142,23 +151,18 @@
           <div class="modal-btns" id="choice-btns"></div>
         </div>
       </div>
-      <div id="instinto-modal" style="display:none">
-        <div class="modal-box" id="instinto-box">
-          <h3><span data-icon="ojo" data-icon-size="16"></span> Algo cambia en ti</h3>
-          <p id="instinto-text">Las Backrooms te reconocen. Un instinto nuevo se abre paso bajo tu piel — elige cuál dejas entrar. <b>No hay vuelta atrás.</b></p>
-          <div id="instinto-cards"></div>
-          <p class="warn" style="font-size:13px">Sintonía <span id="instinto-nivel"></span>/100 — cuanto más te adaptas, menos te reconoce la realidad al escapar.</p>
-        </div>
-      </div>
     </div>
   </div>
 
   <div id="touch-controls" aria-label="Controles táctiles">
-    <div class="touch-dpad">
-      <button data-touch="up">▲</button>
-      <button data-touch="left">◀</button>
-      <button data-touch="down">▼</button>
-      <button data-touch="right">▶</button>
+    <div id="touch-joystick" class="touch-joystick" aria-label="Movimiento">
+      <div class="joy-base"><div class="joy-stick"></div></div>
+    </div>
+    <div id="touch-dpad" class="touch-dpad">
+      <button data-dir="up">▲</button>
+      <button data-dir="left">◀</button>
+      <button data-dir="down">▼</button>
+      <button data-dir="right">▶</button>
     </div>
     <div class="touch-actions">
       <button data-touch="q"><span data-icon="mano" data-icon-size="22"></span></button>
@@ -199,7 +203,13 @@
         <select id="opt-camara-modo">
           <option value="libre">Cámara libre (Pointer Lock)</option>
           <option value="clic">Clic derecho y arrastrar</option>
+          <option value="bloqueada">Cámara bloqueada (Seguimiento)</option>
         </select>
+      </div>
+      <div class="sound-row" id="row-camara-seguimiento" style="display:none;">
+        <label>Vel. de seguimiento</label>
+        <input type="range" id="opt-camara-seguimiento" min="1" max="30" step="1">
+        <span id="opt-camara-seguimiento-v"></span>
       </div>
       <div class="sound-row"><label>Giro de cámara</label>
         <label class="chk-row"><input type="checkbox" id="opt-camara-invertir"> Invertir arrastre horizontal</label>
@@ -208,9 +218,37 @@
         <input type="range" id="opt-camara-sens" min="10" max="300" step="5">
         <span id="opt-camara-sens-v"></span>
       </div>
+      <div class="sound-row">
+        <label>Resolución</label>
+        <select id="opt-resolucion">
+          <option value="auto16x9">Auto - 16:9 (Ajuste automático)</option>
+          <option value="auto16x10">Auto - 16:10 (Ajuste automático)</option>
+          <option value="1920x1200">1920 × 1200 (16:10)</option>
+          <option value="1920x1080">1920 × 1080 (16:9)</option>
+          <option value="1680x1050">1680 × 1050 (16:10)</option>
+          <option value="1600x900">1600 × 900 (16:9)</option>
+          <option value="1440x900">1440 × 900 (16:10)</option>
+          <option value="1366x768">1366 × 768 (16:9)</option>
+          <option value="1280x800">1280 × 800 (16:10)</option>
+          <option value="1280x720">1280 × 720 (16:9)</option>
+          <option value="960x600">960 × 600 (16:10)</option>
+          <option value="960x540">960 × 540 (16:9)</option>
+          <option value="640x360">640 × 360 (16:9 - Retro)</option>
+        </select>
+      </div>
+      <div class="sound-row">
+        <label>Fotogramas (FPS)</label>
+        <select id="opt-fps">
+          <option value="vsync">VSync (Sincronización vertical)</option>
+          <option value="144">144 FPS</option>
+          <option value="120">120 FPS</option>
+          <option value="60">60 FPS</option>
+          <option value="30">30 FPS</option>
+        </select>
+      </div>
       <div class="sound-row"><label>Pantalla</label><button id="btn-fullscreen" class="btn-small" style="margin-top:0">Pantalla completa</button></div>
       <div class="sound-row" id="admin-row"><label>🔑 Guardián</label>
-        <input type="password" id="admin-clave" placeholder="contraseña de admin…" maxlength="64" autocomplete="off">
+        <input type="password" id="admin-clave" placeholder="contraseña de admin…" maxlength="64" autocomplete="new-password">
         <button id="btn-admin" class="btn-small" style="margin-top:0">Entrar</button>
       </div>
       <p id="admin-msg"></p>
@@ -245,8 +283,19 @@
     </div>
   </div>
 
+  <!-- Selector de Música del Menú -->
+  <div id="music-menu" style="display:none">
+    <div class="modal-box" style="max-width: 380px;">
+      <h3><span data-icon="nota" data-icon-size="15"></span> Música del menú</h3>
+      <div id="music-list" class="music-list-container">
+        <!-- Rellenado por JS dinámicamente -->
+      </div>
+      <button id="btn-music-close" class="btn-small" style="margin-top: 15px; width: 100%;">Cerrar</button>
+    </div>
+  </div>
+
   <!-- Ajustes de Mando -->
-  <div id="gamepad-menu" style="display:none; position:absolute; inset:0; align-items:center; justify-content:center; background:rgba(0,0,0,0.8); z-index:90;">
+  <div id="gamepad-menu" style="display:none;">
     <div class="modal-box" style="width: 420px; max-width: 90%;">
       <h3>Configuración de Mando</h3>
       <div class="sound-row"><label>Vel. del Cursor</label><input type="range" id="opt-cursor-speed" min="2" max="25"><span id="opt-cursor-speed-v"></span></div>
@@ -270,40 +319,44 @@
 
   <!-- Códice del Errante (superpuesto, accesible desde título y juego con C) -->
   <div id="codex-panel" style="display:none">
-    <div class="codex-box">
-      <h2><span data-icon="libro" data-icon-size="17"></span> Códice del Errante — <span id="codex-name"></span></h2>
-      <p id="codex-records" class="codex-records"></p>
-      <details class="cdx" id="cdx-niveles" open>
-        <summary>Niveles transitados <span class="cdx-n" id="cdx-n-niveles"></span></summary>
-        <div id="codex-levels"></div>
-      </details>
-      <details class="cdx">
-        <summary>Colección — entidades <span class="cdx-n" id="cdx-n-ent"></span></summary>
-        <div id="codex-entidades" class="col-grid"></div>
-      </details>
-      <details class="cdx">
-        <summary>Colección — objetos <span class="cdx-n" id="cdx-n-obj"></span></summary>
-        <div id="codex-objetos" class="col-grid"></div>
-      </details>
-      <details class="cdx">
-        <summary>Salidas descubiertas <span class="cdx-n" id="cdx-n-sal"></span></summary>
-        <div id="codex-salidas"></div>
-      </details>
-      <details class="cdx">
-        <summary>Últimas expediciones <span class="cdx-n" id="cdx-n-hist"></span></summary>
-        <ol id="codex-history"></ol>
-      </details>
-      <button id="btn-codex-close" class="btn-small">Cerrar (C)</button>
+    <div class="codex-box-wrapper">
+      <button id="btn-codex-close-top" class="btn-close-box" aria-label="Cerrar">&times;</button>
+      <div class="codex-box">
+        <h2><span data-icon="libro" data-icon-size="17"></span> Códice del Errante — <span id="codex-name"></span></h2>
+        <p id="codex-records" class="codex-records"></p>
+        <details class="cdx" id="cdx-niveles" open>
+          <summary>Niveles transitados <span class="cdx-n" id="cdx-n-niveles"></span></summary>
+          <div id="codex-levels"></div>
+        </details>
+        <details class="cdx">
+          <summary>Colección — entidades <span class="cdx-n" id="cdx-n-ent"></span></summary>
+          <div id="codex-entidades" class="col-grid"></div>
+        </details>
+        <details class="cdx">
+          <summary>Colección — objetos <span class="cdx-n" id="cdx-n-obj"></span></summary>
+          <div id="codex-objetos" class="col-grid"></div>
+        </details>
+        <details class="cdx">
+          <summary>Salidas descubiertas <span class="cdx-n" id="cdx-n-sal"></span></summary>
+          <div id="codex-salidas"></div>
+        </details>
+        <details class="cdx">
+          <summary>Últimas expediciones <span class="cdx-n" id="cdx-n-hist"></span></summary>
+          <ol id="codex-history"></ol>
+        </details>
+      </div>
     </div>
   </div>
 
   <!-- Changelog (accesible desde título) -->
   <div id="changelog-panel" style="display:none">
-    <div class="codex-box">
-      <h2><span data-icon="reloj" data-icon-size="17"></span> Changelog</h2>
-      <p class="codex-records">Qué ha cambiado en el juego, versión a versión — lo más reciente arriba.</p>
-      <div id="changelog-list"></div>
-      <button id="btn-changelog-close" class="btn-small">Cerrar</button>
+    <div class="codex-box-wrapper">
+      <button id="btn-changelog-close-top" class="btn-close-box" aria-label="Cerrar">&times;</button>
+      <div class="codex-box">
+        <h2><span data-icon="reloj" data-icon-size="17"></span> Changelog</h2>
+        <p class="codex-records">Qué ha cambiado en el juego, versión a versión — lo más reciente arriba.</p>
+        <div id="changelog-list"></div>
+      </div>
     </div>
   </div>
 
@@ -327,39 +380,39 @@
 
 <!-- ?v= rompe la caché del edge (Cloudflare cachea .js/.css por defecto aunque
      el origen no lo pida): SUBIR el número en cada versión, junto con VERSION_JUEGO -->
-<script src="js/data.js?v=276"></script>
-<script src="js/engine/rng.js?v=274"></script>
-<script src="js/engine/daily-seed.js?v=274"></script>
-<script src="js/engine/route-seed.js?v=275"></script>
-<script src="js/mapgen/mapgen.js?v=276"></script>
-<script src="js/texture-assets.js?v=279"></script>
-<script src="js/engine/tiles.js?v=279"></script>
-<script src="js/engine/sprites.js?v=262"></script>
-<script src="js/engine/effects.js?v=262"></script>
-<script src="js/audio-manifest.js?v=262"></script>
-<script src="js/engine/sfx.js?v=274"></script>
-<script src="js/engine/fov.js?v=262"></script>
-<script src="js/systems/entities.js?v=262"></script>
-<script src="js/systems/rules.js?v=276"></script>
-<script src="js/engine/render.js?v=276"></script>
-<script src="js/lib/three.min.js?v=262"></script>
-<script src="js/lib/shaders/CopyShader.js?v=262"></script>
-<script src="js/lib/shaders/LuminosityHighPassShader.js?v=262"></script>
-<script src="js/lib/shaders/GammaCorrectionShader.js?v=262"></script>
-<script src="js/lib/postprocessing/EffectComposer.js?v=262"></script>
-<script src="js/lib/postprocessing/RenderPass.js?v=262"></script>
-<script src="js/lib/postprocessing/ShaderPass.js?v=262"></script>
-<script src="js/lib/postprocessing/UnrealBloomPass.js?v=262"></script>
-<script src="js/engine/atmos3d.js?v=262"></script>
-<script src="js/engine/render3d.js?v=278"></script>
-<script src="js/systems/game.js?v=276"></script>
-<script src="js/ui/icons.js?v=262"></script>
-<script src="js/ui/ui.js?v=276"></script>
-<script src="js/ui/changelog.js?v=279"></script>
-<script src="js/ui/minimap.js?v=262"></script>
-<script src="js/sim/fisica.js?v=262"></script>
-<script src="js/net/otros.js?v=262"></script>
-<script src="js/net/cliente.js?v=276"></script>
-<script src="js/main.js?v=279"></script>
+<script src="js/data.js?v=280"></script>
+<script src="js/engine/rng.js?v=280"></script>
+<script src="js/engine/daily-seed.js?v=280"></script>
+<script src="js/engine/route-seed.js?v=280"></script>
+<script src="js/mapgen/mapgen.js?v=280"></script>
+<script src="js/texture-assets.js?v=280"></script>
+<script src="js/engine/tiles.js?v=280"></script>
+<script src="js/engine/sprites.js?v=280"></script>
+<script src="js/engine/effects.js?v=280"></script>
+<script src="js/audio-manifest.js?v=280"></script>
+<script src="js/engine/sfx.js?v=280"></script>
+<script src="js/engine/fov.js?v=280"></script>
+<script src="js/systems/entities.js?v=280"></script>
+<script src="js/systems/rules.js?v=280"></script>
+<script src="js/engine/render.js?v=280"></script>
+<script src="js/lib/three.min.js?v=280"></script>
+<script src="js/lib/shaders/CopyShader.js?v=280"></script>
+<script src="js/lib/shaders/LuminosityHighPassShader.js?v=280"></script>
+<script src="js/lib/shaders/GammaCorrectionShader.js?v=280"></script>
+<script src="js/lib/postprocessing/EffectComposer.js?v=280"></script>
+<script src="js/lib/postprocessing/RenderPass.js?v=280"></script>
+<script src="js/lib/postprocessing/ShaderPass.js?v=280"></script>
+<script src="js/lib/postprocessing/UnrealBloomPass.js?v=280"></script>
+<script src="js/engine/atmos3d.js?v=280"></script>
+<script src="js/engine/render3d.js?v=280"></script>
+<script src="js/systems/game.js?v=280"></script>
+<script src="js/ui/icons.js?v=280"></script>
+<script src="js/ui/ui.js?v=280"></script>
+<script src="js/ui/changelog.js?v=280"></script>
+<script src="js/ui/minimap.js?v=280"></script>
+<script src="js/sim/fisica.js?v=280"></script>
+<script src="js/net/otros.js?v=280"></script>
+<script src="js/net/cliente.js?v=280"></script>
+<script src="js/main.js?v=280"></script>
 </body>
 </html>

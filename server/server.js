@@ -10,7 +10,7 @@ const path = require('path');
 const { WebSocketServer } = require('ws');
 const P = require('./protocolo');
 const filtro = require('./filtro');
-const { asignar, tickTodas, estado } = require('./sala');
+const { asignar, tickTodas, estado, observa, chatReciente } = require('./sala');
 const { DATA } = require('./sim/mundo');
 const db = require('./db');
 
@@ -53,10 +53,117 @@ const MIME = {
   '.ttf': 'font/ttf', '.otf': 'font/otf', '.woff': 'font/woff', '.woff2': 'font/woff2',
 };
 
+// ---------- observatorio (solo guardián) ----------
+// El detalle por jugador (posición, inventario, equipo) daría ventaja a
+// cualquier jugador que lo lea: exige la MISMA clave que /admin, con el mismo
+// freno anti fuerza bruta (5 fallos en 10 min por IP).
+const ARRANQUE = Date.now();
+const obsFallos = new Map(); // ip -> [timestamps de fallos]
+
+function ipDe(req) {
+  const reenviada = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return reenviada || req.socket.remoteAddress || '?';
+}
+
+// verifica la clave de guardián con freno anti fuerza bruta (5 fallos/10 min
+// por IP). Devuelve 'ok' | 'mal' | 'freno'. La comparten /observa, /chat y
+// /accion (moderación).
+function chequearClave(clave, ip) {
+  const ahora = Date.now();
+  const fallos = (obsFallos.get(ip) || []).filter((t) => ahora - t < 600000);
+  if (fallos.length >= 5) { obsFallos.set(ip, fallos); return 'freno'; }
+  if (clave === ADMIN_CLAVE) { obsFallos.delete(ip); return 'ok'; }
+  fallos.push(ahora);
+  obsFallos.set(ip, fallos);
+  return 'mal';
+}
+
+function claveObserva(req) {
+  const clave = new URL(req.url, 'http://x').searchParams.get('clave') || '';
+  return chequearClave(clave, ipDe(req));
+}
+
+// busca un jugador VIVO por su id numérico en cualquier sala (para moderar
+// desde el panel sin exponer el token completo por la red)
+function buscarPorId(id) {
+  for (const s of salasVivas())
+    for (const j of s.jugadores.values())
+      if (j.id === id) return { jug: j, sala: s };
+  return null;
+}
+
 const servidor = http.createServer((req, res) => {
-  if (req.url === '/estado') {
+  const rutaUrl = (req.url || '/').split('?')[0];
+  if (rutaUrl === '/estado') {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify(estado()));
+    return;
+  }
+  if (rutaUrl === '/observa') {
+    const ok = claveObserva(req);
+    if (ok !== 'ok') {
+      res.writeHead(ok === 'freno' ? 429 : 403, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ error: ok === 'freno'
+        ? 'Demasiados intentos: las paredes desconfían de ti un buen rato.'
+        : 'La clave no abre nada.' }));
+      return;
+    }
+    const datos = observa();
+    datos.historico = db.resumen();
+    datos.uptimeS = Math.round((Date.now() - ARRANQUE) / 1000);
+    datos.protocolo = P.VERSION;
+    datos.node = process.version;
+    res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+    res.end(JSON.stringify(datos));
+    return;
+  }
+  if (rutaUrl === '/chat') {
+    const ok = claveObserva(req);
+    if (ok !== 'ok') { res.writeHead(ok === 'freno' ? 429 : 403); res.end(); return; }
+    const q = new URL(req.url, 'http://x').searchParams;
+    const nivel = q.get('nivel') || '';
+    const desde = parseInt(q.get('desde'), 10) || 0;
+    res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+    res.end(JSON.stringify({ mensajes: chatReciente(nivel, desde) }));
+    return;
+  }
+  if (rutaUrl === '/accion' && req.method === 'POST') {
+    let cuerpo = '';
+    req.on('data', (c) => { cuerpo += c; if (cuerpo.length > 2000) req.destroy(); });
+    req.on('end', () => {
+      let m; try { m = JSON.parse(cuerpo); } catch (e) { m = {}; }
+      const ok = chequearClave(m.clave || '', ipDe(req));
+      if (ok !== 'ok') {
+        res.writeHead(ok === 'freno' ? 429 : 403, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ error: ok === 'freno' ? 'Demasiados intentos.' : 'La clave no abre nada.' }));
+        return;
+      }
+      const r = buscarPorId(m.id | 0);
+      if (!r) { res.writeHead(404, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'Ese errante ya no está conectado.' })); return; }
+      let msg;
+      if (m.accion === 'kick') {
+        r.jug.ws.close(1008, 'expulsado');
+        msg = `${r.jug.nombre} expulsado.`;
+        console.log(`[obs] kick ${r.jug.nombre}#${r.jug.id}`);
+      } else if (m.accion === 'ban') {
+        db.ban(r.jug.token);
+        r.jug.ws.close(1008, 'baneado');
+        msg = `${r.jug.nombre} baneado (no podrá volver a entrar con este navegador).`;
+        console.log(`[obs] ban ${r.jug.nombre}#${r.jug.id}`);
+      } else {
+        res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'Acción inválida.' })); return;
+      }
+      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      res.end(JSON.stringify({ ok: true, msg }));
+    });
+    return;
+  }
+  if (rutaUrl === '/observatorio') {
+    fs.readFile(path.join(__dirname, 'observatorio.html'), (err, datos) => {
+      if (err) { res.writeHead(404); res.end('no existe'); return; }
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
+      res.end(datos);
+    });
     return;
   }
   const url = decodeURIComponent((req.url || '/').split('?')[0]);
@@ -249,11 +356,12 @@ function cambiarDeSala(jug, salaVieja, defSalida, opts) {
   jug.x = x; jug.y = y;
   jug.oxigeno = 100;
   jug._oxigenoEn = Date.now() + 1000;
-  jug.canal = null; jug.escondido = null;
+  jug.canal = null; jug.escondido = null; jug.manila = null;
   // teleport de sala: caducan los informes de posición en vuelo (v24)
   jug.sec = (jug.sec || 0) + 1;
   jug._posT = Date.now();
   jug._margen = 0.8;
+  nueva.protegerPrimeraVisita(jug);
   nueva.prepararCaminata(jug);
   const id = jug.id;
   nueva.jugadores.set(id, jug);
@@ -367,8 +475,17 @@ function comando(jug, sala, linea) {
       sala.enviar(jug.ws, { t: 'aviso', txt: 'Clave actualizada para esta sesión, pero no se pudo guardar en disco.' });
     }
     console.log(`[admin] ${jug.nombre}#${jug.id} cambió la clave de guardián`);
+  } else if (cmd === '/reiniciar') {
+    // reinicio del PROCESO desde el chat: el guardián avisa a todos, el
+    // proceso sale limpio y systemd (Restart=always) lo revive en ~3 s; los
+    // clientes reconectan solos. El mundo vivo (salas/posiciones) se pierde
+    // —está en memoria—; jugadores, visitas y baneos persisten en mmo.db.
+    for (const s of salasVivas())
+      s.difundir({ t: 'anuncio', txt: 'El guardián reinicia la realidad. Las Backrooms parpadean: volvéis en unos segundos…' });
+    console.log(`[admin] ${jug.nombre}#${jug.id} reinicia el servidor`);
+    setTimeout(() => process.exit(0), 1200); // margen para que el anuncio llegue
   } else {
-    sala.enviar(jug.ws, { t: 'aviso', txt: 'Comandos: /anuncio <txt> · /kick <nombre> · /mute <nombre> [min] · /ban <nombre> · /tp <nivel> · /give <objeto> · /admin-clave <nueva>' });
+    sala.enviar(jug.ws, { t: 'aviso', txt: 'Comandos: /anuncio <txt> · /kick <nombre> · /mute <nombre> [min] · /ban <nombre> · /tp <nivel> · /give <objeto> · /admin-clave <nueva> · /reiniciar' });
   }
 }
 
@@ -389,4 +506,5 @@ setInterval(() => {
 servidor.listen(PUERTO, () => {
   console.log(`BACKROOMS MMO en http://localhost:${PUERTO}  (ws en /ws)`);
   console.log(`clave de admin: /admin ${ADMIN_CLAVE}   (cámbiala en caliente con /admin-clave <nueva> una vez dentro, o fija otra con la variable MMO_ADMIN)`);
+  console.log(`observatorio del guardián: http://localhost:${PUERTO}/observatorio (misma clave)`);
 });

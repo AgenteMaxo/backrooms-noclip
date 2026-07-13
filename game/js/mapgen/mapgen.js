@@ -87,6 +87,9 @@
          (walkable(at(g, x, y - 1)) && walkable(at(g, x, y + 1)))))
         if (rng.chance(0.4)) set(g, x, y, T.SUELO);
     }
+    // Conserva el contrato común de todos los generadores (devolver la
+    // cuadrícula) y adjunta las salas como metadato para Sala Manila.
+    g._rects = rects;
     return g;
   }
 
@@ -578,6 +581,16 @@
     return RNG.create(`${runSeed}::${levelDef.id}::caminata::${entry}::${attempt}`).int(a, b);
   }
 
+  // Permanencia en la Sala Manila: minutos reales, no turnos ni pasos. `seedKey`
+  // ya incluye partida/nivel/instancia — cada nueva estancia en la sala (attempt)
+  // vuelve a tirar dentro del rango declarado en la propia salida.
+  function manilaGoal(salidaDef, seedKey, attempt = 0) {
+    const range = salidaDef.permanenciaS || [180, 300];
+    const a = Math.max(1, Math.floor(range[0]));
+    const b = Math.max(a, Math.floor(range[1]));
+    return RNG.create(`${seedKey}::manila::${attempt}`).int(a, b);
+  }
+
   // ---------- generación completa de un nivel ----------
   function generate(levelDef, rng) {
     let [w, h] = levelDef.tam;
@@ -621,6 +634,7 @@
     const exits = [];
     const caminatas = []; // salidas SIN casilla: se cruzan caminando mucho
     const usable = [];
+    let manilaSalida = null; // salida SIN casilla: se cruza por PERMANENCIA en map.manila
     for (const source of levelDef.salidas || []) {
       if (source.tipo === 'void') continue;
       // Cada aparición tiene estado propio: romper una grieta no abre todas
@@ -628,7 +642,17 @@
       const s = { ...source, _mec: mecanicaDe(source), _abierta: false };
       if (s.prob !== undefined && !rng.chance(s.prob)) continue;
       if (s._mec === 'caminata') { caminatas.push(s); continue; }
+      if (s._mec === 'manila') { manilaSalida = s; continue; }
       usable.push(s);
+    }
+
+    // Sala Manila (Level 0): sala rara y tranquila, aparece con probabilidad
+    // baja y lejos del spawn — su presencia habilita la mecánica de permanencia
+    let manila = null;
+    if (manilaSalida && g._rects && g._rects.length && rng.chance(0.2)) {
+      const candidatas = g._rects.filter((r) =>
+        Math.hypot((r.x + r.w / 2) - spawn[0], (r.y + r.h / 2) - spawn[1]) > 12);
+      if (candidatas.length) manila = rng.pick(candidatas);
     }
     // pool ANCHO: toda casilla a más del 45% de la distancia máxima al spawn —
     // cubre regiones opuestas del nivel, no solo el rincón más profundo
@@ -783,8 +807,11 @@
       }
     }
 
-    return { w, h, grid: g, spawn, exits, items, entitySpawns, props, airPockets, dist, caminatas };
+    return {
+      w, h, grid: g, spawn, exits, items, entitySpawns, props,
+      airPockets, dist, caminatas, manila, manilaSalida,
+    };
   }
 
-  window.MapGen = { T, generate, walkable, at, bfsDist, mecanicaDe, walkingGoal };
+  window.MapGen = { T, generate, walkable, at, bfsDist, mecanicaDe, walkingGoal, manilaGoal };
 })();

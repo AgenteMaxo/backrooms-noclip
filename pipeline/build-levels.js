@@ -283,7 +283,8 @@ function containsPhrase(text, phrase) {
 }
 
 function resolveCuratedRoute(route, parsedLevel) {
-  if (route.destino === '*aleatoria' || route.destino === '*visitada') return { ...route };
+  if (route.destino === '*aleatoria' || route.destino === '*visitada' ||
+      String(route.destino || '').startsWith('*opciones:')) return { ...route };
   if (route.destino && titleById.has(route.destino))
     return { ...route, tipo: route.tipo === 'sellada' ? 'normal' : route.tipo };
   const routeText = normalizedText(route.texto || '');

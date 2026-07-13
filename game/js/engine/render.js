@@ -172,6 +172,13 @@
     ctx.translate(px + 24, py + 20);
     ctx.scale(p.flip ? -resp : resp, resp);
     ctx.drawImage(img, -24, -24);
+    // capa de máscara de gas (PUESTA en la ranura de cara): PNG opcional en
+    // game/assets/sprites/mascara_<dir>.png, se compone encima del cuerpo
+    if (world.equipado && world.equipado('mascara_gas')) {
+      const maskId = 'mascara_' + dir;
+      if (Sprites.tiene(maskId))
+        ctx.drawImage(Sprites.get(maskId, frame % Sprites.frameCount(maskId)), -24, -24);
+    }
     ctx.restore();
   }
 
@@ -243,6 +250,21 @@
         for (let fy = 0; fy < 5; fy++)
           for (let fx = 0; fx < 3; fx++)
             if ((fx + fy) % 2 === 0) ctx.fillRect(cx - 7 + fx * 5.5, base - 36 + fy * 7, 3.5, 4);
+        break;
+      case 'emergencia': // puerta de emergencia (L0 → L14): rótulo EXIT + baliza roja
+        ctx.fillStyle = '#181210';
+        ctx.fillRect(cx - 11, base - 36, 22, 36);
+        ctx.fillStyle = '#3a2c28';
+        ctx.fillRect(cx - 9, base - 28, 18, 26);
+        ctx.fillStyle = '#c81818';
+        ctx.fillRect(cx - 8, base - 12, 16, 4);
+        ctx.fillStyle = '#2a0808';
+        ctx.fillRect(cx - 11, base - 38, 22, 8);
+        ctx.fillStyle = Math.floor(t / 300) % 2 ? '#ff2020' : '#c81010'; // rótulo parpadeante
+        ctx.font = 'bold 6px monospace'; ctx.textAlign = 'center';
+        ctx.fillText('EXIT', cx, base - 32);
+        ctx.fillStyle = '#ff2020'; ctx.globalAlpha = 0.35 + pulse * 0.35; // baliza
+        ctx.beginPath(); ctx.arc(cx, base - 34, 10, 0, 7); ctx.fill();
         break;
     }
     ctx.restore();
@@ -578,14 +600,15 @@
     for (const e of world.entities) {
       if (!e.viva) continue;
       if (e.rx === undefined) { e.rx = e.x; e.ry = e.y; }
-      const idx = e.y * g.w + e.x;
+      const ex = Math.round(e.x), ey = Math.round(e.y);
+      const idx = ey * g.w + ex;
       const lit = world.light[idx];
       const esSmiler = e.def.glyph === 'smiler';
       const visible = lit > 0.05 ||
         (e.reveladaHasta ?? -1) > world.turn ||
         (esSmiler && (world.explored[idx] || Math.hypot(e.x - world.player.x, e.y - world.player.y) < 9));
       if (!visible) continue;
-      (actorsAt.get(e.y) ?? actorsAt.set(e.y, []).get(e.y)).push(e);
+      (actorsAt.get(ey) ?? actorsAt.set(ey, []).get(ey)).push(e);
     }
 
     const esWall = (x, y) => MapGen.at(g, x, y) === T.PARED;
@@ -666,7 +689,7 @@
           drawEntity(e, ax, ay - 6, lit, t);
         }
       }
-      if (world.player.y === y && !world.escondido) {
+      if (Math.round(world.player.y) === y && !world.escondido) {
         drawPlayer(world.player.rx * TILE - cam.x, world.player.ry * TILE - cam.y, t, world);
       }
     }

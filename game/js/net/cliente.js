@@ -410,6 +410,10 @@
       const hechas = new Set(JSON.parse(localStorage.getItem('mmo-cajas::' + m.semilla) || '[]'));
       for (const pr of w.map.props || [])
         if (pr.contenedor && hechas.has(pr.x + ',' + pr.y)) pr.registrado = true;
+      // ...y los objetos del suelo que ya recogiste: la semilla los regenera
+      // intactos y sin esto se podían re-farmear cruzando de sala ida y vuelta
+      for (const it of w.map.items || [])
+        if (hechas.has('suelo:' + it.x + ',' + it.y)) it.taken = true;
     } catch (e) {}
     w.entities = (m.ents || []).map((e) => ({
       uid: e.uid, id: e.id, def: w.data.entities[e.id],
@@ -481,9 +485,17 @@
   // Lo que ves es donde estás: sin reconciliación, sin saltos. El servidor
   // valida cada informe (velocidad/paredes/teleport) y solo responde 'mueve'
   // si es imposible — p. ej. un cliente trucado.
-  function frame(dt) {
-    const w = Game.world;
-    if (!listo) return;
+  function informarPosicion(w, forzar) {
+    const ahora = performance.now();
+    const dMov = Math.abs(w.player.x - repX) + Math.abs(w.player.y - repY);
+    const dRot = Math.abs(Fisica.normAng((w.player.rot || 0) - repRot));
+    if ((dMov > 0.03 || dRot > 0.05) && (forzar || ahora - repT > 60) && !w.escondido) {
+      repX = w.player.x; repY = w.player.y; repRot = w.player.rot || 0; repT = ahora;
+      enviar({ t: 'p', x: r2(repX), y: r2(repY), rot: r2(repRot), sec });
+    }
+  }
+
+  function integrarPaso(w, dt) {
     let idx = input.dx, idy = input.dy;
     if (modoMov) {
       if (mov.giro) {
@@ -494,13 +506,36 @@
     }
     if (!w.escondido && (idx || idy)) {
       const [nx, ny] = Fisica.mover(w.map.grid, w.player.x, w.player.y, idx, idy, dt, Fisica.VEL_JUGADOR);
-      // pasos: sonido 100% local, uno cada ~0.75 tiles recorridos
-      pasoAcum += Fisica.dist(w.player.x, w.player.y, nx, ny);
+      const distancia = Fisica.dist(w.player.x, w.player.y, nx, ny);
+      w.player.x = nx; w.player.y = ny;
+      return distancia;
+    }
+    return 0;
+  }
+
+  function frame(dt) {
+    const w = Game.world;
+    if (!listo) return;
+    // Tras un microparón, conservar la trayectoria REAL (incluidas curvas junto
+    // a paredes) y reportarla en tramos cortos. El servidor acumula el presupuesto
+    // de velocidad de esos 0.6 s, pero mantiene el anti-teleport por informe.
+    const trocear = dt > 0.1;
+    let restante = dt;
+    let distancia = 0;
+    do {
+      const paso = Math.min(0.1, restante);
+      distancia += integrarPaso(w, paso);
+      if (trocear) informarPosicion(w, true);
+      restante -= paso;
+    } while (restante > 0.0001);
+    if (distancia) {
+      // pasos y botín conservan una sola evaluación por frame, aun si el
+      // movimiento tuvo que trocearse para informar el rastro al servidor
+      pasoAcum += distancia;
       if (pasoAcum > 0.75) {
         pasoAcum = 0;
         if (window.Sfx) Sfx.play('paso', w.level?.estilo?.suelo);
       }
-      w.player.x = nx; w.player.y = ny;
       recogerSuelo(w); // botín del suelo: proximidad local
     }
     const tx = Fisica.tileDe(w.player.x), ty = Fisica.tileDe(w.player.y);
@@ -510,13 +545,7 @@
     }
     // informe de posición: al moverte/girar (mín. 60 ms entre informes) — los
     // tramos cortos mantienen legal el chequeo de paredes del servidor
-    const ahora = performance.now();
-    const dMov = Math.abs(w.player.x - repX) + Math.abs(w.player.y - repY);
-    const dRot = Math.abs(Fisica.normAng((w.player.rot || 0) - repRot));
-    if ((dMov > 0.03 || dRot > 0.05) && ahora - repT > 60 && !w.escondido) {
-      repX = w.player.x; repY = w.player.y; repRot = w.player.rot || 0; repT = ahora;
-      enviar({ t: 'p', x: r2(repX), y: r2(repY), rot: r2(repRot), sec });
-    }
+    if (!trocear) informarPosicion(w, false);
   }
 
   // ---------- botín INDIVIDUAL (v25): cajas, dado y suelo en TU navegador ----------
@@ -525,13 +554,29 @@
     return basicos.concat(Object.keys(w.data.objects).filter((id) => !basicos.includes(id)));
   }
 
-  function guardarCaja(w, pr) {
+  // persiste el botín ya resuelto de esta sala: cajas ('x,y') y suelo ('suelo:x,y')
+  function guardarLoot(w, clave) {
     try {
       const k = 'mmo-cajas::' + (w._semillaSala || '');
       const lista = JSON.parse(localStorage.getItem(k) || '[]');
-      lista.push(pr.x + ',' + pr.y);
+      lista.push(clave);
       localStorage.setItem(k, JSON.stringify(lista.slice(-400)));
     } catch (e) {}
+  }
+
+  // El alta de botín tiene cadencia en el server (sala.loot descarta EN
+  // SILENCIO a <1.2 s del anterior): los envíos se espacian aquí para que un
+  // objeto ya consumido en este lado no se pierda por llegar demasiado seguido.
+  // 1.3 s da margen al jitter de red; lootPend cuenta los aún no enviados
+  // (ocupan hueco de mochila mientras viajan).
+  let lootT = 0, lootPend = 0;
+  function enviarLoot(id) {
+    const cuando = Math.max(Date.now(), lootT + 1300);
+    lootT = cuando;
+    const espera = cuando - Date.now();
+    if (espera <= 0) { enviar({ t: 'loot', id }); return; }
+    lootPend++;
+    setTimeout(() => { lootPend--; enviar({ t: 'loot', id }); }, espera);
   }
 
   // ESPACIO sobre un contenedor sin registrar: TODO local (dado, botín,
@@ -541,19 +586,20 @@
       Fisica.dist(p.x, p.y, w.player.x, w.player.y) <= 1.2);
     if (!pr) return false;
     pr.registrado = true;
-    guardarCaja(w, pr);
+    guardarLoot(w, pr.x + ',' + pr.y);
     if (window.Sfx) Sfx.play('registrar');
     w.rollDice('Registras el contenedor…', (d) => {
       if (d >= 14) {
         const pool = poolCajas(w);
         const id = pool[Math.min(pool.length - 1,
           Math.floor((d - 14) / 7 * pool.length + Math.floor(Math.random() * 3)))];
-        if ((w.player.inv || []).length >= 6) {
+        if ((w.player.inv || []).length + lootPend >= 6) {
           w.log(`Dado: ${d}. Hay algo útil… pero no te cabe nada más.`, 'event');
         } else {
           w.log(`Dado: ${d}. Encuentras: ${w.data.objects[id].nombre}.`, 'good');
+          try { Game.Profiles.registrarDescubierto('objetos', id); } catch (e) {}
           if (window.Effects) Effects.flash(w.player.x, w.player.y, '#ffe9a0');
-          enviar({ t: 'loot', id }); // el server valida cadencia y hueco
+          enviarLoot(id); // el server revalida hueco al recibirlo
         }
       } else if (d >= 7) {
         w.log(`Dado: ${d}. Vacío. Solo polvo y papel amarillento.`, 'event');
@@ -576,14 +622,16 @@
       const d = Fisica.dist(it.x, it.y, w.player.x, w.player.y);
       if (it.recien) { if (d > 0.8) it.recien = false; continue; }
       if (d >= 0.5) continue;
-      if ((w.player.inv || []).length >= 6) continue; // sin hueco: se queda
+      if ((w.player.inv || []).length + lootPend >= 6) continue; // sin hueco: se queda
       it.taken = true;
+      guardarLoot(w, 'suelo:' + it.x + ',' + it.y); // que no reaparezca al re-entrar
       w.itemsVersion = (w.itemsVersion || 0) + 1;
       const def = w.data.objects[it.id];
       w.log(`Recoges: ${def ? def.nombre : it.id}.`, 'good');
+      try { Game.Profiles.registrarDescubierto('objetos', it.id); } catch (e) {}
       if (window.Sfx) Sfx.play('recoger');
-      enviar({ t: 'loot', id: it.id });
-      break; // uno por vez (la cadencia del server manda)
+      enviarLoot(it.id);
+      break; // uno por escaneo
     }
   }
 

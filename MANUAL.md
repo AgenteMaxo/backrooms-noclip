@@ -31,7 +31,6 @@ fluorescentes**, bloom cinematográfico y polvo en suspensión. Alternativas por
 | ESC | **Ajustes**: volumen, pantalla completa, opciones, versión del juego y la caja 🔑 de guardián |
 | Q (o clic en su caja) | **Usar la mano izquierda** (linterna, tubería, fuego griego…) |
 | E (o clic en su caja) | **Usar la mano derecha** (los objetos a 2 manos solo responden a Q) |
-| G | **No-clip** (solo con su Instinto): atraviesas la pared que encaras |
 
 *(Mantener pulsada W camina a velocidad constante — sin ráfagas.)*
 
@@ -80,25 +79,7 @@ fluorescentes**, bloom cinematográfico y polvo en suspensión. Alternativas por
 - **Pantalla completa (v25)**: el botón de Ajustes ahora extiende el juego a TODA la
   pantalla, re-renderizando a la resolución del monitor (nada de cuadro con bordes).
 
-## 2b. La Sintonía (el "RPG" de las Backrooms)
-
-No hay experiencia ni niveles de personaje: hay un **pacto silencioso con el lugar**.
-
-- **Sintonía (0-100)**: sube al presenciar horrores — matar entidades, chocar con ellas a
-  oscuras, beber agua contaminada, ver remodelarse los pasillos, cruzar caminos inestables,
-  vivir con la mente rota… Aparece como un **ojo amarillo** entre los iconos de estado.
-  Baja muy poco (descansar en niveles seguros, usar el Recuerdo del hogar).
-- **Instintos**: al cruzar los umbrales 20/40/60/80 eliges **1 de 3 instintos** (aleatorios
-  de un pool de 8): oír entidades a través de los muros, pasos silenciosos, esquiva
-  instintiva, necesitar menos agua/comida, registrar sin pifias, +visión, regeneración…
-  y a Sintonía 80 puede aparecer **No-clip** (tecla `G`: atraviesas la pared que encaras,
-  a cambio de cordura y con riesgo de caer al Vacío).
-- **El precio**: con Sintonía alta las entidades corrientes empiezan a IGNORARTE (te huelen
-  como cosa del lugar)… pero al cruzar una salida de ESCAPE la realidad tira un dado contra
-  tu Sintonía: si ya eres "demasiado de este lado", **te escupe de vuelta**. Escapar de
-  verdad exige seguir siendo humano. Poder o volver a casa: elige.
-
-## 2c. Combate y escape
+## 2b. Combate y escape
 
 - **Telegraph**: toda entidad ANUNCIA su golpe un turno antes (⚠ y parpadeo ámbar).
   Si te mueves ese turno, el golpe falla. El Cazador solo avisa la primera vez.
@@ -217,6 +198,7 @@ ejecuta SIEMPRE** (en una terminal, dentro de la carpeta del proyecto):
 node pipeline/build-levels.js
 node pipeline/build-data.js
 node pipeline/make-map.js
+node pipeline/make-catalog-map.js
 ```
 
 Sin esos pasos el juego y el mapa no ven los cambios. Luego F5 en el navegador.
@@ -267,7 +249,8 @@ Este archivo representa el grafo de conexiones, no el dibujo de paredes de cada 
 sala puede no tener entradas o salidas documentadas; si la geometría actual no ofrece salida,
 el camino por el que llegaste permanece abierto para poder retroceder.
 
-Se regenera con: `node pipeline/make-map.js`
+Se regenera con: `node pipeline/make-catalog-map.js`. El mapa reducido del piloto se
+regenera con `node pipeline/make-map.js`.
 
 ## 9. Actualizar la copia local de la wiki
 
@@ -359,6 +342,9 @@ El servidor arranca solo al encender y se reinicia si se cae.
 - `/kick nombre` · `/mute nombre 10` (minutos) · `/ban nombre` (permanente).
 - `/tp 14` (o `/tp level-483`) — teletransporte de guardián a cualquier nivel:
   tu menú de debug para enseñar niveles en directo.
+- `/reiniciar` — reinicia el servidor desde dentro del juego: anuncia a todos,
+  el proceso se apaga limpio y vuelve solo en ~3 segundos (los jugadores
+  reconectan al Level 0; sus fichas y baneos se conservan).
 
 **D. Mantenimiento:**
 - Actualizar a la última versión: `bash /opt/backrooms-mmo/deploy/desplegar.sh`

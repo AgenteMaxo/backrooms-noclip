@@ -49,7 +49,8 @@ node pipeline/parse.test.js  # pruebas del parser (sin dependencias)
 node pipeline/level0-audit.js            # 100 semillas fijas (regresión reproducible)
 node pipeline/level0-audit.js --random   # muestra nueva; imprime cómo reproducirla
 node pipeline/build-levels.js # catálogo parseado - Joke + overrides -> 731 fichas jugables
-node pipeline/make-map.js    # regenerar data/game/mapa.html
+node pipeline/make-map.js    # regenerar data/game/mapa-piloto.html
+node pipeline/make-catalog-map.js # regenerar data/game/mapa.html (catálogo completo)
 node pipeline/build-data.js  # OBLIGATORIO tras editar data/game/*.json -> game/js/data.js
 ```
 
@@ -59,6 +60,8 @@ node pipeline/build-data.js  # OBLIGATORIO tras editar data/game/*.json -> game/
 salidas, peligro, bioma y enlaces a Fandom. Muestra la semilla diaria y resuelve sus rutas
 variables; el grafo representa conexiones, no la geometría procedural de paredes y pasillos.
 Con el servidor en marcha también está disponible en `http://localhost:8080/mapa.html`.
+
+`data/game/mapa-piloto.html` conserva el mapa reducido del piloto y se regenera por separado.
 
 ## Actualizar y personalizar niveles
 

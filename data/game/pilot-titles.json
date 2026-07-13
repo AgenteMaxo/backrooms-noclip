@@ -1,0 +1,687 @@
+{
+ "generated": "2026-07-03T16:08:52.166Z",
+ "escapeLevel": "Level 385",
+ "escapePath": [
+  "Level 0",
+  "Level 14",
+  "Level 16",
+  "Level 144",
+  "Level 385"
+ ],
+ "titles": [
+  {
+   "title": "Level 0",
+   "depth": 0,
+   "exitsInPilot": [
+    "Level 1",
+    "Level 483",
+    "Level 27",
+    "Level 14",
+    "Level 13"
+   ],
+   "exitsOutside": [],
+   "class": {
+    "template": "Class Custom Image",
+    "numeric": null,
+    "security": "Unstable",
+    "entityLevel": "Devoid of Entities}",
+    "color": "#75623e"
+   },
+   "cats": [
+    "Levels",
+    "The Main Nine",
+    "Safe",
+    "Cluster I"
+   ]
+  },
+  {
+   "title": "Level 14",
+   "depth": 1,
+   "exitsInPilot": [
+    "Level 777",
+    "Level 130",
+    "Level 15",
+    "Level 16",
+    "Level 268"
+   ],
+   "exitsOutside": [],
+   "class": null,
+   "cats": [
+    "Levels",
+    "Cluster I",
+    "Class 4",
+    "Dangerous"
+   ]
+  },
+  {
+   "title": "Level 16",
+   "depth": 2,
+   "exitsInPilot": [
+    "Level 14",
+    "Level 144",
+    "Level 268",
+    "Level 777"
+   ],
+   "exitsOutside": [
+    "Level 0.7",
+    "Level 3",
+    "Level 4",
+    "Level 17",
+    "Level 98",
+    "Level 400",
+    "Level 223",
+    "Level 69"
+   ],
+   "class": {
+    "template": "Class 2",
+    "numeric": null,
+    "security": null,
+    "entityLevel": null,
+    "color": null
+   },
+   "cats": [
+    "Cluster I",
+    "Mental Hazards",
+    "Levels",
+    "Frontrooms"
+   ]
+  },
+  {
+   "title": "Level 144",
+   "depth": 3,
+   "exitsInPilot": [
+    "Level 385"
+   ],
+   "exitsOutside": [
+    "Level 137",
+    "Level 690",
+    "Level 899",
+    "Level 138",
+    "Level 224"
+   ],
+   "class": null,
+   "cats": [
+    "Levels",
+    "Dangerous",
+    "Darkness",
+    "Environmental Hazards",
+    "Glitched Levels"
+   ]
+  },
+  {
+   "title": "Level 385",
+   "depth": 4,
+   "exitsInPilot": [],
+   "exitsOutside": [
+    "Level 84",
+    "Level 993",
+    "Level 74",
+    "Level 382",
+    "Level 11.3"
+   ],
+   "class": {
+    "template": "Class Custom Image",
+    "numeric": null,
+    "security": "Sustained Communities",
+    "entityLevel": "Devoid of Harmful Entities",
+    "color": null
+   },
+   "cats": [
+    "Safe",
+    "Levels",
+    "Cluster I",
+    "Frigid",
+    "Safe Levels",
+    "Darkness",
+    "Environmental Hazards",
+    "Sky",
+    "Threat 3"
+   ]
+  },
+  {
+   "title": "Level 1",
+   "depth": 1,
+   "exitsInPilot": [
+    "Level 2",
+    "Level 0",
+    "The Hub",
+    "Level 188"
+   ],
+   "exitsOutside": [],
+   "class": {
+    "template": "Class 1",
+    "numeric": null,
+    "security": "Stable",
+    "entityLevel": "Minimal Entity Count}",
+    "color": null
+   },
+   "cats": [
+    "Levels",
+    "The Main Nine",
+    "Safe",
+    "Cluster I"
+   ]
+  },
+  {
+   "title": "Level 483",
+   "depth": 1,
+   "exitsInPilot": [
+    "Level 80",
+    "Level 626",
+    "Level 140",
+    "Level 6",
+    "Level 484",
+    "Level 305",
+    "Level 306",
+    "Level 399",
+    "Level 186",
+    "Level 995",
+    "Level 483.5"
+   ],
+   "exitsOutside": [],
+   "class": {
+    "template": "Class 2",
+    "numeric": null,
+    "security": "Unstable}",
+    "entityLevel": "<span style=\"font-family:Rubik Glitch\">Devoid of Entities</span>",
+    "color": null
+   },
+   "cats": [
+    "Levels",
+    "Class 2",
+    "Cluster I"
+   ]
+  },
+  {
+   "title": "Level 27",
+   "depth": 1,
+   "exitsInPilot": [],
+   "exitsOutside": [],
+   "class": {
+    "template": "Class 1",
+    "numeric": null,
+    "security": null,
+    "entityLevel": "Devoid of Entities}",
+    "color": null
+   },
+   "cats": [
+    "Levels",
+    "Cluster I"
+   ]
+  },
+  {
+   "title": "Level 13",
+   "depth": 1,
+   "exitsInPilot": [
+    "Level 14",
+    "Level 45",
+    "Level 1",
+    "Level 909",
+    "Level 996"
+   ],
+   "exitsOutside": [
+    "Level 173"
+   ],
+   "class": {
+    "template": "Class 1",
+    "numeric": null,
+    "security": null,
+    "entityLevel": "Psychological Hazards",
+    "color": null
+   },
+   "cats": [
+    "Class 1",
+    "Levels",
+    "Cluster I"
+   ]
+  },
+  {
+   "title": "Level 2",
+   "depth": 2,
+   "exitsInPilot": [
+    "Level 1",
+    "Level 27"
+   ],
+   "exitsOutside": [
+    "Level 3",
+    "Level Phi",
+    "Level 4",
+    "Level 699"
+   ],
+   "class": {
+    "template": "Class Custom Image",
+    "numeric": null,
+    "security": null,
+    "entityLevel": "Low Entity Count",
+    "color": null
+   },
+   "cats": [
+    "Levels",
+    "The Main Nine",
+    "Cluster I",
+    "Dangerous"
+   ]
+  },
+  {
+   "title": "The Hub",
+   "depth": 2,
+   "exitsInPilot": [],
+   "exitsOutside": [
+    "Level 37",
+    "Level 154",
+    "The Unconscious Hub"
+   ],
+   "class": null,
+   "cats": [
+    "Levels",
+    "Anomalous Levels"
+   ]
+  },
+  {
+   "title": "Level 188",
+   "depth": 2,
+   "exitsInPilot": [],
+   "exitsOutside": [],
+   "class": {
+    "template": "class",
+    "numeric": null,
+    "security": null,
+    "entityLevel": null,
+    "color": null
+   },
+   "cats": [
+    "Levels",
+    "Cluster I",
+    "Safe"
+   ]
+  },
+  {
+   "title": "Level 80",
+   "depth": 2,
+   "exitsInPilot": [
+    "Level 2"
+   ],
+   "exitsOutside": [
+    "Level 555"
+   ],
+   "class": {
+    "template": "Class Custom Image",
+    "numeric": null,
+    "security": "Stable",
+    "entityLevel": "Low Entity Count}",
+    "color": null
+   },
+   "cats": [
+    "Class Ψ",
+    "Cluster I",
+    "Levels",
+    "Mental Hazards"
+   ]
+  },
+  {
+   "title": "Level 626",
+   "depth": 2,
+   "exitsInPilot": [
+    "Level 483"
+   ],
+   "exitsOutside": [
+    "Level 626.2",
+    "Level 630"
+   ],
+   "class": {
+    "template": "Class Ψ}",
+    "numeric": null,
+    "security": null,
+    "entityLevel": null,
+    "color": null
+   },
+   "cats": [
+    "Levels",
+    "Cluster I",
+    "Dangerous",
+    "Forest",
+    "Mental Hazards"
+   ]
+  },
+  {
+   "title": "Level 140",
+   "depth": 2,
+   "exitsInPilot": [],
+   "exitsOutside": [
+    "Level 203",
+    "Level 24"
+   ],
+   "class": {
+    "template": "Class_Custom_Image",
+    "numeric": null,
+    "security": "Deteriorating Security",
+    "entityLevel": "I Hope This Hurts.",
+    "color": "#0a0005"
+   },
+   "cats": [
+    "Levels",
+    "Space",
+    "Horror",
+    "Backrooms Investigation Foundation",
+    "Our Home, Kuryente",
+    "Cluster I"
+   ]
+  },
+  {
+   "title": "Level 6",
+   "depth": 2,
+   "exitsInPilot": [],
+   "exitsOutside": [
+    "Level 6.1",
+    "Level 8",
+    "Level 7"
+   ],
+   "class": null,
+   "cats": [
+    "Levels",
+    "The Main Nine",
+    "Cluster I",
+    "Class Undetermined"
+   ]
+  },
+  {
+   "title": "Level 484",
+   "depth": 2,
+   "exitsInPilot": [],
+   "exitsOutside": [],
+   "class": null,
+   "cats": [
+    "Levels",
+    "Cluster I",
+    "Wikidot Ports"
+   ]
+  },
+  {
+   "title": "Level 305",
+   "depth": 2,
+   "exitsInPilot": [
+    "Level 306"
+   ],
+   "exitsOutside": [
+    "Level 410",
+    "Level 17",
+    "Level 3",
+    "Level 256",
+    "Level 699"
+   ],
+   "class": {
+    "template": "Class Custom Image",
+    "numeric": null,
+    "security": "<span style=\"font-family:Mate SC;\">Psychologically manipulateing</span>",
+    "entityLevel": "<span style=\"font-family:Mate SC;\">High Entity Count </span>",
+    "color": null
+   },
+   "cats": [
+    "Glitched Levels",
+    "Cluster I",
+    "Levels",
+    "Dangerous"
+   ]
+  },
+  {
+   "title": "Level 306",
+   "depth": 2,
+   "exitsInPilot": [],
+   "exitsOutside": [],
+   "class": null,
+   "cats": [
+    "Class 1e - Environmental",
+    "Levels",
+    "Cluster I",
+    "Safe",
+    "Environmental Hazards"
+   ]
+  },
+  {
+   "title": "Level 399",
+   "depth": 2,
+   "exitsInPilot": [],
+   "exitsOutside": [],
+   "class": null,
+   "cats": [
+    "Levels",
+    "Cluster I",
+    "Secret Levels",
+    "Class Habitable"
+   ]
+  },
+  {
+   "title": "Level 186",
+   "depth": 2,
+   "exitsInPilot": [
+    "Level 188"
+   ],
+   "exitsOutside": [
+    "Level 192",
+    "Level 202.1",
+    "Level 204",
+    "Level 908"
+   ],
+   "class": {
+    "template": "Class 4",
+    "numeric": null,
+    "security": "Extreme Hunger",
+    "entityLevel": null,
+    "color": null
+   },
+   "cats": [
+    "Levels",
+    "Cluster I",
+    "Dangerous",
+    "Forest"
+   ]
+  },
+  {
+   "title": "Level 995",
+   "depth": 2,
+   "exitsInPilot": [],
+   "exitsOutside": [],
+   "class": null,
+   "cats": [
+    "Class Variable",
+    "Levels",
+    "Cluster I"
+   ]
+  },
+  {
+   "title": "Level 483.5",
+   "depth": 2,
+   "exitsInPilot": [],
+   "exitsOutside": [],
+   "class": {
+    "template": "Class Custom Image",
+    "numeric": null,
+    "security": "Unusual Properties",
+    "entityLevel": "Mysterious Entities",
+    "color": null
+   },
+   "cats": [
+    "Levels",
+    "Sub-Levels"
+   ]
+  },
+  {
+   "title": "Level 777",
+   "depth": 2,
+   "exitsInPilot": [],
+   "exitsOutside": [
+    "Level 690",
+    "Level 450"
+   ],
+   "class": null,
+   "cats": [
+    "Levels",
+    "Cluster I",
+    "Class Undetermined",
+    "Horror"
+   ]
+  },
+  {
+   "title": "Level 130",
+   "depth": 2,
+   "exitsInPilot": [
+    "Level 14",
+    "Level 0"
+   ],
+   "exitsOutside": [
+    "Level 3",
+    "Level 4",
+    "Level 5",
+    "Level 11",
+    "Level 21"
+   ],
+   "class": {
+    "template": "Class Custom Image",
+    "numeric": null,
+    "security": "Stable",
+    "entityLevel": "Low Entity Count",
+    "color": null
+   },
+   "cats": [
+    "Levels",
+    "Class 2",
+    "Cluster I",
+    "Dangerous"
+   ]
+  },
+  {
+   "title": "Level 15",
+   "depth": 2,
+   "exitsInPilot": [
+    "Level 14",
+    "Level 16",
+    "Level 6",
+    "Level 80"
+   ],
+   "exitsOutside": [
+    "Level 3",
+    "Level 4",
+    "Level 11",
+    "Level 58",
+    "Level 69",
+    "Level 339",
+    "Level 443",
+    "Level 818",
+    "Level 990",
+    "Level 32",
+    "Level 48",
+    "Level 427"
+   ],
+   "class": {
+    "template": "Class 1e}",
+    "numeric": null,
+    "security": null,
+    "entityLevel": null,
+    "color": null
+   },
+   "cats": [
+    "Levels",
+    "Cluster I",
+    "Environmental Hazards"
+   ]
+  },
+  {
+   "title": "Level 268",
+   "depth": 2,
+   "exitsInPilot": [
+    "Level 1"
+   ],
+   "exitsOutside": [
+    "Level 22",
+    "Level 20",
+    "Level 23",
+    "Level 108",
+    "Level 176",
+    "Level 47",
+    "Level 269",
+    "Level 914",
+    "Level 67",
+    "Level 38",
+    "Level 38.1",
+    "Level 10"
+   ],
+   "class": null,
+   "cats": [
+    "Levels",
+    "Frigid",
+    "Cluster I",
+    "Dangerous",
+    "Industrial"
+   ]
+  },
+  {
+   "title": "Level 45",
+   "depth": 2,
+   "exitsInPilot": [
+    "Level 0"
+   ],
+   "exitsOutside": [
+    "The Hive",
+    "Level 110",
+    "Level 974",
+    "Level 7",
+    "Level 8",
+    "Level 46",
+    "Level 49",
+    "Level 73"
+   ],
+   "class": {
+    "template": "Class Variable}",
+    "numeric": null,
+    "security": null,
+    "entityLevel": null,
+    "color": null
+   },
+   "cats": [
+    "Levels",
+    "Cluster I",
+    "Forest"
+   ]
+  },
+  {
+   "title": "Level 909",
+   "depth": 2,
+   "exitsInPilot": [],
+   "exitsOutside": [
+    "Level 910"
+   ],
+   "class": null,
+   "cats": [
+    "Class Undetermined",
+    "Levels",
+    "Format Screws",
+    "Cluster I"
+   ]
+  },
+  {
+   "title": "Level 996",
+   "depth": 2,
+   "exitsInPilot": [
+    "Level 0"
+   ],
+   "exitsOutside": [
+    "Level 141",
+    "Level 700"
+   ],
+   "class": {
+    "template": "Class Ψ",
+    "numeric": null,
+    "security": null,
+    "entityLevel": null,
+    "color": null
+   },
+   "cats": [
+    "Levels",
+    "Levels",
+    "Cluster I",
+    "Mental Hazards",
+    "Dangerous"
+   ]
+  }
+ ]
+}

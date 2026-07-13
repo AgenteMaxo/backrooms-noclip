@@ -40,3 +40,13 @@ Recomendacion de hitbox visual:
  - Mantener los pies/base cerca de la parte baja del frame.
  - Centrar el cuerpo en X para que coincida con la casilla.
  - No llenar todo el 48x48 salvo entidades grandes o altas.
+ 
+ CAPAS DE EQUIPO (se dibujan ENCIMA del sprite del jugador)
+------------------------------------------------------------
+ Mascara de gas: mascara_down, mascara_up, mascara_side.png
+ Estas NO tienen pixel-art integrado -- si no existen, simplemente no se
+ dibuja nada (la mascara sigue funcionando por su efecto, solo falta la capa
+ visual). Se muestran automaticamente en cuanto la mascara de gas esta
+ PUESTA (ranura de cara), en 2D y en 3D, respetando la direccion/flip del
+ jugador. Mismo formato: 48x48 por frame, fondo transparente.
+

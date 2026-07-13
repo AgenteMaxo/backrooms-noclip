@@ -31,7 +31,8 @@ function elegirNivel() {
       if (map.caminatas && map.caminatas.length) continue;
       const cont = (map.props || []).some((p) => p.contenedor && !p.registrado);
       const salida = map.exits.some((e) =>
-        !e.def._mec && e.def.tipo !== 'void' && DATA.levels[e.def.destino] &&
+        !e.def._mec && e.def.tipo !== 'void' &&
+        !(e.def.tipo === 'arriesgada' && e.def.riesgoVoid > 0) && DATA.levels[e.def.destino] &&
         !/agujero|caes |caer |caída|desplom|abismo|pozo|trampilla/i.test(e.def.texto || ''));
       if (cont && salida) candidatos.push({ id: def.id, area: map.grid.w * map.grid.h });
     } catch (e) { /* nivel no generable: fuera */ }
@@ -179,6 +180,36 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(!luzDe, 'sin linterna en mano NO se difunde luzDe');
     ok(!!avisoLuz, 'sin linterna en mano llega el aviso explicativo');
 
+    // --- microparón: el cliente integra 0.6 s y manda el rastro en una ráfaga
+    // de tramos cortos. Deben entrar con el presupuesto acumulado, sin snap ---
+    {
+      const g = c.map.grid;
+      let mejor = null;
+      for (let i = 0; i < 24; i++) {
+        const th = i * Math.PI * 2 / 24;
+        let x = c.x, y = c.y;
+        const puntos = [];
+        for (let j = 0; j < 6; j++) {
+          [x, y] = Fisica.mover(g, x, y, Math.sin(th), -Math.cos(th), 0.1, Fisica.VEL_JUGADOR);
+          puntos.push([x, y]);
+        }
+        const d = Fisica.dist(c.x, c.y, x, y);
+        if (!mejor || d > mejor.d) mejor = { d, puntos };
+      }
+      ok(mejor.d > 1.3, `ruta de microparón recorre ${mejor.d.toFixed(2)} tiles`);
+      const n0r = c.rechazos || 0;
+      await espera(650);
+      for (const [x, y] of mejor.puntos) {
+        c.x = x; c.y = y;
+        c.enviar({
+          t: 'p', x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100,
+          rot: 0, sec: c.sec || 0,
+        });
+      }
+      await espera(300);
+      ok((c.rechazos || 0) === n0r, 'microparón de 0.6 s → rastro aceptado sin rubber-band');
+    }
+
     // --- v24, el VALIDADOR: (a) informes más rápidos que la física legal se
     // rechazan (anti-speedhack) — lo aceptado nunca supera vel×t ---
     {
@@ -249,7 +280,8 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     // --- cruzar una salida y comprobar la puerta de RETORNO ---
     const salida = c.map.exits
       .map((e, i) => ({ e, i }))
-      .filter(({ e }) => !e.def._mec && e.def.tipo !== 'void' && DATA.levels[e.def.destino] &&
+      .filter(({ e }) => !e.def._mec && e.def.tipo !== 'void' &&
+        !(e.def.tipo === 'arriesgada' && e.def.riesgoVoid > 0) && DATA.levels[e.def.destino] &&
         !/agujero|caes |caer |caída|desplom|abismo|pozo|trampilla/i.test(e.def.texto || '') &&
         e.def.destino !== nivelId && alcanz(e.x, e.y))[0];
     ok(!!salida, 'hay una salida normal alcanzable');

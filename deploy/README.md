@@ -61,8 +61,10 @@ systemctl enable --now backrooms-mmo   # el servicio ya escucha en 8080
 
 En el chat del juego: `/admin tu-clave-secreta` te convierte en guardián →
 `/anuncio <texto>` (global), `/kick <nombre>`, `/mute <nombre> [min]`, `/ban <nombre>`,
-`/tp <nivel>` (teletransporte de debug: `/tp 14` o `/tp level-483`) y `/give <objeto>`
-(añade un objeto a tu mochila). No escribas la clave en directo.
+`/tp <nivel>` (teletransporte de debug: `/tp 14` o `/tp level-483`), `/give <objeto>`
+(añade un objeto a tu mochila) y `/reiniciar` (reinicia el proceso del servidor:
+anuncia a todos, sale limpio y systemd lo revive en ~3 s — el mundo vivo se
+resetea, jugadores/baneos persisten). No escribas la clave en directo.
 
 **Cambiar la clave sin reiniciar el servidor**: una vez seas guardián,
 `/admin-clave <nueva>` la cambia AL INSTANTE y la guarda en
