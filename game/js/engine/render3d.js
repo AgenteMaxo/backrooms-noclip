@@ -17,6 +17,14 @@
   let camYaw = 0;          // yaw animado (radianes)
   let yawLibre = null;     // v25 online: cámara LIBRE (ratón, estilo Roblox); null = aún sin tocar
   let ultimoOrbitoT = 0;   // v26: timestamp del último movimiento manual de cámara (órbita)
+  let camPitch = 0;        // v28: inclinación vertical de la órbita libre (radianes)
+  let lastRot = 2;          // v28: rotación del jugador del último frame (para recenter)
+  // límites de la órbita vertical: por debajo del horizonte (mirar hacia arriba)
+  // hasta casi cenital (mirar de frente al suelo). Nunca se ROMPE la inmersión
+  // porque la cámara va a 1.5 de altura y la detección de muros la frena.
+  const TP_PITCH = { min: -0.55, max: 1.15 };
+  // sensibilidad de la órbita vertical con el stick derecho / arrastre vertical
+  const PITCH_SENS = 1.7;
   // altura de muros: en 3ª persona son de altura real (la cámara va a 1.5 y JAMÁS
   // ve por encima → nunca se rompe la sensación de interior)
   const WALL_H = CAM_MODO === 'tercera' ? 2.3 : 1.2;
@@ -1175,12 +1183,15 @@
         // ahí en adelante la mueve el RATÓN (yawLibre)
         camYaw = -(p.rot || 0);
         yawLibre = null;
+        camPitch = 0;
         camera.position.set(p.rx + 0.5 + Math.sin(camYaw) * TP.dist, TP.alto, p.ry + 0.5 + Math.cos(camYaw) * TP.dist);
         frame._look = new THREE.Vector3(p.rx + 0.5, TP.lookY, p.ry + 0.5);
         return;
       }
       const [fx0, fz0] = ROT_VEC[p.rot ?? 2];
       camYaw = Math.atan2(-fx0, -fz0);
+      yawLibre = null;
+      camPitch = 0;
       camera.position.set(p.rx + 0.5 - fx0 * TP.dist, TP.alto, p.ry + 0.5 - fz0 * TP.dist);
       frame._look = new THREE.Vector3(p.rx + 0.5 + fx0 * TP.lookAhead, TP.lookY, p.ry + 0.5 + fz0 * TP.lookAhead);
     } else {
@@ -1627,6 +1638,7 @@
     if (CAM_MODO === 'tercera') {
       // --- CÁMARA 3ª PERSONA: pegada a la espalda, baja, inmersiva ---
       const rot = p.rot ?? 2;
+      lastRot = rot;
       if (world.moving) camBobT += 0.13;
       const bob = Math.sin(camBobT) * TP.bob * (world.moving ? 1 : 0.12);
       // v25 online: cámara LIBRE estilo Roblox — el ratón fija el yaw
@@ -1662,8 +1674,22 @@
           yawObjetivo = yawLibre === null ? camYaw : yawLibre;
         }
       } else {
+        // offline: órbita LIBRE (el stick derecho mueve yawLibre/camPitch) que
+        // se RECOLÓCA tras el jugador cuando camina hacia delante (tercera
+        // persona clásica). Así la cámara no queda nunca "girada" al andar.
         const [fx3, fz3] = ROT_VEC[rot];
-        yawObjetivo = Math.atan2(-fx3, -fz3);
+        const yawDetras = Math.atan2(-fx3, -fz3);
+        // ¿el jugador avanza en la dirección de la cámara? (visto desde atrás)
+        let dC = yawDetras - camYaw;
+        while (dC > Math.PI) dC -= Math.PI * 2;
+        while (dC < -Math.PI) dC += Math.PI * 2;
+        const caminaAdelante = world.moving && Math.abs(dC) < 0.6;
+        if (caminaAdelante) {
+          yawLibre = yawDetras;
+          yawObjetivo = yawDetras;
+        } else {
+          yawObjetivo = yawLibre === null ? yawDetras : yawLibre;
+        }
       }
       let dyaw = yawObjetivo - camYaw;
       while (dyaw > Math.PI) dyaw -= Math.PI * 2;
@@ -1677,10 +1703,16 @@
       }
 
       camYaw += dyaw * factorSuavidad; // el ratón/seguimiento pide respuesta directa o suave
-      const ox = Math.sin(camYaw) * TP.dist;
-      const oz = Math.cos(camYaw) * TP.dist;
-      let target = new THREE.Vector3(px + ox, TP.alto + bob, pz + oz);
-      // colisión: si un muro queda entre la cabeza del jugador y la cámara, acercarla
+      camPitch = Math.max(TP_PITCH.min, Math.min(TP_PITCH.max, camPitch));
+      // posición con ÓRBITA COMPLETA (yaw + pitch) alrededor del jugador
+      const horiz = TP.dist * Math.cos(camPitch);
+      const ox = Math.sin(camYaw) * horiz;
+      const oz = Math.cos(camYaw) * horiz;
+      const oy = TP.alto + TP.dist * Math.sin(camPitch) + bob;
+      let target = new THREE.Vector3(px + ox, oy, pz + oz);
+      // DETECCIÓN DE MURO/TECHO: rayo recto desde la cabeza del jugador hasta
+      // la cámara; si algo interpuesto, acercamos la cámara hasta quedar justo
+      // delante (nunca atraviesa paredes ni el techo al orbitar en vertical).
       if (solidosCamara.length) {
         const desde = new THREE.Vector3(px, 1.05, pz);
         const hacia = target.clone().sub(desde);
@@ -1688,14 +1720,15 @@
         rayo.set(desde, hacia.clone().normalize());
         rayo.far = dist;
         const hits = rayo.intersectObjects(solidosCamara, false);
-        if (hits.length && hits[0].distance < dist - 0.2) {
-          const d2 = Math.max(0.65, hits[0].distance - 0.25);
+        if (hits.length && hits[0].distance < dist - 0.15) {
+          const d2 = Math.max(0.7, hits[0].distance - 0.22);
           target = desde.clone().add(hacia.normalize().multiplyScalar(d2));
-          target.y = Math.min(target.y, TP.alto + bob);
         }
+        // tope de seguridad: nunca por debajo del suelo ni muy por encima del techo
+        target.y = Math.max(0.45, Math.min(target.y, WALL_H + 0.5));
       }
       camera.position.lerp(target, TP.suavidad);
-      // mira hacia delante (según la órbita actual: giro suave sin bandazos)
+      // mira hacia el jugador (la órbita cambia el ángulo, no el punto de mira)
       frame._look = frame._look || new THREE.Vector3(px, TP.lookY, pz);
       frame._look.lerp(
         new THREE.Vector3(px - Math.sin(camYaw) * TP.lookAhead, TP.lookY, pz - Math.cos(camYaw) * TP.lookAhead),
@@ -1846,9 +1879,21 @@
     get rot() { return camRot; },
     // v25 — cámara libre (online): el ratón orbita; el movimiento es relativo a ella
     get yaw() { return camYaw; },
+    get pitch() { return camPitch; },
     orbita(d) {
       yawLibre = (yawLibre === null ? camYaw : yawLibre) + d;
       ultimoOrbitoT = performance.now();
+    },
+    // v28 — órbita vertical (stick derecho / arrastre vertical del ratón/táctil)
+    orbitPitch(d) {
+      camPitch = Math.max(TP_PITCH.min, Math.min(TP_PITCH.max, camPitch + d));
+      ultimoOrbitoT = performance.now();
+    },
+    // recoloca la cámara detrás del jugador y a la altura neutra (v28)
+    recenter() {
+      const [fx, fz] = ROT_VEC[lastRot] || ROT_VEC[2];
+      yawLibre = Math.atan2(-fx, -fz);
+      camPitch = 0;
     },
     // v25 — pantalla completa real: relanza el render a la resolución nueva
     resize(w, h) {

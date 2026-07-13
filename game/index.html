@@ -96,6 +96,7 @@
         <div class="eq-hud-slot" id="hud-eq-cuerpo"><span class="eq-ph">cuerpo</span></div>
         <div class="eq-hud-slot" id="hud-eq-pies"><span class="eq-ph">pies</span></div>
       </div>
+      <div id="device-indicator" title="Dispositivo de entrada activo"></div>
       <div id="hud-manos">
         <div class="mano-slot" id="mano-0" title="Mano izquierda"></div>
         <div class="mano-slot" id="mano-1" title="Mano derecha"></div>
@@ -107,12 +108,12 @@
           <div id="backpack-layout">
             <div class="bp-mano-col">
               <div class="mano-slot bp-mano" id="bp-mano-0" title="Mano izquierda"></div>
-              <span class="bp-label">mano izq.<br>(tecla Q)</span>
+              <span class="bp-label">mano izq.<br>(<span id="bp-key-0">tecla Q</span>)</span>
             </div>
             <div id="backpack-slots"></div>
             <div class="bp-mano-col">
               <div class="mano-slot bp-mano" id="bp-mano-1" title="Mano derecha"></div>
-              <span class="bp-label">mano der.<br>(tecla E)</span>
+              <span class="bp-label">mano der.<br>(<span id="bp-key-1">tecla E</span>)</span>
             </div>
           </div>
           <div id="bp-equipo">
@@ -404,6 +405,7 @@
 <script src="js/engine/render3d.js?v=280"></script>
 <script src="js/systems/game.js?v=280"></script>
 <script src="js/ui/icons.js?v=280"></script>
+<script src="js/ui/controllers.js?v=280"></script>
 <script src="js/ui/ui.js?v=280"></script>
 <script src="js/ui/changelog.js?v=280"></script>
 <script src="js/ui/minimap.js?v=280"></script>

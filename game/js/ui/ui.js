@@ -179,10 +179,17 @@
     el.innerHTML = '';
     el.classList.remove('activa', 'vacia');
     if (!enPanel) {
-      const k = document.createElement('span');
-      k.className = 'k-mano';
-      k.textContent = m === 0 ? 'Q' : 'E';
-      el.appendChild(k);
+      // v28 — atajo dibujado según el dispositivo activo (Q/E, LB/L1…)
+      if (window.Controllers) {
+        const gl = Controllers.handGlyph(m, 13);
+        gl.className = 'k-mano';
+        el.appendChild(gl);
+      } else {
+        const k = document.createElement('span');
+        k.className = 'k-mano';
+        k.textContent = m === 0 ? 'Q' : 'E';
+        el.appendChild(k);
+      }
     }
     if (window.Icons) {
       const hand = Icons.img('mano', tam, m === 1);
@@ -191,7 +198,8 @@
       el.appendChild(hand);
     }
     const id = manos[m];
-    const accion = enPanel ? 'clic: guardar en la mochila' : `clic o ${m === 0 ? 'Q' : 'E'}: usar`;
+    const atajoTxt = window.Controllers ? Controllers.handKeyText(m) : (m === 0 ? 'Q' : 'E');
+    const accion = enPanel ? 'clic: guardar en la mochila' : `clic o ${atajoTxt}: usar`;
     if (id === '=') { el.title = `Ocupada por el objeto a dos manos (${enPanel ? 'clic: guardar' : 'clic o Q: usar'})`; return; }
     if (id) {
       const def = world.data.objects[id];
@@ -216,6 +224,9 @@
       pintarMano($('mano-' + m), m, 30, false);
       const bp = $('bp-mano-' + m);
       if (bp) pintarMano(bp, m, 40, true);
+      // v28 — etiqueta de atajo en la mochila según el dispositivo activo
+      const bpKey = $('bp-key-' + m);
+      if (bpKey) bpKey.textContent = window.Controllers ? Controllers.handKeyText(m) : (m === 0 ? 'tecla Q' : 'tecla E');
     }
   }
 

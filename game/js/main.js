@@ -445,6 +445,7 @@
   {
     const wrap = document.getElementById('game-wrap');
     let arrastre = null;
+    let arrastreY = null;
     let arrastreTactil = null;
     let justLocked = false;
     wrap.addEventListener('contextmenu', (ev) => ev.preventDefault());
@@ -460,6 +461,7 @@
       }
       if (ev.button !== 2) return; // modo clic: solo el derecho arrastra
       arrastre = ev.clientX;
+      arrastreY = ev.clientY;
       wrap.classList.add('orbitando');
     });
     window.addEventListener('mousemove', (ev) => {
@@ -471,14 +473,22 @@
         const dx = ev.movementX || 0;
         if (Math.abs(dx) > 200) return; // salto anómalo del cursor: se ignora
         Render3D.orbita(factor * dx * 0.0035 * sensMult);
+        // v28 — arrastre vertical del ratón también inclina la cámara (pitch)
+        Render3D.orbitPitch(factor * (ev.movementY || 0) * 0.004 * sensMult);
         return;
       }
       if (arrastre === null) return;
       Render3D.orbita(factor * (arrastre - ev.clientX) * 0.0085 * sensMult);
       arrastre = ev.clientX;
+      // v28 — arrastre vertical (botón derecho) = órbita vertical de la cámara
+      if (arrastreY !== null) {
+        Render3D.orbitPitch(factor * (arrastreY - ev.clientY) * 0.0085 * sensMult);
+        arrastreY = ev.clientY;
+      }
     });
     window.addEventListener('mouseup', () => {
       arrastre = null;
+      arrastreY = null;
       wrap.classList.remove('orbitando');
     });
     document.addEventListener('pointerlockchange', () => {
@@ -486,6 +496,7 @@
         justLocked = true;
       } else {
         arrastre = null;
+        arrastreY = null;
         wrap.classList.remove('orbitando');
         teclas.clear();
         window.joyDx = 0; window.joyDy = 0;
@@ -497,7 +508,7 @@
       if (!world.online || !use3D || Render3D.modo !== 'tercera') return;
       if (ev.target.closest('#touch-controls, button, input, select, #backpack-panel, #log-panel, #game-menu, #sound-menu, #item-modal')) return;
       ev.preventDefault();
-      arrastreTactil = { id: ev.pointerId, x: ev.clientX };
+      arrastreTactil = { id: ev.pointerId, x: ev.clientX, y: ev.clientY };
       try { wrap.setPointerCapture(ev.pointerId); } catch (e) {}
       wrap.classList.add('orbitando');
     }, { passive: false });
@@ -507,7 +518,9 @@
       const factor = window.OPTS.camaraInvertir ? 1 : -1;
       const sensMult = (window.OPTS.camaraSens !== undefined ? window.OPTS.camaraSens : 100) / 100;
       Render3D.orbita(factor * (arrastreTactil.x - ev.clientX) * 0.010 * sensMult);
-      arrastreTactil.x = ev.clientX;
+      // v28 — arrastre vertical táctil = órbita vertical de la cámara (pitch)
+      Render3D.orbitPitch(factor * (arrastreTactil.y - ev.clientY) * 0.010 * sensMult);
+      arrastreTactil.x = ev.clientX; arrastreTactil.y = ev.clientY;
     }, { passive: false });
     function finArrastreTactil(ev) {
       if (!arrastreTactil || arrastreTactil.id !== ev.pointerId) return;
@@ -710,7 +723,21 @@
       const btn = document.createElement('button');
       btn.className = 'btn-small';
       btn.style.marginTop = '0';
-      btn.textContent = 'Botón ' + OPTS.gamepadMap[action.id];
+      btn.style.display = 'flex';
+      btn.style.alignItems = 'center';
+      btn.style.gap = '6px';
+      if (window.Controllers) {
+        // v28 — glifo del botón según el mando conectado (Xbox / PlayStation)
+        const idx = OPTS.gamepadMap[action.id];
+        const gl = Controllers.buttonGlyph(idx, 18, Controllers.activeGamepadType());
+        gl.style.marginTop = '-1px';
+        btn.appendChild(gl);
+        const lbl = document.createElement('span');
+        lbl.textContent = Controllers.buttonName(idx);
+        btn.appendChild(lbl);
+      } else {
+        btn.textContent = 'Botón ' + OPTS.gamepadMap[action.id];
+      }
       
       btn.onclick = () => {
         if (isWaitingForButton) return;
@@ -801,6 +828,7 @@
           world.ui.pulsarMano(m);
         } else Render3D.rotar(ev.code === 'KeyQ' ? 1 : -1);
       } else if (ev.code === 'KeyF') Net.luzToggle();
+      else if (ev.code === 'KeyV') { if (tercera && window.Render3D) Render3D.recenter(); }
       else if (/^Digit[1-6]$/.test(ev.code)) Game.useItem(parseInt(ev.code.slice(5), 10) - 1);
       else if (ev.code === 'KeyB') { if (document.pointerLockElement) document.exitPointerLock(); world.ui.toggleBackpack(); }
       else if (ev.code === 'KeyL') { if (document.pointerLockElement) document.exitPointerLock(); world.ui.toggleLog(); }
@@ -845,6 +873,7 @@
       ev.preventDefault();
       Game.interact();
     } else if (ev.code === 'KeyX') Game.wait();
+    else if (ev.code === 'KeyV') { if (tercera && window.Render3D) Render3D.recenter(); }
     else if (ev.code === 'KeyF') Game.toggleLuz();
     else if (ev.code === 'KeyB') world.ui.toggleBackpack();
     else if (ev.code === 'KeyL') world.ui.toggleLog();
@@ -930,6 +959,7 @@
   let wasUIOpen = false;
   const hideGamepadCursor = () => { 
     usingGamepad = false; 
+    if (window.Controllers) Controllers.setDevice('keyboard');
     if (vCursor) vCursor.style.display = 'none'; 
     const st = document.getElementById('no-cursor-style');
     if (st) st.remove();
@@ -937,10 +967,30 @@
   document.addEventListener('mousemove', hideGamepadCursor);
   document.addEventListener('mousedown', hideGamepadCursor);
   document.addEventListener('wheel', hideGamepadCursor);
+  // v28 — cualquier tecla cuenta como entrada de teclado/ratón
+  window.addEventListener('keydown', () => { if (window.Controllers) Controllers.setDevice('keyboard'); });
+  // si se desconecta el mando, volvemos a teclado/ratón
+  window.addEventListener('gamepaddisconnected', () => { if (window.Controllers) Controllers.clearGamepad(); });
+
+  // v28 — indicador HUD del dispositivo de entrada activo (teclado/Xbox/PS)
+  function updateDeviceIndicator() {
+    const el = document.getElementById('device-indicator');
+    if (!el || !window.Controllers) return;
+    el.innerHTML = '';
+    el.appendChild(Controllers.deviceGlyphImg(16));
+    const txt = document.createElement('span');
+    txt.textContent = ' ' + Controllers.deviceName();
+    el.appendChild(txt);
+  }
+  if (window.Controllers) {
+    Controllers.onChange(updateDeviceIndicator);
+    updateDeviceIndicator();
+  }
 
   window.gamepadDx = 0;
   window.gamepadDy = 0;
   let lastGamepadStepT = 0;
+  let lastOrbitT = 0;       // v28: dt de la órbita del stick derecho
   const lastGamepadState = {};
 
   function pollGamepad(t) {
@@ -990,6 +1040,20 @@
       window.gamepadDy = dy;
     }
 
+    // v28 — stick derecho: ÓRBITA COMPLETA de la cámara (yaw + pitch) en 3ªP.
+    // axes[2]/axes[3] = stick derecho; con deadzone y sensibilidad por opciones.
+    if (!uiOpen && use3D && window.Render3D && Render3D.modo === 'tercera') {
+      if (window.Controllers) Controllers.setGamepad(gp);
+      const rsx = gp.axes[2] || 0, rsy = gp.axes[3] || 0;
+      if (Math.abs(rsx) > 0.18 || Math.abs(rsy) > 0.18) {
+        const dtO = Math.min(0.05, (t - lastOrbitT) / 1000) || 0.016;
+        lastOrbitT = t;
+        const sens = 2.4 * (OPTS.camaraSens ? OPTS.camaraSens / 100 : 1);
+        Render3D.orbita(-rsx * sens * dtO);
+        Render3D.orbitPitch(rsy * sens * dtO);
+      }
+    }
+
     let anyInput = false;
     for(let i=0; i<btns.length; i++) if (pressed(i)) anyInput = true;
     if (anyInput || Math.abs(gp.axes[0]) > 0.1 || Math.abs(gp.axes[1]) > 0.1) {
@@ -1003,6 +1067,7 @@
         }
       }
       usingGamepad = true;
+      if (window.Controllers) Controllers.setGamepad(gp);
     }
 
     if (uiOpen && !wasUIOpen) {
