@@ -734,12 +734,35 @@
   // ---------- personalización de personaje (v28): estilo + color de pelo/ojos/ropa ----------
   // se abre desde el título, ANTES de que exista world.player — trabaja sobre
   // una copia local hasta "Confirmar", que la persiste en el perfil activo
+  // ángulo mostrado en el muñeco grande — estado propio de la UI (no de la
+  // apariencia guardada): arranca en "down" cada vez que se abre el panel
+  const DIRS_PREVIEW = ['down', 'side', 'up'];
+  const NOMBRE_DIR_PREVIEW = { down: 'De frente', side: 'De lado', up: 'De espaldas' };
+  let previewDir = 'down';
+
   function pintarApariencia(sel) {
     const cv = $('ap-preview-canvas');
     const ctx = cv.getContext('2d');
     ctx.clearRect(0, 0, 48, 48);
-    const img = Sprites.getTintado('player_down', sel, 0, false);
+    const img = Sprites.getTintado('player_' + previewDir, sel, 0, false);
     if (img) ctx.drawImage(img, 0, 0);
+  }
+
+  // flechas debajo del muñeco para rotarlo entre los 3 ángulos del sprite
+  // (de frente/de lado/de espaldas) — mismo componente pintarFlecha que usan
+  // las filas de estilo, funciona en los dos modos (Hazmat y Personalizado:
+  // getTintado ya resuelve 'player_'+dir a hazmat_dir cuando corresponde)
+  function refrescarAngulo(sel) {
+    const el = $('ap-angulo');
+    if (!el) return;
+    const idx = DIRS_PREVIEW.indexOf(previewDir);
+    const mover = (paso) => () => {
+      previewDir = DIRS_PREVIEW[(idx + paso + DIRS_PREVIEW.length) % DIRS_PREVIEW.length];
+      refrescarAngulo(sel);
+      pintarApariencia(sel);
+      if (window.Sfx) Sfx.play('ui');
+    };
+    pintarFlecha(el, NOMBRE_DIR_PREVIEW[previewDir], mover(-1), mover(1));
   }
 
   // v28.8: selector estilo Stardew Valley — flechas + texto ("Piel 1",
@@ -925,7 +948,9 @@
 
   function showApariencia() {
     const sel = JSON.parse(JSON.stringify(Game.Profiles.apariencia()));
+    previewDir = 'down';
     refrescarTodo(sel);
+    refrescarAngulo(sel);
     pintarApariencia(sel);
     $('apariencia-panel').style.display = 'flex';
 

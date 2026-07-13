@@ -4,9 +4,15 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
+    { v: 'v28.20', cambios: [
+      'Nuevas flechas debajo del muñeco del personalizador para verlo de frente, de lado y de espaldas.',
+      'El vello facial ahora se dibuja por encima de la ropa (antes el cuello de algunas prendas lo tapaba).',
+      'Arreglado: a veces el personaje se veía distinto mirando hacia abajo que en las otras direcciones, apenas después de entrar a un nivel.',
+    ] },
     { v: 'v28.7', cambios: [
-
-      { v: 'v28.6', cambios: [
+      'El cabello ahora se dibuja por delante de toda la ropa, no por detrás.',
+    ] },
+    { v: 'v28.6', cambios: [
       'Arreglado: la miniatura de "Parte superior" se veía estirada en el personalizador.',
       'Nueva opción "Sin ropa" en la parte superior del personalizador.',
       'Arreglado (multijugador): algunas entidades podían golpear casi al instante, sin dar tiempo a esquivar el aviso. (josealmon)',

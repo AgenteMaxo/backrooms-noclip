@@ -633,6 +633,11 @@ details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
 .ap-preview canvas { width: 144px; height: 144px; image-rendering: pixelated;
   background: #0a0906 url('../assets/ui/personalizar-fondo.png') center/160% no-repeat;
   border: 1px solid var(--borde); }
+/* flechas para rotar el muñeco entre los 3 ángulos del sprite (down/side/up)
+   — más angostas que las filas de estilo para no desbordar el recuadro de
+   144px del preview */
+.ap-flecha-angulo { margin-top: 8px; margin-bottom: 0; }
+.ap-flecha-angulo .ap-valor { min-width: 76px; font-size: 12px; }
 /* v28.11: ajustes más compactos (pedido del usuario) */
 .ap-cat { margin-bottom: 10px; }
 .ap-cat > .ap-titulo { display: block; color: var(--amarillo); font-size: 13px;

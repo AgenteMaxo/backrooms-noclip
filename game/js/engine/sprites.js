@@ -4,6 +4,13 @@
 (function () {
   const OUT = 'rgba(12,10,8,0.9)';
 
+  // cache-bust por sesión para CUALQUIER override de imagen (sprites base,
+  // objetos, capas de apariencia...): sin esto el navegador puede seguir
+  // sirviendo desde caché la versión vieja de un PNG editado (player_down.png,
+  // Hair1.png...) tras un simple F5 — recién se nota con Ctrl+F5. Un solo
+  // valor por carga de página alcanza (no hace falta uno nuevo por archivo).
+  const CACHE_BUST = Date.now();
+
   // ---------- rasterizador de matrices ----------
   function shadeHex(hex, f) {
     const n = parseInt(hex.slice(1), 16);
@@ -870,7 +877,7 @@
     const dirs = ['assets/sprites', 'assets/objetos', 'assets/apariencia', 'assets'];
     const exts = ['webp', 'png', 'jpg', 'jpeg'];
     const out = [];
-    for (const dir of dirs) for (const ext of exts) out.push(`${dir}/${id}.${ext}`);
+    for (const dir of dirs) for (const ext of exts) out.push(`${dir}/${id}.${ext}?t=${CACHE_BUST}`);
     return out;
   }
 
@@ -920,18 +927,13 @@
   const AJUSTE_CAPA = {
   };
 
-  // cache-bust por sesión: mientras se itera el arte de apariencia el mismo
-  // nombre de archivo se reemplaza muchas veces — sin esto el navegador podía
-  // seguir sirviendo la versión vieja de Hair1.png/Eyes1.png desde caché tras
-  // un simple F5 (recién con Ctrl+F5 se notaba el cambio)
-  const CACHE_BUST_APARIENCIA = Date.now();
   function rutasCapaEstilo(id) {
     return ['webp', 'png', 'jpg', 'jpeg']
-      .map((ext) => `assets/apariencia/${id}.${ext}?t=${CACHE_BUST_APARIENCIA}`);
+      .map((ext) => `assets/apariencia/${id}.${ext}?t=${CACHE_BUST}`);
   }
   function rutasCapaDireccion(id, dir) {
     return ['webp', 'png', 'jpg', 'jpeg']
-      .map((ext) => `assets/apariencia/${id}_${dir}.${ext}?t=${CACHE_BUST_APARIENCIA}`);
+      .map((ext) => `assets/apariencia/${id}_${dir}.${ext}?t=${CACHE_BUST}`);
   }
 
   // intenta cargar UN estilo (probando extensiones en orden); cb(true/false)
@@ -1161,7 +1163,13 @@
   const tintCuerpoCache = {};
   function tintarCuerpo(baseCanvas, limpioId, frame, colorHex) {
     if (!colorHex) return baseCanvas;
-    const key = limpioId + '::' + frame + '::' + colorHex;
+    // overrideVersion en la key: mismo motivo que en getTintado — si el
+    // primer teñido de un id+frame+color se pide antes de que
+    // player_down/up/side.png termine de cargar, baseCanvas es el sprite
+    // PROCEDURAL de respaldo (con colores propios, no gris puro) y
+    // remapTonos sobre eso da cualquier cosa; sin esto quedaba cacheado mal
+    // para siempre aunque después llegara el override correcto.
+    const key = limpioId + '::' + frame + '::' + colorHex + '::' + overrideVersion;
     if (tintCuerpoCache[key]) return tintCuerpoCache[key];
     const c = remapTonos(baseCanvas, colorHex);
     tintCuerpoCache[key] = c;
@@ -1184,9 +1192,17 @@
     // v28.14: skin predeterminada — nada de capas/tinte, es un sprite fijo
     // (hazmat_down/up/side, arriba) que sustituye al cuerpo+capas entero
     if (apariencia.modo === 'hazmat') return get('hazmat_' + dir + (herido ? '_herido' : ''), frame, flip);
-    const cats = ['ojos', 'vello', 'inferior', 'superior', 'cabello']; // orden de dibujo, de atrás a adelante — cabello AL FRENTE de todo (incluida la ropa)
+    const cats = ['ojos', 'inferior', 'superior', 'vello', 'cabello']; // orden de dibujo, de atrás a adelante — vello y cabello AL FRENTE de la ropa (si no, el cuello de "superior" tapaba la barba, feo sobre todo mirando "down")
     const piel = apariencia.piel;
-    const key = [limpioId, herido ? 1 : 0, frame, piel ? piel.color : '']
+    // overrideVersion en la key: el cuerpo base (player_down/up/side.png) y
+    // las capas cargan async (Image.onload) — si el primer composite de una
+    // combinación se pide ANTES de que terminen de cargar, se arma con el
+    // sprite procedural de respaldo (get() cae a cache[] mientras
+    // overrides[] todavía no existe) y sin esto quedaba cacheado mal PARA
+    // SIEMPRE, sin refrescarse cuando el override real llegaba (bug real:
+    // "down" se veía distinto a "up"/"side" porque es la primera dirección
+    // que se pide, más propensa a la carrera).
+    const key = [limpioId, herido ? 1 : 0, frame, piel ? piel.color : '', overrideVersion]
       .concat(cats.map((cat) => {
         const sel = apariencia[cat];
         return sel ? sel.estilo + ':' + sel.color : '';

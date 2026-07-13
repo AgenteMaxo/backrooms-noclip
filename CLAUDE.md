@@ -572,6 +572,75 @@ lo deja en flujo normal (ya centrado por `.ap-layout.centrado`), sticky-centrado
 exclusivo de "Personalizar" (que sí lo necesita, por su columna larga). Verificado con
 `getBoundingClientRect` en varios altos de viewport: sin superposición, centrado horizontal
 exacto (mismo centerX que el panel).
+**v28.18 — vello por encima de la ropa**: reporte jugando en vivo — con barba/bigote
+equipado, el cuello de "superior" (que cae justo en la zona nariz-mentón donde vive "vello",
+ver `LEEME.txt` de `game/assets/apariencia/`) lo tapaba, sobre todo mirando "down" (la única
+dirección donde el vello se ve de lleno de frente — de espaldas no aplica y de perfil se nota
+menos). Orden de `cats` en `getTintado` (`sprites.js`) pasa de
+`['ojos','vello','inferior','superior','cabello']` a
+`['ojos','inferior','superior','vello','cabello']` — vello se suma a cabello en la lista de
+capas que van AL FRENTE de la ropa (mismo criterio que ya se aplicó a cabello en v28.7).
+**v28.19 — cache-bust faltante en overrides de sprite base**: reporte del usuario tras editar
+`player_down.png` y no ver el cambio jugando ("no se ve el formato del png"). Causa: el
+cache-bust por sesión (`?t=timestamp`) se había agregado en v28 SOLO a las rutas de capas de
+apariencia (`rutasCapaEstilo`/`rutasCapaDireccion`, por el mismo síntoma con Hair1.png/
+Eyes1.png), pero `rutasOverride` — la que carga `player_down/up/side.png`, sprites de
+entidades/objetos y `hazmat_*.png` — nunca lo tuvo, así que el navegador podía seguir
+sirviendo la versión vieja de esos PNG desde caché tras un F5 normal (recién con Ctrl+F5 se
+notaba). La constante se unificó (`CACHE_BUST`, declarada una sola vez arriba del todo del
+archivo) y ahora se aplica también en `rutasOverride`, así que CUALQUIER override de imagen
+del juego queda protegido, no solo la apariencia.
+**v28.20 — reemplazo del cuerpo base (v2, más detalle) + bug real de caché de composites**:
+el usuario proveyó un rediseño del cuerpo neutro (`player_down/up/side.png`) con más sombreado
+— igual de válido para el sistema porque, pese a verse más prolijo, sigue usando EXACTAMENTE
+los 3 tonos de gris exactos requeridos (verificado píxel a píxel: cero tonos intermedios).
+Origen del archivo: `player_3direcciones_horizontal_v2.gif` en su carpeta de trabajo de arte
+(fuera del repo) — un GIF de 864×288 con 4 frames de animación (el ciclo de caminata) y 3
+columnas de 288×288 (6× de 48×48) para down/side/up; se extrajeron los 4 frames, se recortó
+y reescaló cada columna a 48×48 por nearest-neighbor, y se armaron las 3 hojas de 192×48.
+Al verificar el resultado en el juego salió a la luz el bug REAL detrás del reporte original
+del usuario ("down se ve mal, sale otro sprite"): `getTintado` (`sprites.js`) cachea el
+compuesto final en `tintadoCache`, pero `player_down/up/side.png` (y las capas) cargan ASYNC
+(`Image.onload`); si el PRIMER compuesto de una combinación se pide antes de que la imagen
+termine de cargar, `get()` cae al sprite PROCEDURAL de respaldo (`cache[]`, el personaje
+hardcodeado original con pelo/campera propios — casualmente `palPlayer.h = '#523c28'`
+coincidía con el color de prueba que se venía usando, por eso pasó desapercibido tanto
+tiempo) — y ese compuesto MALO quedaba cacheado PARA SIEMPRE bajo esa key, sin refrescarse
+cuando la imagen real terminaba de cargar después. "down" es la primera dirección que se pide
+al entrar a un nivel (más propensa a la carrera), mientras que "up"/"side" se piden un
+instante después (ya cargado) — de ahí la asimetría que reportó el usuario. Fix: la key de
+`tintadoCache` ahora incluye `overrideVersion` (el contador que ya existía y se usa para
+otras cosas — ver `Sprites.version()`, v28.15), así que cualquier composite armado ANTES de
+que termine de cargar un override se invalida solo en cuanto `overrideVersion` sube.
+Quedó una SEGUNDA caché con el mismo problema, encontrada al re-probar (el usuario reportó
+"en down se superponen el sprite y otro que no es sprite" — el parche fantasma seguía):
+`tintCuerpoCache` (dentro de `tintarCuerpo`, el teñido de piel) cacheaba por
+`limpioId::frame::color` SIN `overrideVersion` — si el primer teñido de esa combinación se
+pedía antes de que cargara el override, `remapTonos` corría sobre el sprite PROCEDURAL
+(colores propios, no gris) y el resultado mal teñido quedaba pegado igual que antes. Mismo
+fix: se sumó `overrideVersion` a esa key también. Verificado con 3 corridas seguidas sin
+recurrencia tras el segundo fix.
+**v28.21 — flechas de ángulo en el preview del personalizador**: pedido del usuario — el
+muñeco grande (`#ap-preview-canvas`) solo mostraba "down"; ahora `#ap-angulo` (div nuevo en
+`index.html`, dentro de `.ap-preview-sticky`, debajo del canvas) tiene el mismo componente
+`pintarFlecha` que ya usan las filas de estilo, ciclando `DIRS_PREVIEW = ['down','side','up']`
+("De frente"/"De lado"/"De espaldas"). Estado `previewDir` es de la UI, no de la apariencia
+guardada — se resetea a `'down'` cada vez que se abre el panel (`showApariencia`).
+`pintarApariencia` pasa `'player_' + previewDir` a `getTintado` en vez de tener
+`'player_down'` hardcodeado — funciona en los DOS modos sin condicional propio, porque
+`getTintado` ya resuelve internamente `'player_'+dir` a `hazmat_dir` cuando `modo==='hazmat'`.
+Verificado con capturas headless en ambos modos, ciclando los 3 ángulos y de vuelta.
+Encontrado de paso (bloqueaba las pruebas, no relacionado con el pedido): `changelog.js`
+tenía un error de sintaxis real desde el merge de `upstream/main` a esta rama — la entrada
+`v28.7` había quedado con el array `cambios` sin cerrar antes de que arrancara `v28.6`
+anidado adentro, sin conflicto de merge marcado pero estructuralmente roto (`node --check`
+lo confirma). Como cada `<script src>` de `index.html` se parsea independiente, esto no
+tumbaba el resto del juego, pero si alguna vez se abría el Changelog fallaba. Se cerró la
+entrada de v28.7 (contenido real: "cabello al frente de la ropa", de la nota de esa versión
+más arriba en este archivo) y se agregó la entrada v28.20 de esta sesión arriba de todo.
+`VERSION_JUEGO` (estaba pisado en `'v28.7'` desde hace mucho, sin subir en cada sub-versión
+de este archivo pese a la instrucción de la cabecera de `changelog.js`) pasó a `'v28.20'`, y
+el cache-bust `?v=` de TODOS los `<script>/<link>` de `index.html` subió de 278 a 279.
 
 (Todos existen y están committeados. v3: render cenital con paredes finas autotile en `tiles.js`/`render.js`,
 pixel-art data-driven en `sprites.js` con override PNG desde `game/assets/sprites/`, efectos de combate
