@@ -18,6 +18,7 @@
   let menuAudioEl = null;
   let menuAudioSrc = null;
   let idleStop = null;
+  let desbloqueado = false; // hubo ya un gesto real del usuario (click/tecla) en la sesión
   const overrides = {};
   const entityLoops = {};
 
@@ -62,6 +63,22 @@
       if (!ensure()) return;
       if (ctx.state === 'suspended') ctx.resume();
     } catch (e) {}
+    if (desbloqueado) return;
+    desbloqueado = true;
+    // la música de menú arrancó silenciada en autoplay (los navegadores lo
+    // permiten sin gesto); con el primer click/tecla real, sube con fade
+    if (menuAudioEl && menuAudioEl.muted) {
+      menuAudioEl.muted = false;
+      const objetivo = Math.min(1, 0.62 * vol * volAmb);
+      const t0 = performance.now();
+      const fade = () => {
+        if (!menuAudioEl) return;
+        const k = Math.min(1, (performance.now() - t0) / 900);
+        menuAudioEl.volume = objetivo * k;
+        if (k < 1) requestAnimationFrame(fade);
+      };
+      fade();
+    }
   }
 
   // ---------- bloques de síntesis ----------
@@ -635,19 +652,22 @@
   function playMenu(src) {
     // Si viene la misma canción y ya está sonando, no reiniciar
     if (menuAudioSrc === src && menuAudioEl) return;
-    
+
     stopMenu();
     menuAudioSrc = src;
-    if (!src || muted || !ctx) {
+    if (!src || muted) {
       return;
     }
     try {
       const el = new window.Audio(src);
       el.loop = true;
-      el.volume = Math.min(1, 0.62 * vol * volAmb);
-      el.play().then(() => {
-        menuAudioEl = el;
-      }).catch(e => {});
+      // sin gesto todavía: arranca silenciada (autoplay muted SÍ lo permiten
+      // los navegadores) — unlock() la desmutea con fade al primer click/tecla.
+      // Si el gesto ya ocurrió esta sesión, empieza directamente audible.
+      el.muted = !desbloqueado;
+      el.volume = desbloqueado ? Math.min(1, 0.62 * vol * volAmb) : 0;
+      menuAudioEl = el;
+      el.play().catch(() => {});
     } catch (e) {}
   }
 

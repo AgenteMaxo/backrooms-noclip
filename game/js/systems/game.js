@@ -373,6 +373,11 @@
 
   // ---------- inicio de partida ----------
   function startRun(seed) {
+    // la música de menú puede seguir sonando si el primer click de la sesión
+    // fue justo el de "empezar partida" (el listener global de desbloqueo de
+    // audio se dispara con el mismo click) — cortarla aquí es la garantía
+    // final, sin importar el orden de los otros manejadores de ese click
+    if (window.Sfx) Sfx.stopMenu();
     world.runSeed = seed || RNG.randomSeed();
     world.player = {
       x: 0, y: 0, rx: 0, ry: 0, dir: 'down', flip: false, rot: 2,

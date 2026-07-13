@@ -1566,6 +1566,10 @@
 
   function playMenuMusic() {
     if (document.getElementById('screen-title').style.display === 'none') return;
+    // el click que desbloquea el audio puede ser el mismo click de "empezar
+    // partida" — si ya hay una conexión en marcha (botones deshabilitados),
+    // no arranques la música del menú, o sonaría durante toda la partida
+    if ($id('btn-start')?.disabled) return;
     let trackId = OPTS.menuMusica || 'menu1';
     const track = CANCIONES_MENU.find(t => t.id === trackId) || CANCIONES_MENU[0];
     if (track && track.archivo && window.Sfx) {
