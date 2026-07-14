@@ -32,12 +32,16 @@
    "alucinaciones"
   ],
   "entidades": [],
+  "contenedores": [
+   10,
+   14
+  ],
   "objetos": [
    {
     "id": "agua_almendras",
     "n": [
-     1,
-     2
+     3,
+     4
     ]
    }
   ],

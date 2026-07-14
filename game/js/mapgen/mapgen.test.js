@@ -47,3 +47,35 @@ test('Level 6 conserva dos salidas físicas y la salida por caminata', () => {
     }
   }
 });
+
+test('Level 0 genera sus botellas y taquillas adicionales en sitios validos', () => {
+  const def = {
+    id: 'level-0',
+    bioma: 'pasillos',
+    tam: [150, 150],
+    infinito: true,
+    salidas: [],
+    objetos: [{ id: 'agua_almendras', n: [3, 4] }],
+    contenedores: [10, 14],
+    entidades: [],
+  };
+
+  for (let i = 0; i < 50; i++) {
+    const map = MapGen.generate(def, RNG.create(`level-0-recursos-${i}`));
+    const botellas = map.items.filter((item) => item.id === 'agua_almendras');
+    const taquillas = map.props.filter((prop) => prop.id === 'taquilla');
+    const posiciones = new Set();
+
+    assert.ok(botellas.length >= 3 && botellas.length <= 4);
+    assert.ok(taquillas.length >= 10 && taquillas.length <= 14);
+
+    for (const recurso of [...botellas, ...taquillas]) {
+      assert.ok(MapGen.walkable(MapGen.at(map.grid, recurso.x, recurso.y)));
+      const clave = `${recurso.x},${recurso.y}`;
+      assert.ok(!posiciones.has(clave), `recurso solapado en ${clave}`);
+      posiciones.add(clave);
+    }
+    for (const taquilla of taquillas)
+      assert.equal(MapGen.at(map.grid, taquilla.x, taquilla.y - 1), MapGen.T.PARED);
+  }
+});

@@ -634,7 +634,17 @@
     guardarLoot(w, pr.x + ',' + pr.y);
     if (window.Sfx) Sfx.play('registrar');
     w.rollDice('Registras el contenedor…', (d) => {
-      if (d >= 14) {
+      if (w.level.id === 'level-0' && (d === 12 || d === 13)) {
+        const id = 'agua_almendras';
+        if ((w.player.inv || []).length + lootPend >= 6) {
+          w.log(`Dado: ${d}. Encuentras agua de almendras… pero no te cabe nada más.`, 'event');
+        } else {
+          w.log(`Dado: ${d}. Encuentras: ${w.data.objects[id].nombre}.`, 'good');
+          try { Game.Profiles.registrarDescubierto('objetos', id); } catch (e) {}
+          if (window.Effects) Effects.flash(w.player.x, w.player.y, '#ffe9a0');
+          enviarLoot(id);
+        }
+      } else if (d >= 14) {
         const pool = poolCajas(w);
         const id = pool[Math.min(pool.length - 1,
           Math.floor((d - 14) / 7 * pool.length + Math.floor(Math.random() * 3)))];

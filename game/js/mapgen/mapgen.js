@@ -620,7 +620,8 @@
         props.push({ x: p[0], y: p[1], id, contenedor: esCont, registrado: esCont ? false : undefined });
       }
     }
-    const nCont = rng.int(3, 5);
+    const rangoCont = levelDef.contenedores ?? [3, 5];
+    const nCont = rng.int(rangoCont[0], rangoCont[1]);
     for (let i = 0; i < nCont; i++) {
       const id = CONT_BIOMA[levelDef.bioma] ?? 'cofre';
       const p = sitioPara(id);

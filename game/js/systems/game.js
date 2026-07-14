@@ -1071,7 +1071,17 @@
     if (window.Sfx) Sfx.play('registrar');
     world.hacerRuido(world.player.x, world.player.y, 10); // registrar HACE RUIDO
     world.rollDice(`Registras ${NOMBRES_CONT[cont.id] ?? 'el contenedor'}…`, (d) => {
-      if (d >= 14) {
+      if (world.level.id === 'level-0' && (d === 12 || d === 13)) {
+        const id = 'agua_almendras';
+        if (world.player.inv.length >= 6) {
+          world.log(`Dado: ${d}. Encuentras agua de almendras… pero no te cabe nada más.`, 'event');
+        } else {
+          world.player.inv.push(id);
+          Profiles.registrarDescubierto('objetos', id);
+          world.log(`Dado: ${d}. Encuentras: ${world.data.objects[id].nombre}.`, 'good');
+          if (window.Effects) Effects.flash(world.player.x, world.player.y, '#ffe9a0');
+        }
+      } else if (d >= 14) {
         const basicos = ['agua_almendras', 'agua_almendras', 'botiquin', 'linterna', 'tuberia', 'trebol'];
         const pool = basicos.concat(Object.keys(world.data.objects).filter((id) => !basicos.includes(id)));
         const id = pool[Math.min(pool.length - 1, Math.floor((d - 14) / 7 * pool.length + world.rng.int(0, 2)))];
