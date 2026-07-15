@@ -14,18 +14,6 @@
   let sala = null;
   let bucle = null;
 
-  function token() {
-    try {
-      let t = localStorage.getItem('mmo-token');
-      if (!t) {
-        t = Array.from(crypto.getRandomValues(new Uint8Array(16)),
-          (b) => b.toString(16).padStart(2, '0')).join('');
-        localStorage.setItem('mmo-token', t);
-      }
-      return t;
-    } catch (e) { return 'sin-token'; }
-  }
-
   // comandos de guardián útiles en local (debug): /tp y /give — el resto de
   // la moderación (kick/ban/mute) no tiene sentido contra uno mismo
   function comando(linea) {
@@ -111,7 +99,7 @@
     const nivel = nivelInicial && window.GAME_DATA.levels[nivelInicial] ? nivelInicial : NIVEL_INICIAL;
     sala = S.asignar(nivel);
     S.prepararSala(sala);
-    jug = sala.entrar(wsSala, nombre, token(), {});
+    jug = sala.entrar(wsSala, nombre, window.ClientIdentity.token(), {});
     jug._reSala = (s) => { sala = s; }; // el cruce actualiza la sala activa
     if (!bucle) {
       // el corazón del mundo: 20 Hz como el servidor real. En una pestaña en

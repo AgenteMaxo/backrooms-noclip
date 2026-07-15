@@ -117,7 +117,7 @@ function observa() {
       jugadores: [...s.jugadores.values()].map((j) => ({
         id: j.id, nombre: j.nombre, token6: String(j.token || '').slice(0, 6),
         x: r2(j.x), y: r2(j.y),
-        salud: j.salud, sed: j.sed, cordura: j.cordura,
+        salud: j.salud, sed: j.sed, cordura: j.cordura, agotamiento: j.agotamiento,
         luz: !!j.luz, escondido: !!j.escondido, muerto: !!j.muerto,
         esAdmin: !!j.esAdmin, muteado: j.muteadoHasta > ahora,
         espectador: !!j.espectador,

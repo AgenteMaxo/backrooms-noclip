@@ -14,40 +14,18 @@
 'use strict';
 
 const esNode = typeof module !== 'undefined' && module.exports;
-// Node: sim/mundo.js carga el motor del juego y expone DATA/RNG/MapGen +
-// generarMapa/esTransitable; navegador: index.html cargó ya esos <script>.
-const M = esNode ? require('../../../server/sim/mundo') : null;
-const DATA = esNode ? M.DATA : window.GAME_DATA;
-const RNG = esNode ? M.RNG : window.RNG;
-const MapGen = esNode ? M.MapGen : window.MapGen;
+// MundoSim es la misma implementación en Node y navegador.
+const M = esNode ? require('../../../server/sim/mundo') : window.MundoSim;
+const DATA = M.DATA;
+const RNG = M.RNG;
+const MapGen = M.MapGen;
 const Entidades = esNode ? require('./entidades') : window.Entidades;
 const Fisica = esNode ? require('./fisica') : window.Fisica;
+const Shared = esNode ? require('./shared-rules') : window.SharedRules;
+const generarMapa = M.generarMapa;
+const esTransitable = M.esTransitable;
 
-// En el mundo compartido las salidas aparecen SIEMPRE (se ignora `prob`, que
-// era para las ventanas infinitas del modo por turnos): una instancia fija
-// sin puertas sería una trampa. (En Node la implementación canónica vive en
-// server/sim/mundo.js; el navegador replica aquí esas tres funciones cortas.)
-const defParaOnline = esNode ? null : function (def) {
-  return {
-    ...def,
-    salidas: (def.salidas || []).map((s) => { const c = { ...s }; delete c.prob; return c; }),
-  };
-};
-
-const generarMapa = esNode ? M.generarMapa : function (nivelId, semilla) {
-  const def = DATA.levels[nivelId];
-  if (!def) throw new Error(`nivel desconocido: ${nivelId}`);
-  const map = MapGen.generate(defParaOnline(def), RNG.create(semilla));
-  return { def, map };
-};
-
-const esTransitable = esNode ? M.esTransitable : function (map, x, y) {
-  if (x < 0 || y < 0 || x >= map.grid.w || y >= map.grid.h) return false;
-  return MapGen.walkable(MapGen.at(map.grid, x, y));
-};
-
-// Constantes de juego (dueño: este archivo; protocolo.js conserva copias por
-// compatibilidad histórica, pero la Sala ya no las lee de allí).
+// Constantes de juego: este archivo es su única fuente de verdad.
 const CAP_SALA = 60;          // jugadores por instancia de nivel
 const COOLDOWN_CHAT = 1500;   // ms entre mensajes de chat
 const RADIO_CHAT = 14;        // casillas: el chat es de PROXIMIDAD (voz, no megafonía)
@@ -157,6 +135,21 @@ let REMODEL_ONLINE = false;
 function activarRemodel(v) { REMODEL_ONLINE = !!v; }
 
 const PROTECCION_ENTRADA_MS = 3000;
+
+// Agotamiento (v31): el TERCER peligro que nombra la wiki de Level 0 (junto a
+// la sed y el hambre). Caminar cansa; se recupera descansando. Constantes
+// compartidas navegador/servidor para que ambos mundos se cansen igual.
+const CAD_AGOTA = 12;         // tiles caminados por cada punto de aguante perdido
+const AGOTA_REC_QUIETO = 2000;  // ms parado por cada punto recuperado
+const AGOTA_REC_DESCANSO = 800; // ídem escondido o en la Sala Manila (más rápido)
+const AGOTA_IDLE = 600;         // ms sin moverte para considerarte «en reposo»
+
+// Apagones de la Sala Manila (v31): la wiki dice que la sala «reportedly
+// experiences occasional blackouts». Es un EVENTO de sala (lo ve toda la
+// instancia a la vez); los susurros que lo acompañan los sintetiza cada
+// cliente. El intervalo sale del RNG determinista de la sala.
+const APAGON_MIN = 40000, APAGON_MAX = 90000;   // ms entre apagones
+const APAGON_DUR_MIN = 1600, APAGON_DUR_MAX = 3800; // ms que dura la oscuridad
 
 // vector cardinal más cercano a un ángulo θ (0=N, π/2=E, π=S, 3π/2=O)
 function cardinalDe(th) {
@@ -268,7 +261,7 @@ class Sala {
     const jug = {
       id, ws, nombre, token, x, y, rot: Math.PI, // θ continuo (π = mirando al sur)
       distSala: 0,
-      salud: 100, sed: 100, cordura: 100, luz: false, escondido: null, muerto: false,
+      salud: 100, sed: 100, cordura: 100, agotamiento: 100, luz: false, escondido: null, muerto: false,
       inv: [], manos: [null, null], equipo: { cara: null, cuerpo: null, pies: null },
       esAdmin: false, muteadoHasta: 0,
       espectador: null, // v30: {objetivo: id} — guardián invisible observando
@@ -289,7 +282,8 @@ class Sala {
     this.enviar(ws, {
       t: 'bienvenida', id, nivel: this.nivelId, inst: this.inst,
       semilla: this.semilla, privada: this.privada, x, y, rot: jug.rot, sec: 0,
-      salud: jug.salud, sed: jug.sed, cordura: jug.cordura, inv: jug.inv, manos: jug.manos, equipo: jug.equipo,
+      salud: jug.salud, sed: jug.sed, cordura: jug.cordura, agotamiento: jug.agotamiento,
+      inv: jug.inv, manos: jug.manos, equipo: jug.equipo,
       caminata: jug.caminataObjetivo ? { pasos: 0, objetivo: jug.caminataObjetivo } : null,
       jugadores: this.censo(), ...this.estadoDinamico(),
     });
@@ -328,7 +322,7 @@ class Sala {
   }
 
   enviarEstado(jug) {
-    this.enviar(jug.ws, { t: 'estado', salud: jug.salud, sed: jug.sed, cordura: jug.cordura });
+    this.enviar(jug.ws, { t: 'estado', salud: jug.salud, sed: jug.sed, cordura: jug.cordura, agotamiento: jug.agotamiento });
   }
 
   herir(jug, cantidad, causa) {
@@ -389,6 +383,15 @@ class Sala {
         });
       }
     }
+    // agotamiento: caminar cansa en TODOS los niveles (la recuperación por
+    // reposo vive en regenAguante). El traje AVMH reparte el esfuerzo mejor.
+    jug._agotAcum = (jug._agotAcum || 0) + tiles;
+    const cadAgota = trajeHostil ? CAD_AGOTA * 1.5 : CAD_AGOTA;
+    if (jug._agotAcum >= cadAgota) {
+      const n = Math.floor(jug._agotAcum / cadAgota);
+      jug._agotAcum -= n * cadAgota;
+      jug.agotamiento = Math.max(0, jug.agotamiento - n);
+    }
     if (reglas.includes('frio') && !chaqueta) this.herir(jug, pasos, 'el frío');
     // Los charcos sirena son una amenaza física del terreno: las botas
     // anulan el arrastre cuando el jugador pisa una casilla de agua.
@@ -397,6 +400,7 @@ class Sala {
         this.map.grid.t[ty * this.map.grid.w + tx] === 3)
       this.herir(jug, pasos * 2, 'un charco sirena');
     if (!jug.muerto && jug.sed === 0) this.herir(jug, pasos, 'la deshidratación');
+    if (!jug.muerto && jug.agotamiento === 0) this.herir(jug, pasos, 'el agotamiento');
     if (!jug.muerto && jug.cordura === 0) this.morir(jug, 'perdiste la cordura');
     if (!jug.muerto) this.enviarEstado(jug);
   }
@@ -438,6 +442,7 @@ class Sala {
       return;
     }
     jug._margen -= d;
+    if (d > 0.03) jug._ultMovReal = ahora; // reposo = sin desplazamiento real
     jug.x = m.x; jug.y = m.y;
     if (m.rot !== undefined) jug.rot = m.rot;
     (this._movidosExtra || (this._movidosExtra = new Map())).set(jug.id, jug);
@@ -631,7 +636,7 @@ class Sala {
     const ex = this.map.exits[c.i];
     if (!ex || ex.def._abierta) return;
     let d = this.rng.int(1, 20);
-    if (jug.inv.includes('trebol') || jug.manos.includes('trebol') || Object.values(jug.equipo).includes('trebol'))
+    if (Shared.posee(jug, 'trebol'))
       d = Math.min(20, d + 2);
     const esSuelo = ex.def._mec === 'romper_suelo';
     const umbral = c.herramienta ? 7 : (esSuelo ? 11 : 12);
@@ -659,15 +664,14 @@ class Sala {
     if (!s || jug.muerto) return;
     const defOriginal = s.ex.def;
     let def = defOriginal;
-    if (defOriginal.destino === '*aleatoria') {
-      const candidatos = Object.keys(DATA.levels).filter((id) => id !== this.nivelId);
-      const destino = candidatos.length ? this.rng.pick(candidatos) : null;
+    if (defOriginal.destino?.startsWith('*')) {
+      const destino = Shared.resolverDestino(defOriginal, {
+        levelIds: Object.keys(DATA.levels),
+        currentId: this.nivelId,
+        pick: (values) => values.length ? this.rng.pick(values) : null,
+      });
       // La definición pertenece al mapa compartido: no convertir la puerta en
       // un destino fijo para quienes la crucen después.
-      def = { ...defOriginal, destino, _destinoResuelto: destino };
-    } else if (defOriginal.destino?.startsWith('*opciones:')) {
-      const opciones = defOriginal.destino.slice('*opciones:'.length).split(',');
-      const destino = this.rng.pick(opciones);
       def = { ...defOriginal, destino, _destinoResuelto: destino };
     }
     if ((def._mec === 'romper' || def._mec === 'romper_suelo') && !def._abierta) return;
@@ -678,12 +682,11 @@ class Sala {
     // ---------- riesgoVoid (paridad con crossExit de game.js) ----------
     // el mismo d20 que resolverCanal (this.rng, semilla de sala): la MISMA
     // secuencia determinista consumida por todo lo que ocurre en la sala.
-    if (def.tipo === 'arriesgada' && def.riesgoVoid > 0) {
+    if (Shared.resolverRiesgoVoid(def, 20).applies) {
       let d = this.rng.int(1, 20);
-      if (jug.inv.includes('trebol') || jug.manos.includes('trebol') || Object.values(jug.equipo).includes('trebol'))
+      if (Shared.posee(jug, 'trebol'))
         d = Math.min(20, d + 2);
-      const umbral = Math.round(def.riesgoVoid * 20);
-      const exito = d > umbral; // offline: d <= umbral === caes
+      const exito = Shared.resolverRiesgoVoid(def, d).success;
       this.enviar(jug.ws, { t: 'dado', id: jug.id, valor: d, exito });
       if (!exito) { this.morir(jug, 'el Vacío'); return; }
     }
@@ -699,6 +702,7 @@ class Sala {
     }
     if (ef.sed) jug.sed = Math.max(0, Math.min(100, jug.sed + ef.sed));
     if (ef.cordura) jug.cordura = Math.max(0, Math.min(100, jug.cordura + ef.cordura));
+    if (ef.agotamiento) jug.agotamiento = Math.max(0, Math.min(100, jug.agotamiento + ef.agotamiento));
     if (ef.ruido) this.hacerRuido(jug.x, jug.y, ef.ruido);
     this.enviarEstado(jug);
     // La sed a 0 no mata de golpe: supervivencia() aplica el daño gradual
@@ -892,27 +896,22 @@ class Sala {
       case 'equipar': {
         const id = jug.inv[m.slot];
         const def = id && OBJ[id];
-        if (!def || !def.manos) { aviso('Eso no se empuña.'); return; }
-        if (def.manos === 2) {
-          if (jug.manos[0] || jug.manos[1]) { aviso('Necesitas las DOS manos libres.'); return; }
-          jug.manos = [id, '='];
-        } else {
-          const libre = jug.manos.indexOf(null);
-          if (libre < 0) { aviso('Tienes las manos ocupadas.'); return; }
-          jug.manos[libre] = id;
+        const result = Shared.equiparManos(jug.manos, id, def?.manos);
+        if (result.reason === 'no_equipable') { aviso('Eso no se empuña.'); return; }
+        if (!result.ok) {
+          aviso(def.manos === 2 ? 'Necesitas las DOS manos libres.' : 'Tienes las manos ocupadas.');
+          return;
         }
+        jug.manos = result.hands;
         jug.inv.splice(m.slot, 1);
         break;
       }
       case 'desequipar': {
-        let mano = m.mano;
-        if (jug.manos[mano] === '=') mano = 0;
-        const id = jug.manos[mano];
-        if (!id) return;
-        if (jug.inv.length >= 6) { aviso('La mochila está llena.'); return; }
-        if (OBJ[id] && OBJ[id].manos === 2) jug.manos = [null, null];
-        else jug.manos[mano] = null;
-        jug.inv.push(id);
+        const result = Shared.guardarMano(jug.manos, m.mano, jug.inv.length);
+        if (result.reason === 'vacia') return;
+        if (!result.ok) { aviso('La mochila está llena.'); return; }
+        jug.manos = result.hands;
+        jug.inv.push(result.itemId);
         break;
       }
       case 'usarItem': {
@@ -1032,7 +1031,8 @@ class Sala {
     this.difundir({ t: 'muere', id: jug.id, causa });
     setTimeout(() => {
       if (!this.jugadores.has(jug.id)) return;
-      jug.salud = 100; jug.sed = 100; jug.cordura = 100;
+      jug.salud = 100; jug.sed = 100; jug.cordura = 100; jug.agotamiento = 100;
+      jug._agotAcum = 0; jug._aguanteRec = 0;
       jug.muerto = false;
       jug.inv = []; jug.manos = [null, null];
       // lo VESTIDO también se queda atrás (paridad con startRun del modo solo;
@@ -1103,6 +1103,53 @@ class Sala {
     return false;
   }
 
+  // ---------- recuperación de aguante por reposo (v31) ----------
+  // El agotamiento solo se drena al caminar (supervivencia); aquí se repone
+  // mientras estás quieto. La Sala Manila es un «rudimentary resting point»
+  // según la wiki, así que descansar dentro (o escondido) recupera más rápido.
+  regenAguante(ahora) {
+    const rect = this.map.manila;
+    for (const jug of this.jugadores.values()) {
+      if (jug.muerto || jug.espectador) { jug._aguanteT = ahora; continue; }
+      const reposo = ahora - (jug._ultMovReal || 0) > AGOTA_IDLE;
+      if (!reposo || jug.agotamiento >= 100) { jug._aguanteT = ahora; continue; }
+      const enManila = !!rect && jug.x >= rect.x && jug.x < rect.x + rect.w &&
+        jug.y >= rect.y && jug.y < rect.y + rect.h;
+      const cad = (enManila || jug.escondido) ? AGOTA_REC_DESCANSO : AGOTA_REC_QUIETO;
+      jug._aguanteRec = (jug._aguanteRec || 0) + (ahora - (jug._aguanteT || ahora));
+      jug._aguanteT = ahora;
+      if (jug._aguanteRec >= cad) {
+        const n = Math.floor(jug._aguanteRec / cad);
+        jug._aguanteRec -= n * cad;
+        jug.agotamiento = Math.min(100, jug.agotamiento + n);
+        this.enviarEstado(jug);
+      }
+    }
+  }
+
+  // ---------- apagones de la Sala Manila (v31, EVENTO de sala) ----------
+  // La wiki: la Manila «reportedly experiences occasional blackouts». Se
+  // difunde a TODA la instancia (que lo vive a la vez); cada cliente decide si
+  // le afecta visualmente/sonoramente según su cercanía a la sala.
+  apagonManila(ahora) {
+    const rect = this.map.manila;
+    if (!rect) return;
+    if (this._apagonEn === undefined) {
+      this._apagonEn = ahora + APAGON_MIN + this.rng.int(0, APAGON_MAX - APAGON_MIN);
+      return;
+    }
+    if (ahora < this._apagonEn) return;
+    this._apagonEn = ahora + APAGON_MIN + this.rng.int(0, APAGON_MAX - APAGON_MIN);
+    // solo tiene sentido si hay alguien cerca de la sala para presenciarlo
+    const cx = rect.x + rect.w / 2, cy = rect.y + rect.h / 2;
+    const radio = Math.max(rect.w, rect.h) / 2 + 12;
+    const testigos = [...this.jugadores.values()].some(
+      (j) => !j.espectador && !j.muerto && Fisica.dist(j.x, j.y, cx, cy) <= radio);
+    if (!testigos) return;
+    const ms = APAGON_DUR_MIN + this.rng.int(0, APAGON_DUR_MAX - APAGON_DUR_MIN);
+    this.difundir({ t: 'apagon', ms });
+  }
+
   // ---------- tick de simulación (lo llama el anfitrión a 20 Hz) ----------
   tick(ahora) {
     if (!this.jugadores.size) return;
@@ -1112,6 +1159,8 @@ class Sala {
     const movidos = this._movidosExtra || (this._movidosExtra = new Map());
     for (const jug of this.jugadores.values())
       if (jug.canal && ahora >= jug.canal.hasta) this.resolverCanal(jug);
+    this.regenAguante(ahora);
+    this.apagonManila(ahora);
     Entidades.tick(this, ahora, dt);
     // La simulación continúa a 20 Hz, pero la red publica a 10 Hz. Durante los
     // 100 ms intermedios los Map conservan solo la posición más reciente de
@@ -1241,15 +1290,6 @@ function prepararSala(sala) {
   }, { sinRetorno: true });
 }
 
-// salidas de las que físicamente NO se puede volver — la MISMA regla que
-// esSinRetorno en game.js (caídas, vacío, desplomes) para que el mundo
-// online respete la física del modo original
-function esSinRetorno(def) {
-  if (def.sinRetorno) return true;
-  if (def.tipo === 'void') return true;
-  return /agujero|caes |caer |caída|desplom|abismo|pozo|trampilla|no.?clip|desmay|despiert/i.test(def.texto || '');
-}
-
 // cruce de salas: sacar de la sala vieja, meter en la del nivel destino y
 // mandar el estado nuevo (el cliente reconstruye el mapa desde la semilla)
 function cambiarDeSala(jug, salaVieja, defSalida, opts) {
@@ -1260,7 +1300,7 @@ function cambiarDeSala(jug, salaVieja, defSalida, opts) {
   // salvo que llegaras cayendo/por el vacío/noclip (caminata o /tp): de ahí no se vuelve
   const origen = salaVieja.nivelId;
   const conRetorno = !(opts && opts.sinRetorno) && !(opts && opts.sinTarjeta) &&
-    !esSinRetorno(defSalida) && origen !== nueva.nivelId;
+    !Shared.esSinRetorno(defSalida) && origen !== nueva.nivelId;
   jug.retorno = null;
   // cruzar por aquí SIEMPRE devuelve al mundo (un espectador viaja por
   // moverEspectador): si un guardián espectando usa /tp, el flag no puede
@@ -1344,7 +1384,7 @@ function moverEspectador(esp, salaVieja, nueva, objetivo) {
 
 const api = {
   Sala, salas, crearSala, asignar, todas, totalJugadores,
-  prepararSala, cambiarDeSala, esSinRetorno, moverEspectador,
+  prepararSala, cambiarDeSala, esSinRetorno: Shared.esSinRetorno, moverEspectador,
   tickEventosGlobales, crearControlApagon,
   usarDb, ganchos, metricas, activarRemodel, fijarSemillaBase,
   generarMapa, esTransitable,

@@ -128,6 +128,7 @@
         <div class="dbg-fila"><span class="dbg-lab">Comida</span><div class="dbg-track"><div id="dbg-comida" class="dbg-fill"></div></div><span class="dbg-v" id="dbg-comida-v"></span></div>
         <div class="dbg-fila"><span class="dbg-lab">Bebida</span><div class="dbg-track"><div id="dbg-bebida" class="dbg-fill"></div></div><span class="dbg-v" id="dbg-bebida-v"></span></div>
         <div class="dbg-fila"><span class="dbg-lab">Cordura</span><div class="dbg-track"><div id="dbg-cordura" class="dbg-fill"></div></div><span class="dbg-v" id="dbg-cordura-v"></span></div>
+        <div class="dbg-fila"><span class="dbg-lab">Aguante</span><div class="dbg-track"><div id="dbg-aguante" class="dbg-fill"></div></div><span class="dbg-v" id="dbg-aguante-v"></span></div>
       </div>
       <div id="hud-equipo">
         <div class="eq-hud-slot" id="hud-eq-cara"><span class="eq-ph">cara</span></div>
@@ -424,6 +425,14 @@
      el origen no lo pida): SUBIR el número en cada versión, junto con VERSION_JUEGO -->
 <script src="js/data.js?v=296"></script>
 <script src="js/engine/rng.js?v=296"></script>
+<script src="js/engine/cargador.js?v=296"></script>
+<script src="js/config/options.js?v=296"></script>
+<script src="js/config/identity.js?v=296"></script>
+<script src="js/input/state.js?v=296"></script>
+<script src="js/input/touch.js?v=296"></script>
+<script src="js/input/camera.js?v=296"></script>
+<script src="js/levels/level.js?v=296"></script>
+<script src="js/levels/level-0/level-0.js?v=296"></script>
 <script src="js/mapgen/mapgen.js?v=296"></script>
 <script src="js/engine/tiles.js?v=296"></script>
 <script src="js/engine/sprites.js?v=296"></script>
@@ -432,22 +441,25 @@
 <script src="js/assets-manifest.js?v=296"></script>
 <script src="js/engine/sfx.js?v=296"></script>
 <script src="js/engine/fov.js?v=296"></script>
+<script src="js/sim/mundo.js?v=296"></script>
+<script src="js/sim/shared-rules.js?v=296"></script>
 <script src="js/systems/entities.js?v=296"></script>
 <script src="js/systems/rules.js?v=296"></script>
 <script src="js/engine/render.js?v=296"></script>
-<script src="js/lib/three.min.js?v=296"></script>
-<script src="js/lib/shaders/CopyShader.js?v=296"></script>
-<script src="js/lib/shaders/LuminosityHighPassShader.js?v=296"></script>
-<script src="js/lib/shaders/GammaCorrectionShader.js?v=296"></script>
-<script src="js/lib/postprocessing/EffectComposer.js?v=296"></script>
-<script src="js/lib/postprocessing/RenderPass.js?v=296"></script>
-<script src="js/lib/postprocessing/ShaderPass.js?v=296"></script>
-<script src="js/lib/postprocessing/UnrealBloomPass.js?v=296"></script>
-<script src="js/engine/atmos3d.js?v=296"></script>
-<script src="js/engine/render3d.js?v=296"></script>
+<!-- El chunk 3D (three.min + shaders + postpro + atmos3d + render3d*) NO va
+     aquí: son 721 KB (52% del JS) que la portada no usa. Lo inyecta CHUNK_3D
+     en main.js con Cargador.scripts(). Si añades un archivo al 3D, va en esa
+     lista, no en este HTML. -->
+<script src="js/systems/profiles.js?v=296"></script>
+<script src="js/systems/savegame.js?v=296"></script>
 <script src="js/systems/game.js?v=296"></script>
 <script src="js/ui/icons.js?v=296"></script>
 <script src="js/ui/controllers.js?v=296"></script>
+<script src="js/input/gamepad-settings.js?v=296"></script>
+<script src="js/input/gamepad.js?v=296"></script>
+<script src="js/ui/display-settings.js?v=296"></script>
+<script src="js/ui/modals.js?v=296"></script>
+<script src="js/ui/codex.js?v=296"></script>
 <script src="js/ui/ui.js?v=296"></script>
 <script src="js/ui/title-interface.js?v=296"></script>
 <script src="js/ui/changelog.js?v=296"></script>
@@ -460,6 +472,8 @@
 <script src="js/net/local.js?v=296"></script>
 <script src="js/net/otros.js?v=296"></script>
 <script src="js/net/cliente.js?v=296"></script>
+<script src="js/debug/selftest.js?v=296"></script>
+<script src="js/ui/title-controller.js?v=296"></script>
 <script src="js/main.js?v=296"></script>
 </body>
 </html>

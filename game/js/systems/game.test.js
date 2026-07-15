@@ -13,6 +13,8 @@ global.localStorage = {
   removeItem: (clave) => almacen.delete(clave),
 };
 
+require('./profiles.js');
+global.SaveGame = require('./savegame.js');
 require('./game.js');
 const Profiles = global.Game.Profiles;
 

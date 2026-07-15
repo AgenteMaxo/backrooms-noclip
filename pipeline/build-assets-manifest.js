@@ -1,6 +1,6 @@
 // Genera game/js/assets-manifest.js: el inventario de los assets OPCIONALES
-// que existen DE VERDAD en game/assets/ (sprites, iconos, sonidos y ambientes
-// de nivel). El juego solo carga lo que aparece aquí — nada de sondear rutas
+// que existen DE VERDAD en game/assets/ (sprites, iconos, sonidos, ambientes
+// y texturas de nivel). El juego solo carga lo que aparece aquí — nada de sondear rutas
 // a ciegas (antes se probaban ~2.900 URLs con 4 extensiones por id y la
 // consola/red se llenaban de 404 desde la pantalla de título).
 //
@@ -77,15 +77,45 @@ const ambientes = elegir(
   (a, b) => a.extI - b.extI
 );
 
+// ---- texturas exclusivas: assets/levels/<id>/textures/ ----
+// Convención: pared.png y suelo-<n>.png. El manifiesto continúa siendo la
+// única fuente de rutas de assets que el navegador puede cargar.
+function inventariarTexturasNiveles() {
+  const resultado = {};
+  const nivelesDir = path.join(RAIZ, 'assets', 'levels');
+  if (!fs.existsSync(nivelesDir)) return resultado;
+
+  for (const nivel of fs.readdirSync(nivelesDir, { withFileTypes: true })) {
+    if (!nivel.isDirectory()) continue;
+    const dir = path.join(nivelesDir, nivel.name, 'textures');
+    if (!fs.existsSync(dir)) continue;
+    const archivos = fs.readdirSync(dir);
+    const pared = archivos.find((nombre) => nombre === 'pared.png');
+    const suelos = archivos
+      .filter((nombre) => /^suelo-\d+\.png$/.test(nombre))
+      .sort((a, b) => Number(a.match(/\d+/)[0]) - Number(b.match(/\d+/)[0]));
+    if (!pared && !suelos.length) continue;
+    const base = `assets/levels/${nivel.name}/textures`;
+    resultado[nivel.name] = {
+      pared: pared ? `${base}/${pared}` : null,
+      suelos: suelos.map((nombre) => `${base}/${nombre}`),
+    };
+  }
+  return resultado;
+}
+
+const texturasNiveles = inventariarTexturasNiveles();
+
 const salida = `// GENERADO por pipeline/build-assets-manifest.js — NO editar a mano.
 // Inventario de los assets opcionales que existen en game/assets/: el juego
 // SOLO carga estas rutas (cero sondeos, cero 404). Tras añadir o quitar
 // archivos: node pipeline/build-assets-manifest.js
-window.ASSETS_MANIFEST = ${JSON.stringify({ sprites, iconos, sonidos, ambientes }, null, 2)};
+window.ASSETS_MANIFEST = ${JSON.stringify({ sprites, iconos, sonidos, ambientes, texturasNiveles }, null, 2)};
 `;
 
 const destino = path.join(RAIZ, 'js', 'assets-manifest.js');
 fs.writeFileSync(destino, salida);
 console.log(`assets-manifest.js: ${Object.keys(sprites).length} sprites, ` +
   `${Object.keys(iconos).length} iconos, ${Object.keys(sonidos).length} sonidos, ` +
-  `${Object.keys(ambientes).length} ambientes de nivel`);
+  `${Object.keys(ambientes).length} ambientes y ` +
+  `${Object.keys(texturasNiveles).length} lotes de texturas de nivel`);

@@ -48,18 +48,6 @@
     return 'ws://localhost:8080/ws'; // desarrollo desde file://
   }
 
-  function token() {
-    try {
-      let t = localStorage.getItem('mmo-token');
-      if (!t) {
-        t = Array.from(crypto.getRandomValues(new Uint8Array(16)),
-          (b) => b.toString(16).padStart(2, '0')).join('');
-        localStorage.setItem('mmo-token', t);
-      }
-      return t;
-    } catch (e) { return 'sin-token'; }
-  }
-
   function enviar(msg) {
     if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg));
   }
@@ -85,7 +73,7 @@
     }
     ws = new WebSocket(urlServidor());
     ws.onopen = () => enviar({
-      t: 'hola', nombre, token: token(), v: 9, // debe coincidir con protocolo.js
+      t: 'hola', nombre, token: window.ClientIdentity.token(), v: 10, // debe coincidir con protocolo.js
       nivel: params.get('nivel') || undefined, // puerta de desarrollo (solo MMO_DEV=1)
       sala: salaActual || undefined,
     });
@@ -269,6 +257,7 @@
         w.player.salud = m.salud ?? w.player.salud;
         w.player.sed = m.sed ?? w.player.sed;
         w.player.cordura = m.cordura ?? w.player.cordura;
+        w.player.agotamiento = m.agotamiento ?? w.player.agotamiento;
         w.ui.updateHUD();
         break;
       case 'inv':
@@ -408,6 +397,20 @@
         break;
       }
 
+      // ---------- apagón de la Sala Manila: la luz se corta PARA TODOS ----------
+      // La luz la maneja el render (actualizarLucesTecho lee w.manilaApagon);
+      // los susurros solo suenan si estás cerca de la sala (el driver de
+      // ambiente en main.js decide). El apagón lo vive toda la instancia a la vez.
+      case 'apagon': {
+        w.manilaApagon = { hasta: performance.now() + (m.ms || 2000) };
+        const rect = w.map && w.map.manila;
+        const cerca = rect && Math.hypot(
+          w.player.x - (rect.x + rect.w / 2), w.player.y - (rect.y + rect.h / 2)
+        ) <= Math.max(rect.w, rect.h) / 2 + 12;
+        if (cerca && window.Sfx) Sfx.susurros(1.6);
+        break;
+      }
+
       case 'aviso': w.log(m.txt, 'event'); break;
       case 'error':
         ultimoError = m.txt; // visible en el título si aún no hay partida
@@ -424,16 +427,11 @@
   // dinámico que la semilla no puede saber (entidades, objetos cogidos,
   // grietas ya abiertas, censo de jugadores).
   function construirNivel(m, w) {
-    const def = w.data.levels[m.nivel];
+    const { def, map } = window.MundoSim.generarMapa(m.nivel, m.semilla);
     w.online = true;
     w.level = def;
-    // MISMA transformación que hace el servidor (sim/mundo.js→defParaOnline):
-    // online las salidas aparecen siempre — el campo `prob` era del modo solo
-    const defOnline = {
-      ...def,
-      salidas: (def.salidas || []).map((s) => { const c = { ...s }; delete c.prob; return c; }),
-    };
-    w.map = MapGen.generate(defOnline, RNG.create(m.semilla));
+    if (window.Sfx) Sfx.cargarOverridesDeNivel(def); // solo los bichos de ESTE nivel
+    w.map = map;
     w.tiles = Tiles.build(def, RNG.create(m.semilla + '::tiles'));
     w.map.caminatas = []; // la caminata online (M3) es personal
     // puerta personal de RETORNO (v23): solo existe en TU cliente — el
@@ -472,6 +470,7 @@
     w.player.salud = m.salud ?? 100;
     w.player.sed = m.sed ?? 100;
     w.player.cordura = m.cordura ?? 100;
+    w.player.agotamiento = m.agotamiento ?? 100;
     w.player.inv = m.inv || [];
     w.player.manos = m.manos || [null, null];
     w.player.equipo = m.equipo || { cara: null, cuerpo: null, pies: null };

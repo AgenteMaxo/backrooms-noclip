@@ -5,12 +5,14 @@ global.window = global;
 require('../data.js');
 require('../engine/rng.js');
 require('./mapgen.js');
+const MapGenApi = global.MapGen;
+const RngApi = global.RNG;
 
 function countTiles(g) {
   const counts = { walkable: 0, vacio: 0 };
   for (const tile of g.t) {
-    if (MapGen.walkable(tile)) counts.walkable++;
-    if (tile === MapGen.T.VACIO) counts.vacio++;
+    if (MapGenApi.walkable(tile)) counts.walkable++;
+    if (tile === MapGenApi.T.VACIO) counts.vacio++;
   }
   return counts;
 }
@@ -25,7 +27,7 @@ test('invernadero con altura no divisible por 3 no cae al fallback de pasillos',
     entidades: [],
   };
 
-  const map = MapGen.generate(def, RNG.create('pre-fix-4'));
+  const map = MapGenApi.generate(def, RngApi.create('pre-fix-4'));
   const counts = countTiles(map.grid);
 
   assert.ok(counts.walkable >= 60, 'el mapa debe tener suelo suficiente para jugar');

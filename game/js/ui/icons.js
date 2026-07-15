@@ -66,6 +66,10 @@
     '............', '............', '...tttttt...', '..tttttttt..',
     '.txttxttxtt.', '.tttttttttt.', '.tTtttTttTt.', '.tttttttttt.',
     '..TTTTTTTT..', '............', '............', '............'] };
+  D.energia = { pal: { k: '#2f3d34', g: '#5bbd7a', G: '#9be8b0' }, m: [
+    '.....kk.....', '...kkkkkk...', '...kGGGGk...', '...kGGGGk...',
+    '...kggggk...', '...kggggk...', '...kggggk...', '...kggggk...',
+    '...kggggk...', '...kkkkkk...', '............', '............'] };
   D.refresco = { pal: { c: '#4a90a0', C: '#2a6070', g: '#c0c8cc' }, m: [
     '............', '...gggggg...', '...g.gg.g...', '...cccccc...',
     '...cccccc...', '...cgggcc...', '...cgggcc...', '...cccccc...',

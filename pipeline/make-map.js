@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const SharedRules = require('../game/js/sim/shared-rules');
 
 const levels = require(path.join(__dirname, '..', 'data', 'game', 'levels.es.json'));
 const OUT = path.join(__dirname, '..', 'data', 'game', 'mapa-piloto.html');
@@ -44,11 +45,6 @@ const H = 80 + maxRows * (NH + GY);
 
 const PELIGRO = ['#3fae6a', '#8bb944', '#d9a531', '#e0742c', '#d94a35', '#a12744'];
 const colorPeligro = (p) => PELIGRO[Math.max(0, Math.min(5, p))];
-
-// mismas reglas que el juego (game.js→esSinRetorno): caídas irreversibles
-const esSinRetorno = (s) =>
-  s.sinRetorno === true || s.tipo === 'void' ||
-  /agujero|caes |caer |caída|desplom|abismo|pozo|trampilla|no.?clip|desmay|despiert/i.test(s.texto || '');
 
 // mismas regex que el juego (mapgen.js→mecanicaDe): mecánicas de salida derivadas
 const mecanicaDe = (s) => {
@@ -94,10 +90,7 @@ function estadoDe(s) {
 
 // destinos reales de una salida (el sentinel *opciones:a,b conecta con VARIOS)
 function destinosDe(s) {
-  if (!s.destino) return [];
-  if (s.destino.startsWith('*opciones:'))
-    return s.destino.slice('*opciones:'.length).split(',').filter((id) => levels[id]);
-  return levels[s.destino] ? [s.destino] : [];
+  return SharedRules.destinosDeclarados(s, levels);
 }
 
 // ---------- datos embebidos para la interacción ----------
@@ -125,7 +118,7 @@ for (const [id, lv] of Object.entries(levels)) {
           : (levels[s.destino]?.wikiTitle ?? null),
         opciones, // varios destinos posibles (el azar elige al cruzar)
         riesgoVoid: s.riesgoVoid || 0,
-        sinRetorno: esSinRetorno(s),
+        sinRetorno: SharedRules.esSinRetorno(s),
         estado,
         etiqueta,
       };
@@ -141,7 +134,7 @@ for (const [id, lv] of Object.entries(levels)) {
         desdeNombre: lv.wikiTitle,
         texto: s.texto,
         tipo: s.tipo,
-        sinRetorno: esSinRetorno(s),
+        sinRetorno: SharedRules.esSinRetorno(s),
       });
     }
   }

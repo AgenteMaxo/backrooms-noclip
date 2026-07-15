@@ -7,6 +7,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   Sala,
+  CAP_SALA,
   crearControlApagon,
   APAGON_ESPERA_MIN_MS,
   APAGON_PREAVISO_MS,
@@ -39,6 +40,10 @@ test('el aire contaminado de Level 11 desgasta despacio y la máscara lo bloquea
   jug.equipo.cara = 'mascara_gas';
   for (let i = 0; i < 12; i++) sala.supervivencia(jug, 4);
   assert.equal(jug.salud, 99, 'la máscara bloquea toda la exposición posterior');
+});
+
+test('la simulación es la fuente de verdad del aforo', () => {
+  assert.equal(CAP_SALA, 60);
 });
 
 test('usar un objeto con sed cero no causa una muerte instantánea', () => {

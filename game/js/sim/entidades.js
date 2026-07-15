@@ -13,7 +13,7 @@
 const esNode = typeof module !== 'undefined' && module.exports;
 // Node: sim/mundo.js carga el motor del juego (data/rng/mapgen/fov) y lo
 // expone; navegador: index.html ya cargó esos <script> antes que este.
-const { MapGen, FOV } = esNode ? require('../../../server/sim/mundo') : window;
+const { MapGen, FOV } = esNode ? require('../../../server/sim/mundo') : window.MundoSim;
 const Fisica = esNode ? require('./fisica') : window.Fisica;
 
 const PERIODO_CEREBRO = 260; // ms entre decisiones (elegir waypoint, atacar)

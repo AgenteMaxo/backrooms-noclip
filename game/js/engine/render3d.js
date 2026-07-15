@@ -51,6 +51,7 @@
   let camBobT = 0;
   let panelMats = [];            // grupos independientes de fluorescentes
   let panelPositions = [];       // posición y grupo de cada fluorescente
+  let manilaGruposMemo = { src: null, set: null }; // grupos de panel dentro de la Manila
   let transitionMats = null;     // materiales que mutan al acercarse Level 1
   let flkHasta = 0, flkNext = 0, flkOn = true, flkGrupo = -1;
   const REDUCE_FLICKER = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -154,234 +155,10 @@
     gctx.putImageData(img, 0, 0);
   }
 
-  // ---------- pintores frontales a medida (llenan TODO el lienzo: sin márgenes) ----------
-  const SH = (c, f) => Tiles.shade(c, f);
-  function lienzo(w, h, fn) {
-    const c = document.createElement('canvas');
-    c.width = w; c.height = h;
-    fn(c.getContext('2d'), w, h);
-    return c;
-  }
-  const PINTORES = {
-    puerta: (col) => lienzo(44, 64, (x, w, h) => {
-      x.fillStyle = '#241c12'; x.fillRect(0, 0, w, h);                 // marco
-      x.fillStyle = SH(col, 0.42); x.fillRect(3, 3, w - 6, h - 3);     // hoja
-      x.strokeStyle = SH(col, 0.7); x.lineWidth = 2;
-      x.strokeRect(8, 8, w - 16, 20);                                  // cuarterón sup
-      x.strokeRect(8, 34, w - 16, 20);                                 // cuarterón inf
-      x.fillStyle = '#e8d890';                                          // pomo
-      x.beginPath(); x.arc(w - 9, h / 2 + 2, 2.6, 0, 7); x.fill();
-      x.fillStyle = col; x.globalAlpha = 0.5;                           // luz bajo la puerta
-      x.fillRect(4, h - 3, w - 8, 3);
-    }),
-    // puerta de emergencia (L0 → L14): metal oscuro + barra antipánico + rótulo
-    // EXIT sobre baliza roja — se distingue de cualquier otra puerta del juego
-    emergencia: () => lienzo(44, 64, (x, w, h) => {
-      x.fillStyle = '#181210'; x.fillRect(0, 0, w, h);                   // marco oscuro
-      x.fillStyle = '#3a2c28'; x.fillRect(3, 12, w - 6, h - 15);         // hoja
-      x.strokeStyle = '#5a4038'; x.lineWidth = 2;
-      x.strokeRect(7, 18, w - 14, h - 32);                                // panel
-      x.fillStyle = '#c81818';                                            // barra antipánico
-      x.fillRect(6, h - 22, w - 12, 5);
-      x.fillStyle = '#2a0808'; x.fillRect(2, 0, w - 4, 11);               // caja del rótulo
-      x.fillStyle = '#ff2020'; x.font = 'bold 8px monospace'; x.textAlign = 'center';
-      x.fillText('EXIT', w / 2, 8);
-    }),
-    ventana: (col) => lienzo(44, 64, (x, w, h) => {
-      x.fillStyle = '#2a2a2e'; x.fillRect(0, 0, w, h);
-      x.fillStyle = SH(col, 0.9); x.globalAlpha = 0.85;
-      const pw = (w - 12) / 2, ph = (h - 12) / 2;
-      for (const [px2, py2] of [[4, 4], [8 + pw, 4], [4, 8 + ph], [8 + pw, 8 + ph]])
-        x.fillRect(px2, py2, pw, ph);
-    }),
-    vending: () => lienzo(40, 64, (x, w, h) => {
-      x.fillStyle = '#a83848'; x.fillRect(0, 0, w, h);
-      x.fillStyle = '#701828'; x.fillRect(0, 0, w, 4);
-      x.fillStyle = '#d8e8f0'; x.globalAlpha = 0.85;                    // escaparate
-      x.fillRect(4, 7, w - 16, h - 22);
-      x.globalAlpha = 1;
-      x.fillStyle = '#701828'; x.fillRect(w - 10, 7, 7, h - 22);        // panel
-      x.fillStyle = '#ffe060'; x.fillRect(w - 9, 12, 5, 5);             // botón 9
-      x.fillStyle = '#c8a830'; x.fillRect(w - 9, 20, 5, 5);             // botón 8
-      x.fillStyle = '#1a0c10'; x.fillRect(4, h - 11, w - 8, 7);         // bandeja
-    }),
-    reloj: () => lienzo(48, 28, (x, w, h) => {
-      x.fillStyle = '#20242a'; x.fillRect(0, 0, w, h);
-      x.strokeStyle = '#4a5058'; x.lineWidth = 2; x.strokeRect(1, 1, w - 2, h - 2);
-      x.fillStyle = '#40ff80';
-      x.font = 'bold 13px monospace'; x.textAlign = 'center';
-      x.fillText('88:88', w / 2, h / 2 + 5);
-    }),
-    boton: () => lienzo(40, 40, (x, w, h) => {
-      x.fillStyle = '#c8ccd4'; x.fillRect(0, 0, w, h);
-      x.strokeStyle = '#8a92a0'; x.strokeRect(1.5, 1.5, w - 3, h - 3);
-      x.fillStyle = '#d83030';
-      x.beginPath(); x.arc(w / 2, h / 2 - 4, 9, 0, 7); x.fill();
-      x.fillStyle = '#2a2e34'; x.font = 'bold 7px monospace'; x.textAlign = 'center';
-      x.fillText('ESCAPE', w / 2, h - 6);
-    }),
-    enchufe: () => lienzo(16, 20, (x, w, h) => {
-      x.fillStyle = '#b9ae78'; x.fillRect(1, 1, w - 2, h - 2);
-      x.strokeStyle = '#756b45'; x.lineWidth = 1; x.strokeRect(1.5, 1.5, w - 3, h - 3);
-      x.fillStyle = '#393522';
-      x.fillRect(5, 6, 2, 5); x.fillRect(9, 6, 2, 5);
-      x.fillStyle = '#6e6542'; x.fillRect(7, 14, 2, 2);
-      x.fillStyle = '#d7cc92'; x.fillRect(3, 3, w - 6, 1);
-    }),
-    edificio: () => lienzo(44, 64, (x, w, h) => {
-      x.fillStyle = '#38404c'; x.fillRect(0, 0, w, h);
-      x.fillStyle = '#6ae86a'; x.globalAlpha = 0.8;
-      for (let fy = 0; fy < 7; fy++)
-        for (let fx = 0; fx < 4; fx++)
-          if ((fx + fy) % 2 === 0) x.fillRect(4 + fx * 10, 4 + fy * 8.5, 6, 5);
-    }),
-    trampilla: (col) => lienzo(48, 48, (x, w, h) => {
-      x.fillStyle = '#3a332a'; x.fillRect(0, 0, w, h);                 // marco
-      x.fillStyle = '#060402'; x.fillRect(5, 5, w - 10, h - 10);        // hueco
-      const g = x.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, 18);
-      g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
-      x.globalAlpha = 0.55; x.fillStyle = g; x.fillRect(5, 5, w - 10, h - 10);
-      x.globalAlpha = 1;
-      x.fillStyle = '#5a5044';                                          // bisagras
-      x.fillRect(8, 2, 8, 4); x.fillRect(w - 16, 2, 8, 4);
-    }),
-    sueloGrieta: () => lienzo(48, 48, (x, w, h) => {
-      x.clearRect(0, 0, w, h);
-      x.strokeStyle = 'rgba(24,17,8,0.95)'; x.lineWidth = 3;
-      x.beginPath();
-      x.moveTo(3, 26); x.lineTo(16, 20); x.lineTo(24, 28);
-      x.lineTo(34, 13); x.lineTo(45, 20);
-      x.moveTo(24, 28); x.lineTo(30, 44);
-      x.moveTo(16, 20); x.lineTo(12, 6);
-      x.stroke();
-    }),
-    // cerco de humedad suelto: un único decal circular con caída de alpha,
-    // reutilizado por TODAS las manchas del suelo (una textura, un material).
-    mancha: () => lienzo(64, 64, (x, w, h) => {
-      const g = x.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, w / 2 - 3);
-      g.addColorStop(0, 'rgba(18,14,7,0.5)');
-      g.addColorStop(0.65, 'rgba(18,14,7,0.25)');
-      g.addColorStop(1, 'rgba(18,14,7,0)');
-      x.fillStyle = g;
-      x.beginPath(); x.arc(w / 2, h / 2, w / 2 - 3, 0, 7); x.fill();
-    }),
-    escalera: (col) => lienzo(48, 48, (x, w, h) => {
-      x.fillStyle = '#0a0806'; x.fillRect(0, 0, w, h);
-      for (let i = 0; i < 6; i++) {
-        x.fillStyle = SH(col, 0.95 - i * 0.14);
-        x.fillRect(4, 4 + i * 7, w - 8, 6);
-      }
-    }),
-    taquilla: () => lienzo(48, 84, (x, w, h) => {
-      x.fillStyle = '#5a6a74'; x.fillRect(0, 0, w, h);
-      x.strokeStyle = '#39434b'; x.lineWidth = 2;
-      x.strokeRect(1, 1, w - 2, h - 2);
-      x.beginPath(); x.moveTo(w / 2, 2); x.lineTo(w / 2, h - 2); x.stroke();  // dos puertas
-      x.fillStyle = '#414c54';
-      for (const px2 of [6, w / 2 + 4])                                       // rejillas
-        for (let ry = 8; ry <= 22; ry += 7) x.fillRect(px2, ry, w / 2 - 10, 3);
-      x.fillStyle = '#2c343a';                                                // tiradores
-      x.fillRect(w / 2 - 7, h / 2 + 4, 3, 12); x.fillRect(w / 2 + 4, h / 2 + 4, 3, 12);
-      x.fillStyle = '#39434b'; x.fillRect(0, h - 6, w, 6);                    // zócalo
-    }),
-    archivador: () => lienzo(48, 84, (x, w, h) => {
-      x.fillStyle = '#7a7264'; x.fillRect(0, 0, w, h);
-      x.strokeStyle = '#544e42'; x.lineWidth = 2;
-      for (let i = 0; i < 4; i++) {
-        x.strokeRect(4, 4 + i * 20, w - 8, 17);
-        x.fillStyle = '#4a463c'; x.fillRect(w / 2 - 7, 11 + i * 20, 14, 4);
-      }
-    }),
-    nevera: () => lienzo(48, 84, (x, w, h) => {
-      x.fillStyle = '#c8d0cc'; x.fillRect(0, 0, w, h);
-      x.strokeStyle = '#8e9a94'; x.lineWidth = 2;
-      x.strokeRect(1, 1, w - 2, h - 2);
-      x.beginPath(); x.moveTo(2, 28); x.lineTo(w - 2, 28); x.stroke();
-      x.fillStyle = '#6e7a74';
-      x.fillRect(w - 10, 8, 4, 14); x.fillRect(w - 10, 34, 4, 26);
-    }),
-    camilla: () => lienzo(48, 32, (x, w, h) => {
-      x.fillStyle = '#c8d4cc'; x.fillRect(0, 0, w, 12);                 // colchoneta
-      x.fillStyle = '#e0e8e2'; x.fillRect(0, 0, w, 4);
-      x.fillStyle = '#6a746e'; x.fillRect(0, 12, w, h - 12);            // faldón
-      x.fillStyle = '#3a403c';
-      x.beginPath(); x.arc(9, h - 4, 4, 0, 7); x.fill();
-      x.beginPath(); x.arc(w - 9, h - 4, 4, 0, 7); x.fill();
-    }),
-    cofre: () => lienzo(44, 48, (x, w, h) => {
-      x.fillStyle = '#8a6a42'; x.fillRect(0, 0, w, h);
-      x.fillStyle = '#6e5434'; x.fillRect(0, 0, w, 12);
-      x.fillRect(w / 2 - 3, 0, 6, h);
-      x.fillStyle = '#e0b040'; x.fillRect(w / 2 - 5, 16, 10, 12);
-    }),
-    caja: () => lienzo(44, 48, (x, w, h) => {
-      x.fillStyle = '#8a6a42'; x.fillRect(0, 0, w, h);
-      x.strokeStyle = '#5e4830'; x.lineWidth = 3;
-      x.strokeRect(2, 2, w - 4, h - 4);
-      x.beginPath(); x.moveTo(2, 2); x.lineTo(w - 2, h - 2);
-      x.moveTo(w - 2, 2); x.lineTo(2, h - 2); x.stroke();
-    }),
-    bidon: () => lienzo(44, 48, (x, w, h) => {
-      x.fillStyle = '#4a6858'; x.fillRect(0, 0, w, h);
-      x.fillStyle = '#5e7c6c'; x.fillRect(6, 0, 10, h);
-      x.fillStyle = '#324a3e';
-      x.fillRect(0, 10, w, 5); x.fillRect(0, 30, w, 5);
-    }),
-    grieta: () => lienzo(44, 64, (x, w, h) => {
-      // muro agrietado (fondo transparente: se pega sobre la pared real)
-      x.strokeStyle = 'rgba(16,12,8,0.9)';
-      x.lineWidth = 3;
-      x.beginPath();
-      x.moveTo(w / 2, 2);
-      x.lineTo(w / 2 - 6, 16); x.lineTo(w / 2 + 4, 28);
-      x.lineTo(w / 2 - 4, 42); x.lineTo(w / 2 + 6, 54); x.lineTo(w / 2 + 2, h - 2);
-      x.stroke();
-      x.lineWidth = 1.5;
-      x.beginPath();
-      x.moveTo(w / 2 - 6, 16); x.lineTo(w / 2 - 15, 22);
-      x.moveTo(w / 2 + 4, 28); x.lineTo(w / 2 + 14, 31);
-      x.moveTo(w / 2 - 4, 42); x.lineTo(w / 2 - 13, 48);
-      x.moveTo(w / 2 + 6, 54); x.lineTo(w / 2 + 13, 58);
-      x.stroke();
-      x.globalAlpha = 0.35;                          // un hilo de luz se cuela
-      x.strokeStyle = '#fff8e0';
-      x.lineWidth = 1;
-      x.beginPath();
-      x.moveTo(w / 2 - 1, 4); x.lineTo(w / 2 - 5, 16); x.lineTo(w / 2 + 3, 28);
-      x.stroke();
-    }),
-    boquete: () => lienzo(44, 64, (x, w, h) => {
-      // pared ROTA: boquete negro con luz blanca dentro (florece con el bloom)
-      x.fillStyle = '#0a0806';
-      x.beginPath();
-      x.moveTo(6, 8); x.lineTo(16, 3); x.lineTo(30, 6); x.lineTo(w - 5, 14);
-      x.lineTo(w - 8, 40); x.lineTo(w - 4, h - 8); x.lineTo(20, h - 3);
-      x.lineTo(5, h - 12); x.lineTo(8, 30);
-      x.closePath(); x.fill();
-      x.fillStyle = '#ffffff';                       // la luz del otro lado
-      x.beginPath();
-      x.moveTo(12, 14); x.lineTo(26, 9); x.lineTo(w - 10, 18);
-      x.lineTo(w - 12, 42); x.lineTo(w - 9, h - 13); x.lineTo(20, h - 9);
-      x.lineTo(10, h - 17); x.lineTo(12, 32);
-      x.closePath(); x.fill();
-    }),
-    planta: () => lienzo(40, 44, (x, w, h) => {
-      // helecho: tallos con hojas (fondo transparente)
-      for (let i = 0; i < 6; i++) {
-        const bx = 6 + i * 5.5, alto = 16 + (i * 13) % 20;
-        x.strokeStyle = i % 2 ? '#3f7a48' : '#59985e';
-        x.lineWidth = 2;
-        x.beginPath();
-        x.moveTo(w / 2, h);
-        x.quadraticCurveTo(bx, h - alto / 2, bx + (i % 2 ? 3 : -3), h - alto);
-        x.stroke();
-        x.fillStyle = i % 2 ? '#4e8c55' : '#6aad70';
-        x.beginPath();
-        x.ellipse(bx + (i % 2 ? 3 : -3), h - alto, 3.5, 6, 0.4, 0, 7);
-        x.fill();
-      }
-    }),
-  };
+  const utilidadesPintado = Render3DPainters.crear(Tiles);
+  const PINTORES = utilidadesPintado.pintores;
+  const lienzo = utilidadesPintado.lienzo;
+  const SH = utilidadesPintado.sombrear;
   function pintado(clave, fn) {
     if (texCache.has(clave)) return texCache.get(clave);
     return tex(fn(), clave);
@@ -392,6 +169,16 @@
   let lastRunSeed = null;   // partida a la que pertenece la escena actual
   let solidosCamara = [];
   const rayo = new THREE.Raycaster();
+  const objetivoCamara = new THREE.Vector3();
+  const origenCamara = new THREE.Vector3();
+  const direccionCamara = new THREE.Vector3();
+  const objetivoMirada = new THREE.Vector3();
+  const posicionJugador = new THREE.Vector3();
+  const puntoProyectado = new THREE.Vector3();
+  const fondoFrame = new THREE.Color();
+  const fondoLocura = new THREE.Color(0x13010b);
+  const otrosVivos = new Set();
+  const lucesCercanas = [];
 
   function disposeGrupo(grupo, keepTex) {
     if (!grupo) return;
@@ -473,10 +260,8 @@
     const transMats = {};
 
     // --- SUELO CONTINUO: una sola textura seamless repetida con UV de mundo ---
-    const floorTex = tex(tiles.sueloSeam || tiles.suelo[0], 'suelo-seam');
-    floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping;
-    // la textura macro cubre 2×2 tiles → los UV de mundo se dividen entre 2
-    const uvEsc = tiles.sueloSeam ? 0.5 : 1;
+    // La textura procedural cubre 2x2 tiles. Los bitmaps de Level 0 cubren uno.
+    const uvEsc = tiles.sueloEsc ?? (tiles.sueloSeam ? 0.5 : 1);
     const aguaTex = tex(tiles.agua, 'agua-tile');
     // v19: las mallas grandes se trocean en FRANJAS de 16 filas — el swap del
     // rebuild las revela escalonadas y la subida a GPU se reparte entre frames
@@ -491,15 +276,24 @@
       m.receiveShadow = true;
       return m;
     };
-    const matSuelo = new THREE.MeshLambertMaterial({ map: floorTex });
-    transMats.floor = matSuelo;
-    let floorPos = [], floorUv = [], floorIdx = [], floorNor = [];
+    const sueloVars = tiles.sueloVars?.length ? tiles.sueloVars : null;
+    const floorSources = sueloVars || [tiles.sueloSeam || tiles.suelo[0]];
+    const floorMats = floorSources.map((source, i) => {
+      const texture = tex(source, sueloVars ? `suelo-var-${i}` : 'suelo-seam');
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      return new THREE.MeshLambertMaterial({ map: texture });
+    });
+    transMats.floor = floorMats;
+    const floorBuffers = floorMats.map(() => ({ pos: [], uv: [], idx: [], nor: [] }));
     const flushSuelo = () => {
-      if (!floorPos.length) return;
-      const m = mkFlat(floorPos, floorUv, floorIdx, floorNor, matSuelo);
-      grupo.add(m);
-      bandas.push(m);
-      floorPos = []; floorUv = []; floorIdx = []; floorNor = [];
+      for (let i = 0; i < floorBuffers.length; i++) {
+        const b = floorBuffers[i];
+        if (!b.pos.length) continue;
+        const m = mkFlat(b.pos, b.uv, b.idx, b.nor, floorMats[i]);
+        grupo.add(m);
+        bandas.push(m);
+        b.pos = []; b.uv = []; b.idx = []; b.nor = [];
+      }
     };
     // --- MANCHAS sueltas (v28.1): cercos de humedad dispersos en vez de la
     // textura macro repitiéndolos cada 2 tiles. Un único decal reutilizado,
@@ -525,10 +319,14 @@
       for (let x = 0; x < g.w; x++) {
         const v = g.t[y * g.w + x];
         if (v === T.VACIO || v === T.PARED) continue;
+        const floorIndex = floorBuffers.length > 1
+          ? Math.floor(seededUnit(`${world.runSeed}:svar:${x}:${y}`) * floorBuffers.length)
+          : 0;
+        const floor = floorBuffers[floorIndex];
         // UV = coordenadas de mundo → continuidad perfecta
-        quad(floorPos, floorUv, floorIdx,
+        quad(floor.pos, floor.uv, floor.idx,
           [[x, 0, y + 1], [x + 1, 0, y + 1], [x + 1, 0, y], [x, 0, y]],
-          [x * uvEsc, y * uvEsc, (x + 1) * uvEsc, (y + 1) * uvEsc], floorNor);
+          [x * uvEsc, y * uvEsc, (x + 1) * uvEsc, (y + 1) * uvEsc], floor.nor);
         if (v === T.AGUA)
           quad(aguaPos, aguaUv, aguaIdx,
             [[x, 0.02, y + 1], [x + 1, 0.02, y + 1], [x + 1, 0.02, y], [x, 0.02, y]],
@@ -572,19 +370,23 @@
     const esWall = (x, y) => MapGen.at(g, x, y) === T.PARED;
     if (tiles.wallStyle === 'tabique') {
       // cara sin la franja de techo (solo el muro): recorte del caraFull
-      let caraSolo = texCache.get('muro-lado') ? null : document.createElement('canvas');
+      const seamlessWall = tiles.wallSeam || null;
+      let caraSolo = seamlessWall || texCache.get('muro-lado') ? null : document.createElement('canvas');
       if (caraSolo) {
         caraSolo.width = 48; caraSolo.height = 48;
         caraSolo.getContext('2d').drawImage(tiles.caraFull[1], 0, Tiles.RF, 48, Tiles.FH, 0, 0, 48, 48);
       }
+      const wallTex = tex(seamlessWall || caraSolo, seamlessWall ? 'muro-level0-seam' : 'muro-lado');
+      if (seamlessWall) wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping;
       const matLado = new THREE.MeshLambertMaterial({
-        map: tex(caraSolo, 'muro-lado'),
+        map: wallTex,
         // Una emisión mínima evita la banda negra de autosombreado junto al
         // techo sin convertir el papel en una superficie luminosa.
         emissive: world.level.id === 'level-0' ? pal.pared : 0x000000,
         emissiveIntensity: world.level.id === 'level-0' ? 0.075 : 0,
       });
       transMats.wall = matLado;
+      const wallUv = seamlessWall ? (u0, u1, h) => [u0, h, u1, 0] : () => [0, 0, 1, 1];
       const matTecho = new THREE.MeshLambertMaterial({ map: tex(tiles.techo, 'muro-techo') });
       let sidePos = [], sideUv = [], sideIdx = [], sideNor = [];
       let topPos = [], topUv = [], topIdx = [], topNor = [];
@@ -607,13 +409,13 @@
           const h = WALL_H;
           // caras laterales solo hacia espacios abiertos (culling interior)
           if (!esWall(x, y + 1)) quad(sidePos, sideUv, sideIdx,
-            [[x, 0, y + 1], [x + 1, 0, y + 1], [x + 1, h, y + 1], [x, h, y + 1]], [0, 0, 1, 1], sideNor);
+            [[x, 0, y + 1], [x + 1, 0, y + 1], [x + 1, h, y + 1], [x, h, y + 1]], wallUv(x, x + 1, h), sideNor);
           if (!esWall(x, y - 1)) quad(sidePos, sideUv, sideIdx,
-            [[x + 1, 0, y], [x, 0, y], [x, h, y], [x + 1, h, y]], [0, 0, 1, 1], sideNor);
+            [[x + 1, 0, y], [x, 0, y], [x, h, y], [x + 1, h, y]], wallUv(x + 1, x, h), sideNor);
           if (!esWall(x - 1, y)) quad(sidePos, sideUv, sideIdx,
-            [[x, 0, y], [x, 0, y + 1], [x, h, y + 1], [x, h, y]], [0, 0, 1, 1], sideNor);
+            [[x, 0, y], [x, 0, y + 1], [x, h, y + 1], [x, h, y]], wallUv(y, y + 1, h), sideNor);
           if (!esWall(x + 1, y)) quad(sidePos, sideUv, sideIdx,
-            [[x + 1, 0, y + 1], [x + 1, 0, y], [x + 1, h, y], [x + 1, h, y + 1]], [0, 0, 1, 1], sideNor);
+            [[x + 1, 0, y + 1], [x + 1, 0, y], [x + 1, h, y], [x + 1, h, y + 1]], wallUv(y + 1, y, h), sideNor);
           quad(topPos, topUv, topIdx,
             [[x, h, y + 1], [x + 1, h, y + 1], [x + 1, h, y], [x, h, y]], [0, 0, 1, 1], topNor);
         }
@@ -1396,19 +1198,41 @@
       for (const l of ceilingLights) { l.intensity = 0; l.visible = false; }
       return;
     }
-    const cercanas = [];
+    const maxLuces = ceilingLights.length;
+    while (lucesCercanas.length < maxLuces) {
+      lucesCercanas.push({ x: 0, z: 0, group: 0, d2: Infinity });
+    }
+    let cantidadCercanas = 0;
     for (const p of panelPositions) {
       const d2 = (p.x - px) ** 2 + (p.z - pz) ** 2;
       if (d2 > 64) continue;
-      let i = 0;
-      while (i < cercanas.length && cercanas[i].d2 <= d2) i++;
-      cercanas.splice(i, 0, { ...p, d2 });
-      if (cercanas.length > ceilingLights.length) cercanas.pop();
+      let posicion = 0;
+      while (posicion < cantidadCercanas && lucesCercanas[posicion].d2 <= d2) posicion++;
+      if (posicion >= maxLuces) continue;
+      const ultimo = Math.min(cantidadCercanas, maxLuces - 1);
+      for (let i = ultimo; i > posicion; i--) {
+        const anterior = lucesCercanas[i - 1];
+        const actual = lucesCercanas[i];
+        actual.x = anterior.x;
+        actual.z = anterior.z;
+        actual.group = anterior.group;
+        actual.d2 = anterior.d2;
+      }
+      const actual = lucesCercanas[posicion];
+      actual.x = p.x;
+      actual.z = p.z;
+      actual.group = p.group;
+      actual.d2 = d2;
+      cantidadCercanas = Math.min(maxLuces, cantidadCercanas + 1);
     }
     const m = world.map.manila;
     const pal = world.level.paleta;
+    // apagón de la Sala Manila (v31): la luz naranja se corta unos segundos.
+    // Parpadeo brusco casi siempre a oscuras, con algún destello agónico.
+    const apagado = m && world.manilaApagon && performance.now() < world.manilaApagon.hasta;
+    const apagonF = apagado ? (Math.random() < 0.82 ? 0.02 : 0.28) : 1;
     ceilingLights.forEach((l, i) => {
-      const p = cercanas[i];
+      const p = i < cantidadCercanas ? lucesCercanas[i] : null;
       if (!p) { l.intensity = 0; l.visible = false; return; }
       l.visible = true;
       l.position.set(p.x, WALL_H - 0.12, p.z);
@@ -1417,9 +1241,26 @@
       const enManila = m && p.x >= m.x && p.x < m.x + m.w && p.z >= m.y && p.z < m.y + m.h;
       l.color.set(enManila ? 0xff8c40 : pal.luz);
       const falla = p.group === flkGrupo && !flkOn;
-      const objetivo = (0.82 - 0.12 * fase0) * (falla ? 0.05 : 1);
-      l.intensity += (objetivo - l.intensity) * 0.22;
+      let objetivo = (0.82 - 0.12 * fase0) * (falla ? 0.05 : 1);
+      if (enManila && apagado) objetivo *= apagonF;
+      l.intensity += (objetivo - l.intensity) * (enManila && apagado ? 0.6 : 0.22);
     });
+    // apagar también los paneles emisivos estáticos que caen DENTRO de la Manila
+    // (si no, el techo seguiría brillando durante el «apagón»)
+    if (m && panelPositions.length) {
+      if (manilaGruposMemo.src !== panelPositions) {
+        const set = new Set();
+        for (const p of panelPositions)
+          if (p.x >= m.x && p.x < m.x + m.w && p.z >= m.y && p.z < m.y + m.h) set.add(p.group);
+        manilaGruposMemo = { src: panelPositions, set };
+      }
+      for (const gi of manilaGruposMemo.set) {
+        const mat = panelMats[gi];
+        if (!mat || gi === flkGrupo) continue; // el parpadeo global manda si coincide
+        const f = apagado ? apagonF : 1;
+        mat.color.setRGB(f, 0.965 * f, 0.863 * f);
+      }
+    }
   }
 
   // ---------- frame ----------
@@ -1626,17 +1467,18 @@
     // jugadores remotos (BACKROOMS MMO): mismo patrón que las entidades, con el
     // sprite del jugador orientado según su rotación relativa a la cámara
     if (world.otros && window.Otros) {
-      const vivos = new Set();
+      otrosVivos.clear();
       // ángulo de cámara en radianes: la orientación relativa decide el sprite
       // (v25 online: la cámara es libre — su dirección real es −camYaw)
       const camDir = CAM_MODO === 'tercera'
         ? (world.online ? -camYaw : p.rot * Math.PI / 2)
         : ((4 - camRot) % 4) * Math.PI / 2;
       for (const o of world.otros) {
-        vivos.add(o.id);
-        if (o.escondido || o._crowdVisible === false) {
-          const sE = otrosSprites.get(o.id);
-          if (sE) sE.visible = false;
+        otrosVivos.add(o.id);
+        const sExistente = otrosSprites.get(o.id);
+        const lejos = (o.rx - p.rx) ** 2 + (o.ry - p.ry) ** 2 > radioOtros2;
+        if (o.escondido || o._crowdVisible === false || lejos) {
+          if (sExistente) sExistente.visible = false;
           continue;
         }
         let s = otrosSprites.get(o.id);
@@ -1654,16 +1496,17 @@
         s.position.set(o.rx + 0.5, SPRITE_H / 2 + 0.02, o.ry + 0.5);
       }
       for (const [id, s] of otrosSprites)
-        if (!vivos.has(id)) { actorGroup.remove(s); s.material.dispose(); otrosSprites.delete(id); }
+        if (!otrosVivos.has(id)) { actorGroup.remove(s); s.material.dispose(); otrosSprites.delete(id); }
     }
 
     // En el último tramo de Level 0, los mismos materiales pierden el amarillo
     // y dejan asomar el gris del garaje. No hay pantalla que anuncie el cambio.
     const fase0 = level0Phase(world);
     if (world.level.id === 'level-0' && transitionMats) {
-      const mezcla = (mat, r, g, b) => mat?.color.setRGB(
-        1 + (r - 1) * fase0, 1 + (g - 1) * fase0, 1 + (b - 1) * fase0
-      );
+      const mezcla = (mat, r, g, b) => {
+        for (const m of (Array.isArray(mat) ? mat : [mat]))
+          m?.color.setRGB(1 + (r - 1) * fase0, 1 + (g - 1) * fase0, 1 + (b - 1) * fase0);
+      };
       mezcla(transitionMats.floor, 0.58, 0.62, 0.65);
       mezcla(transitionMats.wall, 0.72, 0.75, 0.76);
       mezcla(transitionMats.ceiling, 0.68, 0.71, 0.73);
@@ -1681,14 +1524,13 @@
     // realimentaría sobre sí mismo y jamás se recuperaría al subir la cordura.
     const cordura = p.cordura ?? 100;
     if (scene.fog && !window.NOFX) {
-      const baseFondo = capFondo(new THREE.Color(world.level.paleta.fondo));
+      const baseFondo = capFondo(fondoFrame.set(world.level.paleta.fondo));
       if (world.level.id === 'level-0') {
         baseFondo.setRGB(0.051 + 0.015 * fase0, 0.043 + 0.025 * fase0, 0.02 + 0.04 * fase0);
       }
       if (cordura < 40) {
         const sc = (40 - cordura) / 40;
-        const locuraFondo = new THREE.Color(0x13010b);
-        baseFondo.lerp(locuraFondo, sc * 0.85);
+        baseFondo.lerp(fondoLocura, sc * 0.85);
       }
       if (apagon > 0) baseFondo.multiplyScalar(1 - apagon * 0.78);
       scene.background.copy(baseFondo);
@@ -1776,8 +1618,10 @@
         if (Math.random() < probFlicker) {
           flkHasta = t + 600 + Math.random() * 1000;
           flkNext = 0;
-          const activos = panelMats.map((m, i) => m ? i : -1).filter((i) => i >= 0);
-          flkGrupo = activos[Math.floor(Math.random() * activos.length)];
+          let cantidadActivos = 0;
+          for (const material of panelMats) if (material) cantidadActivos++;
+          let elegido = Math.floor(Math.random() * cantidadActivos);
+          flkGrupo = panelMats.findIndex((material) => material && elegido-- === 0);
           if (world.level.id === 'level-0' && window.Sfx) Sfx.level0Flicker?.();
         }
       } else if (t > flkHasta) {
@@ -1836,9 +1680,11 @@
       // inclinación leve para que los billboards sigan leyéndose; la rueda
       // del ratón ajusta la altura (main.js escribe Render3D.espAlt) ---
       const alt = espAlt;
-      camera.position.lerp(new THREE.Vector3(px, alt, pz + alt * 0.33), 0.1);
+      objetivoCamara.set(px, alt, pz + alt * 0.33);
+      camera.position.lerp(objetivoCamara, 0.1);
       frame._look = frame._look || new THREE.Vector3(px, 0.4, pz);
-      frame._look.lerp(new THREE.Vector3(px, 0.4, pz), 0.14);
+      objetivoMirada.set(px, 0.4, pz);
+      frame._look.lerp(objetivoMirada, 0.14);
       camera.lookAt(frame._look);
     } else if (CAM_MODO === 'tercera') {
       // --- CÁMARA 3ª PERSONA: pegada a la espalda, baja, inmersiva ---
@@ -1907,18 +1753,19 @@
       else camYaw += dyaw * corrDt(factorSuavidad);
       const ox = Math.sin(camYaw) * TP.dist;
       const oz = Math.cos(camYaw) * TP.dist;
-      let target = new THREE.Vector3(px + ox, TP.alto + bob, pz + oz);
+      const target = objetivoCamara.set(px + ox, TP.alto + bob, pz + oz);
       // colisión: si un muro queda entre la cabeza del jugador y la cámara, acercarla
       if (solidosCamara.length) {
-        const desde = new THREE.Vector3(px, 1.05, pz);
-        const hacia = target.clone().sub(desde);
+        const desde = origenCamara.set(px, 1.05, pz);
+        const hacia = direccionCamara.copy(target).sub(desde);
         const dist = hacia.length();
-        rayo.set(desde, hacia.clone().normalize());
+        hacia.normalize();
+        rayo.set(desde, hacia);
         rayo.far = dist;
         const hits = rayo.intersectObjects(solidosCamara, false);
         if (hits.length && hits[0].distance < dist - 0.2) {
           const d2 = Math.max(0.65, hits[0].distance - 0.25);
-          target = desde.clone().add(hacia.normalize().multiplyScalar(d2));
+          target.copy(desde).addScaledVector(hacia, d2);
           target.y = Math.min(target.y, TP.alto + bob);
         }
       }
@@ -1932,14 +1779,18 @@
       else camera.position.lerp(target, corrDt(TP.suavidad));
       // mira hacia delante (según la órbita actual: giro suave sin bandazos)
       frame._look = frame._look || new THREE.Vector3(px, TP.lookY, pz);
-      const lookObjetivo = new THREE.Vector3(
-        px - Math.sin(camYaw) * TP.lookAhead, TP.lookY, pz - Math.cos(camYaw) * TP.lookAhead);
-      if (world.online) frame._look.copy(lookObjetivo);
-      else frame._look.lerp(lookObjetivo, corrDt(0.12));
+      objetivoMirada.set(
+        px - Math.sin(camYaw) * TP.lookAhead,
+        TP.lookY,
+        pz - Math.cos(camYaw) * TP.lookAhead
+      );
+      if (world.online) frame._look.copy(objetivoMirada);
+      else frame._look.lerp(objetivoMirada, orbitando ? 1 : corrDt(0.12));
       camera.lookAt(frame._look);
       // si la cámara queda pegada (muro a la espalda), el personaje se desvanece
       // en vez de tapar media pantalla
-      const dCam = camera.position.distanceTo(new THREE.Vector3(px, 1.0, pz));
+      posicionJugador.set(px, 1.0, pz);
+      const dCam = camera.position.distanceTo(posicionJugador);
       playerSprite.material.opacity = Math.max(0, Math.min(1, (dCam - 0.85) / 0.9));
     } else {
       // --- cámara Octopath clásica (?cam=alta): inercia, bob sutil, rotación Q/E ---
@@ -1953,13 +1804,13 @@
       camYaw += dyaw * 0.1;
       const ox = Math.sin(camYaw) * CAM.dz;
       const oz = Math.cos(camYaw) * CAM.dz;
-      let target = new THREE.Vector3(px + ox, CAM.dy + bob, pz + oz);
+      const target = objetivoCamara.set(px + ox, CAM.dy + bob, pz + oz);
       // colisión de cámara: si un muro se interpone entre el jugador y la cámara,
       // la cámara se acerca hasta quedar delante (nunca tapa al jugador)
       if (solidosCamara.length) {
         // el rayo protege la visión de los PIES del jugador (lo primero que tapan los muros)
-        const desde = new THREE.Vector3(px, 0.22, pz);
-        const hacia = target.clone().sub(desde);
+        const desde = origenCamara.set(px, 0.22, pz);
+        const hacia = direccionCamara.copy(target).sub(desde);
         const dist = hacia.length();
         rayo.set(desde, hacia.normalize());
         rayo.far = dist;
@@ -1967,21 +1818,24 @@
         if (hits.length && hits[0].distance < dist - 0.3) {
           if (hits[0].distance > 2.4) {
             // hay hueco: acercar la cámara hasta quedar delante del muro
-            target = desde.clone().add(hacia.multiplyScalar(hits[0].distance - 0.35));
+            target.copy(desde).addScaledVector(hacia, hits[0].distance - 0.35);
             target.y = Math.max(target.y, 2.4);
           } else {
             // el muro está encima del jugador: cámara casi cenital sobre él
-            target = new THREE.Vector3(
-              px + Math.sin(camYaw) * 1.2, 6.2, pz + Math.cos(camYaw) * 1.2
-            );
+            target.set(px + Math.sin(camYaw) * 1.2, 6.2, pz + Math.cos(camYaw) * 1.2);
           }
         }
       }
       camera.position.lerp(target, CAM.suavidad);
       // el punto de mira también con inercia: sin micro-tirones por paso
       frame._look = frame._look || new THREE.Vector3(px, CAM.lookY, pz);
+      objetivoMirada.set(
+        px - Math.sin(camYaw) * CAM.lookAhead,
+        CAM.lookY,
+        pz - Math.cos(camYaw) * CAM.lookAhead
+      );
       frame._look.lerp(
-        new THREE.Vector3(px - Math.sin(camYaw) * CAM.lookAhead, CAM.lookY, pz - Math.cos(camYaw) * CAM.lookAhead),
+        objetivoMirada,
         0.09
       );
       camera.lookAt(frame._look);
@@ -2023,7 +1877,7 @@
   }
 
   function project(wx, wy) {
-    const v = new THREE.Vector3(wx + 0.5, 0.8, wy + 0.5).project(camera);
+    const v = puntoProyectado.set(wx + 0.5, 0.8, wy + 0.5).project(camera);
     // v.z > 1 tras project(): el punto queda detrás de la cámara (la
     // división de perspectiva por w negativa lo puede devolver dentro del
     // rango de pantalla en vez de fuera) — quien llama debe ignorarlo
@@ -2088,6 +1942,11 @@
 
   window.Render3D = {
     init, frame, project, TILE: 48,
+    invalidateTextures() {
+      texCache.clear();
+      lastLevelId = null;
+      levelKey = null;
+    },
     modo: CAM_MODO,
     rotar(dir = 1) { camRot = (camRot + dir + 4) % 4; },
     get rot() { return camRot; },

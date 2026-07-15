@@ -29,13 +29,16 @@ window.ASSETS_MANIFEST = {
   },
   "sonidos": {
     "smiler": "assets/sounds/entidades/smiler.wav",
-    "dado": "assets/sounds/dado.wav",
-    "dano": "assets/sounds/dano.mp3",
-    "golpe": "assets/sounds/golpe.mp3",
-    "latido": "assets/sounds/latido.wav",
-    "muerte": "assets/sounds/muerte.mp3",
-    "paso": "assets/sounds/paso.mp3",
-    "registrar": "assets/sounds/registrar.wav"
+    "dado": "assets/sounds/dado.ogg",
+    "dano": "assets/sounds/dano.ogg",
+    "golpe": "assets/sounds/golpe.ogg",
+    "latido": "assets/sounds/latido.ogg",
+    "muerte": "assets/sounds/muerte.ogg",
+    "paso": "assets/sounds/paso.ogg",
+    "registrar": "assets/sounds/registrar.ogg",
+    "susurros-lvl-0-1": "assets/sounds/susurros-lvl-0-1.ogg",
+    "susurros-lvl-0-2": "assets/sounds/susurros-lvl-0-2.ogg",
+    "susurros-lvl-0-3": "assets/sounds/susurros-lvl-0-3.ogg"
   },
   "ambientes": {
     "level-0": "assets/sounds/niveles/level-0.mp3",
@@ -49,5 +52,15 @@ window.ASSETS_MANIFEST = {
     "level-6": "assets/sounds/niveles/level-6.mp3",
     "level-777": "assets/sounds/niveles/level-777.mp3",
     "the-hub": "assets/sounds/niveles/the-hub.mp3"
+  },
+  "texturasNiveles": {
+    "level-0": {
+      "pared": "assets/levels/level-0/textures/pared.png",
+      "suelos": [
+        "assets/levels/level-0/textures/suelo-1.png",
+        "assets/levels/level-0/textures/suelo-2.png",
+        "assets/levels/level-0/textures/suelo-3.png"
+      ]
+    }
   }
 };
