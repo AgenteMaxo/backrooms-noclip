@@ -33,3 +33,24 @@ test('el aire contaminado de Level 11 desgasta despacio y la máscara lo bloquea
   for (let i = 0; i < 12; i++) sala.supervivencia(jug, 4);
   assert.equal(jug.salud, 99, 'la máscara bloquea toda la exposición posterior');
 });
+
+test('usar un objeto con sed cero no causa una muerte instantánea', () => {
+  const sala = new Sala('level-0', 1, 'prueba-sed', 'test');
+  const ws = socketFake();
+  const jug = sala.entrar(ws, 'Errante', 'token-sed', {});
+  jug.salud = 40;
+  jug.sed = 0;
+  jug.cordura = 50;
+
+  sala.aplicarNumericos(jug, {
+    nombre: 'Botiquín de prueba',
+    efecto: { salud: 40 },
+  });
+
+  assert.equal(jug.muerto, false);
+  assert.equal(jug.salud, 80);
+  assert.equal(jug.sed, 0, 'el objeto no recupera sed');
+
+  sala.supervivencia(jug, 4);
+  assert.equal(jug.salud, 79, 'la sed cero mantiene el daño gradual al moverse');
+});

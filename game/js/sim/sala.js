@@ -623,7 +623,10 @@ class Sala {
     if (ef.cordura) jug.cordura = Math.max(0, Math.min(100, jug.cordura + ef.cordura));
     if (ef.ruido) this.hacerRuido(jug.x, jug.y, ef.ruido);
     this.enviarEstado(jug);
-    if (!jug.muerto && (jug.salud <= 0 || jug.sed <= 0 || jug.cordura <= 0))
+    // La sed a 0 no mata de golpe: supervivencia() aplica el daño gradual
+    // por deshidratación. Usar un objeto sin efecto de sed no debe saltarse
+    // esa mecánica y convertirlo en la causa de una muerte instantánea.
+    if (!jug.muerto && (jug.salud <= 0 || jug.cordura <= 0))
       this.morir(jug, def.nombre);
   }
 
