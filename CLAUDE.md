@@ -246,8 +246,9 @@ los archivos generados (data.js byte a byte) y correr tests/auditoría tras el m
 **v21-v22 — BACKROOMS MMO**: el juego es un sandbox multijugador en tiempo real. Servidor en
 `server/` (única carpeta con `package.json`: dep `ws` + SQLite en `datos/mmo.db`):
 `server.js` (estáticos + WebSocket `/ws` + comandos `/admin /anuncio /kick /mute /ban /tp` +
-`cambiarDeSala`), `sala.js` (una sala = instancia de nivel, cap 60; tick 10 Hz vía
-`tickTodas`), `sim/mundo.js` (puente Node↔motor: requiere data/rng/mapgen/fov del juego —
+`cambiarDeSala`), `sala.js` (una sala = instancia de nivel, aforo `CAP_SALA`; simulación a
+20 Hz vía `tickTodas` y posiciones remotas agrupadas a 10 Hz), `sim/mundo.js` (puente
+Node↔motor: requiere data/rng/mapgen/fov del juego —
 por la red NUNCA viaja un mapa, solo la semilla `mmo::<nivel>::<inst>`), `sim/entidades.js`
 (IA continua), `protocolo.js` (validación + P.VERSION — súbela al cambiar mensajes; el
 cliente manda `v` en `hola` y bots.js también), `bots.js` (carga), `db.js`, `filtro.js`.

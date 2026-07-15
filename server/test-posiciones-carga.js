@@ -3,6 +3,9 @@
 const assert = require('node:assert/strict');
 const { Sala, INTERVALO_POS_MS } = require('../game/js/sim/sala');
 
+assert.equal(INTERVALO_POS_MS, 100,
+  'la simulación corre a 20 Hz, pero la red debe agrupar posiciones a 10 Hz');
+
 const sala = Object.create(Sala.prototype);
 sala.jugadores = new Map([[1, { id: 1, canal: null }]]);
 sala.entidades = [];
@@ -29,4 +32,4 @@ assert.equal(enviados.length, 2, 'la red publica a 10 Hz');
 assert.equal(enviados[1].j.length, 1, 'solo conserva una muestra por jugador');
 assert.equal(enviados[1].j[0][1], 3, 'publica la posición más reciente, no una cola vieja');
 
-console.log('PASS simulación 20 Hz con difusión de posiciones a 10 Hz');
+console.log(`PASS difusión de posiciones cada ${INTERVALO_POS_MS}ms, una muestra por jugador`);
