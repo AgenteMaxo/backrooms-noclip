@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Qué es
 
-Roguelike top-down de las Backrooms para navegador, en JavaScript vanilla + Canvas 2D, sin dependencias ni build tools (no hay `package.json`). Todo el contenido, la UI y los comentarios están en **español**; los títulos de la wiki (`Level 0`, `Faceling`) quedan en inglés.
+**El juego es un MMO de las Backrooms: un sandbox multijugador en tiempo real (el modo online es el PRINCIPAL y el que se juega en producción).** Top-down/3ª persona para navegador, en JavaScript vanilla + Canvas 2D / Three.js, sin build tools en el cliente (la única carpeta con `package.json` es `server/`). Todo el contenido, la UI y los comentarios están en **español**; los títulos de la wiki (`Level 0`, `Faceling`) quedan en inglés.
+
+> ⚠️ **MODO POR DEFECTO = ONLINE.** Salvo que el usuario diga lo contrario, cualquier petición ("añade X", "arregla Y", "cambia Z") se refiere al **modo online multijugador** (servidor en `server/` + cliente en `game/js/net/`, arrancado con `?online`). El modo por turnos offline (`?autostart=1`, sin `?online`) es un **respaldo secundario de un jugador** que se conserva por paridad, no el objetivo principal. Al implementar cualquier cambio de mecánica/HUD/salida/combate hay que pensar PRIMERO en el online y verificar que funciona con servidor real; el modo solo se actualiza después para mantener la paridad. Ver las entradas **v21-v30** más abajo (arquitectura cliente/servidor, autoridad del cliente con validación, protocolo `P.VERSION`).
 
 El contenido del juego (niveles, entidades, objetos) se deriva de la wiki backrooms.fandom.com mediante un pipeline de datos en Node, y luego se cura a mano en fichas en español.
 
@@ -21,7 +23,9 @@ node pipeline/build-data.js    # empaqueta data/game/*.es.json → game/js/data.
 node pipeline/build-assets-manifest.js  # inventaría game/assets/ → game/js/assets-manifest.js ← RE-EJECUTAR tras añadir/quitar sprites/sonidos/iconos (el juego solo carga lo inventariado; sin sondeos ni 404)
 ```
 
-Para jugar: abrir `game/index.html` directamente en el navegador (funciona por `file://` porque los datos van embebidos en `game/js/data.js`; no usar `fetch` de JSON en el juego por esa razón).
+Para jugar (modo PRINCIPAL, online): `node server/server.js` → http://localhost:8080 (WebSocket `/ws`; `MMO_DEV=1` habilita `?nivel=`, `MMO_ADMIN` fija la clave de guardián). Ver la entrada v21-v22 más abajo.
+
+Para jugar el respaldo por turnos (offline, un jugador): abrir `game/index.html` con `?autostart=1` directamente en el navegador (funciona por `file://` porque los datos van embebidos en `game/js/data.js`; no usar `fetch` de JSON en el juego por esa razón).
 
 ## Flujo de datos
 
