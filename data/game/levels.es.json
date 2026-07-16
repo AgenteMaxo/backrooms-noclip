@@ -77,7 +77,10 @@
     "destino": "*opciones:level-1,level-2",
     "tipo": "rara",
     "mecanica": "manila",
-    "permanenciaS": [180, 300]
+    "permanenciaS": [
+     180,
+     300
+    ]
    },
    {
     "texto": "Puertas correderas de cristal, como de invernadero, hacia Level 13",
@@ -508,8 +511,9 @@
    },
    {
     "texto": "Las aberturas del techo o las paredes llevan a Level 173; la mayoría de quienes saltaron desaparecieron",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-173",
+    "tipo": "sellada",
+    "destinoNombre": "Level 173"
    }
   ],
   "esEscape": false,
@@ -697,64 +701,76 @@
    },
    {
     "texto": "Una puerta azul envía a Level 0.8",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-0-8",
+    "tipo": "sellada",
+    "destinoNombre": "Level 0.8"
    },
    {
     "texto": "Un panel de control con un botón rotulado «ESCAPE»: pulsarlo abre una verja hacia Level 3",
-    "destino": null,
+    "destino": "level-3",
     "tipo": "sellada",
-    "ritual": "boton"
+    "ritual": "boton",
+    "destinoNombre": "Level 3"
    },
    {
     "texto": "Bajar una escalera de oficina puede llevarte a Level 4",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-4",
+    "tipo": "sellada",
+    "destinoNombre": "Level 4"
    },
    {
     "texto": "Romper una ventana transporta a Level 11",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-11",
+    "tipo": "sellada",
+    "destinoNombre": "Level 11"
    },
    {
     "texto": "Seguir un rastro de marcas de neumático hasta un garaje abierto: Level 69",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-69",
+    "tipo": "sellada",
+    "destinoNombre": "Level 69"
    },
    {
     "texto": "Ciertas puertas llevan a Level 339",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-339",
+    "tipo": "sellada",
+    "destinoNombre": "Level 339"
    },
    {
     "texto": "Una cámara secreta rotulada «Project TCCS» esconde pasillos hacia Level 443",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-443",
+    "tipo": "sellada",
+    "destinoNombre": "Level 443"
    },
    {
     "texto": "Encontrar césped espacial y hacer no-clip en él lleva a Level 818",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-818",
+    "tipo": "sellada",
+    "destinoNombre": "Level 818"
    },
    {
     "texto": "Una sustancia roja y pegajosa marca el camino a las cavernas de Level 990",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-990",
+    "tipo": "sellada",
+    "destinoNombre": "Level 990"
    },
    {
     "texto": "Resbalar con agua de almendras AZUL te lleva a Level 32",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-32",
+    "tipo": "sellada",
+    "destinoNombre": "Level 32"
    },
    {
     "texto": "Resbalar con agua de almendras VERDE te lleva a Level 48",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-48",
+    "tipo": "sellada",
+    "destinoNombre": "Level 48"
    },
    {
     "texto": "Resbalar con agua de almendras ROJA te lleva a Level 427",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-427",
+    "tipo": "sellada",
+    "destinoNombre": "Level 427"
    }
   ],
   "esEscape": false,
@@ -856,44 +872,52 @@
    },
    {
     "texto": "Las zonas más oscuras y angostas llevan a Level 0.7",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-0-7",
+    "tipo": "sellada",
+    "destinoNombre": "Level 0.7"
    },
    {
     "texto": "Una puerta difícil de abrir en el sótano del hospital conduce a Level 3",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-3",
+    "tipo": "sellada",
+    "destinoNombre": "Level 3"
    },
    {
     "texto": "Atravesar la puerta de una consulta médica puede llevar a Level 4",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-4",
+    "tipo": "sellada",
+    "destinoNombre": "Level 4"
    },
    {
     "texto": "Diversos factores hacen que los pasillos se difuminen hacia Level 17",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-17",
+    "tipo": "sellada",
+    "destinoNombre": "Level 17"
    },
    {
     "texto": "Pulsar los botones «9» y «8» de la máquina expendedora de la sala de descanso transporta a Level 98",
-    "destino": null,
+    "destino": "level-98",
     "tipo": "sellada",
-    "ritual": "vending"
+    "ritual": "vending",
+    "destinoNombre": "Level 98"
    },
    {
     "texto": "Los pasajes retrofuturistas de la Novelty Zone disuelven el asilo hacia Level 400",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-400",
+    "tipo": "sellada",
+    "destinoNombre": "Level 400"
    },
    {
     "texto": "Una silla de ruedas moviéndose sola anuncia el teletransporte a Level 223",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-223",
+    "tipo": "sellada",
+    "destinoNombre": "Level 223"
    },
    {
     "texto": "Un Cadillac celeste de los 70 con una foto en el parabrisas transporta a Level 69",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-69",
+    "tipo": "sellada",
+    "destinoNombre": "Level 69"
    }
   ],
   "esEscape": false,
@@ -1027,38 +1051,45 @@
    },
    {
     "texto": "Hacer no-clip a través de un cerezo en flor te lleva a Level 110",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-110",
+    "tipo": "sellada",
+    "destinoNombre": "Level 110"
    },
    {
     "texto": "Hacer no-clip por una puerta lleva a Level 974",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-974",
+    "tipo": "sellada",
+    "destinoNombre": "Level 974"
    },
    {
     "texto": "Sobrevivir de milagro a una sobredosis de Agua de Neón lleva a Level 7. NO lo intentes",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-7",
+    "tipo": "sellada",
+    "destinoNombre": "Level 7"
    },
    {
     "texto": "Ciertas zonas imprevistas de las cuevas transicionan a Level 8",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-8",
+    "tipo": "sellada",
+    "destinoNombre": "Level 8"
    },
    {
     "texto": "Las zonas secas del nivel pueden llevar a Level 46",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-46",
+    "tipo": "sellada",
+    "destinoNombre": "Level 46"
    },
    {
     "texto": "Un sistema de alcantarillado en las cuevas conduce a Level 49",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-49",
+    "tipo": "sellada",
+    "destinoNombre": "Level 49"
    },
    {
     "texto": "Los carteles de neón rotos con la palabra «Range» llevan sin fallo a Level 73",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-73",
+    "tipo": "sellada",
+    "destinoNombre": "Level 73"
    }
   ],
   "esEscape": false,
@@ -1216,13 +1247,15 @@
    },
    {
     "texto": "Una rara puerta de incendios en el pasillo lleva a Level 11",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-11",
+    "tipo": "sellada",
+    "destinoNombre": "Level 11"
    },
    {
     "texto": "Los desgarros de deformación en las paredes transportan a Level 21",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-21",
+    "tipo": "sellada",
+    "destinoNombre": "Level 21"
    }
   ],
   "esEscape": false,
@@ -1402,28 +1435,33 @@
    },
    {
     "texto": "Hacer no-clip en un objeto afectado tras el Fenómeno 70 puede llevar a Level 137",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-137",
+    "tipo": "sellada",
+    "destinoNombre": "Level 137"
    },
    {
     "texto": "Ser corrompido tiene un 2% de probabilidad de llevar a Level 690",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-690",
+    "tipo": "sellada",
+    "destinoNombre": "Level 690"
    },
    {
     "texto": "Un raro túnel conduce a un destino quizá peor: Level 488",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-488",
+    "tipo": "sellada",
+    "destinoNombre": "Level 488"
    },
    {
     "texto": "Un raro túnel subterráneo lleva a Level 899",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-899",
+    "tipo": "sellada",
+    "destinoNombre": "Level 899"
    },
    {
     "texto": "Un colapso mental tiene un 1,7% de probabilidad de llevar a Level 138",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-138",
+    "tipo": "sellada",
+    "destinoNombre": "Level 138"
    }
   ],
   "esEscape": false,
@@ -1472,23 +1510,27 @@
    },
    {
     "texto": "Los raros huecos de los árboles llevan a Level 192",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-192",
+    "tipo": "sellada",
+    "destinoNombre": "Level 192"
    },
    {
     "texto": "Escasas fosas del terreno caen a Level 202.1",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-202-1",
+    "tipo": "sellada",
+    "destinoNombre": "Level 202.1"
    },
    {
     "texto": "Tocar los brotes de árbol que parecen postes de valla teletransporta a Level 204",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-204",
+    "tipo": "sellada",
+    "destinoNombre": "Level 204"
    },
    {
     "texto": "Hacer no-clip a través de un charco envía a Level 908",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-908",
+    "tipo": "sellada",
+    "destinoNombre": "Level 908"
    }
   ],
   "esEscape": false,
@@ -1655,63 +1697,75 @@
    },
    {
     "texto": "Si la sala parece un aparcamiento, lleva a Level 22",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-22",
+    "tipo": "sellada",
+    "destinoNombre": "Level 22"
    },
    {
     "texto": "Si parece un almacén, lleva a Level 20",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-20",
+    "tipo": "sellada",
+    "destinoNombre": "Level 20"
    },
    {
     "texto": "Si parece una fábrica, lleva a Level 23",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-23",
+    "tipo": "sellada",
+    "destinoNombre": "Level 23"
    },
    {
     "texto": "Si hay hielo y nieve, lleva a Level 108",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-108",
+    "tipo": "sellada",
+    "destinoNombre": "Level 108"
    },
    {
     "texto": "Si parece una instalación deportiva, puede llevar a Level 176",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-176",
+    "tipo": "sellada",
+    "destinoNombre": "Level 176"
    },
    {
     "texto": "Cuestionar constantemente la naturaleza del nivel puede enviarte a Level 47",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-47",
+    "tipo": "sellada",
+    "destinoNombre": "Level 47"
    },
    {
     "texto": "Una puerta con la palabra «Next» grabada lleva a Level 269",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-269",
+    "tipo": "sellada",
+    "destinoNombre": "Level 269"
    },
    {
     "texto": "Bajar una escalera envía a Level 914 o a un interior de Level 67",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-914",
+    "tipo": "sellada",
+    "destinoNombre": "Level 914"
    },
    {
     "texto": "Una puerta naranja envía a Level 38 o Level 38.1",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-38",
+    "tipo": "sellada",
+    "destinoNombre": "Level 38"
    },
    {
     "texto": "Una gran sala cuadrada con un parche de hierba lleva a Level 10",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-10",
+    "tipo": "sellada",
+    "destinoNombre": "Level 10"
    },
    {
     "texto": "Una puerta iluminada por un único rayo de sol lleva a Level 268.1",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-268-1",
+    "tipo": "sellada",
+    "destinoNombre": "Level 268.1"
    },
    {
     "texto": "Hacer no-clip por un pasillo de tuberías con fugas envía a Level 0.8",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-0-8",
+    "tipo": "sellada",
+    "destinoNombre": "Level 0.8"
    }
   ],
   "esEscape": false,
@@ -1789,28 +1843,33 @@
    },
    {
     "texto": "Una puerta cubierta de sangre lleva a Level 410",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-410",
+    "tipo": "sellada",
+    "destinoNombre": "Level 410"
    },
    {
     "texto": "Caminar durante un tiempo indeterminado puede dejarte en Level 17",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-17",
+    "tipo": "sellada",
+    "destinoNombre": "Level 17"
    },
    {
     "texto": "Una puerta con barrotes conduce a Level 3",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-3",
+    "tipo": "sellada",
+    "destinoNombre": "Level 3"
    },
    {
     "texto": "Hacer no-clip por un espejo con neón blanco encima lleva a Level 256",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-256",
+    "tipo": "sellada",
+    "destinoNombre": "Level 256"
    },
    {
     "texto": "Hacer no-clip por un espejo de neón tiene una mínima probabilidad de llevar a Level 699",
     "destino": "level-699",
-    "tipo": "sellada"
+    "tipo": "sellada",
+    "destinoNombre": "Level 699"
    }
   ],
   "esEscape": false,
@@ -3453,85 +3512,1633 @@
   "particulas": "lluvia",
   "sonido": "viento"
  },
- "level-phi": {                                                                                                                                   
-    "id": "level-phi",                                                                                                                             
-    "wikiTitle": "Level Phi",                                                                                                                      
-    "nombre": "Level Phi: «Sala Sellada»",                                                                                                         
-    "clase": "Sala Sellada · Sin salidas",                                                                                                         
-    "peligro": 0,                                                                                                                                  
-    "bioma": "pasillos",                                                                                                                           
-    "tam": [12, 12],                                                                                                                               
-    "paleta": {                                                                                                                                    
-        "suelo": "#2a2a2a",                                                                                                                          
-        "pared": "#1a1a1a",                                                                                                                          
-        "detalle": "#111111",                                                                                                                        
-        "luz": "#555555",                                                                                                                            
-        "fondo": "#000000"                                                                                                                           
-    },                                                                                                                                             
-    "vision": 5,                                                                                                                                   
-    "oscuridad": 0.8,                                                                                                                              
-    "descripcion": "Una sala completamente sellada y sumida en el silencio. No hay salidas visibles. Solo queda desandar tus pasos.",              
-    "cita": "No hay nada más aquí. El camino termina.",                                                                                            
-    "reglas": [],                                                                                                                                  
-    "entidades": [],                                                                                                                               
-    "objetos": [],                                                                                                                                 
-    "salidas": [],                                                                                                                                 
-    "esEscape": false,                                                                                                                             
-    "url": "https://backrooms.fandom.com/wiki/Level_Phi",                                                                                          
-    "estilo": { "pared": "hormigon", "suelo": "baldosa" }                                                                                          
-},
-"level-34": {                                                                                                                                    
-    "id": "level-34",                                                                                                                              
-    "wikiTitle": "Level 34",                                                                                                                       
-    "nombre": "Level 34: «Sala Sellada»",                                                                                                          
-    "clase": "Sala Sellada · Sin salidas",                                                                                                         
-    "peligro": 0,                                                                                                                                  
-    "bioma": "tuneles",                                                                                                                            
-    "tam": [12, 12],                                                                                                                               
-    "paleta": {                                                                                                                                    
-        "suelo": "#1e1e1e",                                                                                                                          
-        "pared": "#2d2d2d",                                                                                                                          
-        "detalle": "#141414",                                                                                                                        
-        "luz": "#444444",                                                                                                                            
-        "fondo": "#050505"                                                                                                                           
-    },                                                                                                                                             
-    "vision": 5,                                                                                                                                   
-    "oscuridad": 0.8,                                                                                                                              
-    "descripcion": "Un túnel bloqueado por escombros y planchas de acero. Las tuberías están frías. Debes regresar.",                              
-    "cita": "El eco de tus pasos es el único sonido aquí.",                                                                                        
-    "reglas": [],                                                                                                                                  
-    "entidades": [],                                                                                                                               
-    "objetos": [],                                                                                                                                 
-    "salidas": [],                                                                                                                                 
-    "esEscape": false,                                                                                                                             
-    "url": "https://backrooms.fandom.com/wiki/Level_34",                                                                                           
-    "estilo": { "pared": "ladrillo", "suelo": "cemento" }                                                                                          
-},
-"level-699": {                                                                                                                                   
-    "id": "level-699",                                                                                                                             
-    "wikiTitle": "Level 699",                                                                                                                      
-    "nombre": "Level 699: «Sala Sellada»",                                                                                                         
-    "clase": "Sala Sellada · Sin salidas",                                                                                                         
-    "peligro": 0,                                                                                                                                  
-    "bioma": "pasillos",                                                                                                                           
-    "tam": [12, 12],                                                                                                                               
-    "paleta": {                                                                                                                                    
-        "suelo": "#332233",                                                                                                                          
-        "pared": "#442244",                                                                                                                          
-        "detalle": "#221122",                                                                                                                        
-        "luz": "#aa66aa",                                                                                                                            
-        "fondo": "#0f050f"                                                                                                                           
-    },                                                                                                                                             
-    "vision": 6,                                                                                                                                   
-    "oscuridad": 0.6,                                                                                                                              
-    "descripcion": "Habitación donde las luces de neón parpadean débilmente. Las puertas laterales están soldadas. Debes volver atrás.",           
-    "cita": "La luz parpadea, pero el camino está cerrado.",                                                                                       
-    "reglas": [],                                                                                                                                  
-    "entidades": [],                                                                                                                               
-    "objetos": [],                                                                                                                                 
-    "salidas": [],                                                                                                                                 
-    "esEscape": false,                                                                                                                             
-    "url": "https://backrooms.fandom.com/wiki/Level_699",                                                                                          
-    "estilo": { "pared": "hormigon", "suelo": "baldosa" }                                                                                          
-}
+ "level-phi": {
+  "id": "level-phi",
+  "wikiTitle": "Level Phi",
+  "nombre": "Level Phi: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "Una sala completamente sellada y sumida en el silencio. No hay salidas visibles. Solo queda desandar tus pasos.",
+  "cita": "No hay nada más aquí. El camino termina.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_Phi",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  }
+ },
+ "level-34": {
+  "id": "level-34",
+  "wikiTitle": "Level 34",
+  "nombre": "Level 34: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "tuneles",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#1e1e1e",
+   "pared": "#2d2d2d",
+   "detalle": "#141414",
+   "luz": "#444444",
+   "fondo": "#050505"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "Un túnel bloqueado por escombros y planchas de acero. Las tuberías están frías. Debes regresar.",
+  "cita": "El eco de tus pasos es el único sonido aquí.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_34",
+  "estilo": {
+   "pared": "ladrillo",
+   "suelo": "cemento"
+  }
+ },
+ "level-699": {
+  "id": "level-699",
+  "wikiTitle": "Level 699",
+  "nombre": "Level 699: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#332233",
+   "pared": "#442244",
+   "detalle": "#221122",
+   "luz": "#aa66aa",
+   "fondo": "#0f050f"
+  },
+  "vision": 6,
+  "oscuridad": 0.6,
+  "descripcion": "Habitación donde las luces de neón parpadean débilmente. Las puertas laterales están soldadas. Debes volver atrás.",
+  "cita": "La luz parpadea, pero el camino está cerrado.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_699",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  }
+ },
+ "level-173": {
+  "id": "level-173",
+  "wikiTitle": "Level 173",
+  "nombre": "Level 173: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_173",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-0-8": {
+  "id": "level-0-8",
+  "wikiTitle": "Level 0.8",
+  "nombre": "Level 0.8: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_0_8",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-3": {
+  "id": "level-3",
+  "wikiTitle": "Level 3",
+  "nombre": "Level 3: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_3",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-4": {
+  "id": "level-4",
+  "wikiTitle": "Level 4",
+  "nombre": "Level 4: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_4",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-69": {
+  "id": "level-69",
+  "wikiTitle": "Level 69",
+  "nombre": "Level 69: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_69",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-339": {
+  "id": "level-339",
+  "wikiTitle": "Level 339",
+  "nombre": "Level 339: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_339",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-443": {
+  "id": "level-443",
+  "wikiTitle": "Level 443",
+  "nombre": "Level 443: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_443",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-818": {
+  "id": "level-818",
+  "wikiTitle": "Level 818",
+  "nombre": "Level 818: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_818",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-990": {
+  "id": "level-990",
+  "wikiTitle": "Level 990",
+  "nombre": "Level 990: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_990",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-32": {
+  "id": "level-32",
+  "wikiTitle": "Level 32",
+  "nombre": "Level 32: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_32",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-48": {
+  "id": "level-48",
+  "wikiTitle": "Level 48",
+  "nombre": "Level 48: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_48",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-427": {
+  "id": "level-427",
+  "wikiTitle": "Level 427",
+  "nombre": "Level 427: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_427",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-0-7": {
+  "id": "level-0-7",
+  "wikiTitle": "Level 0.7",
+  "nombre": "Level 0.7: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_0_7",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-17": {
+  "id": "level-17",
+  "wikiTitle": "Level 17",
+  "nombre": "Level 17: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_17",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-98": {
+  "id": "level-98",
+  "wikiTitle": "Level 98",
+  "nombre": "Level 98: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_98",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-400": {
+  "id": "level-400",
+  "wikiTitle": "Level 400",
+  "nombre": "Level 400: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_400",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-223": {
+  "id": "level-223",
+  "wikiTitle": "Level 223",
+  "nombre": "Level 223: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_223",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-110": {
+  "id": "level-110",
+  "wikiTitle": "Level 110",
+  "nombre": "Level 110: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_110",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-974": {
+  "id": "level-974",
+  "wikiTitle": "Level 974",
+  "nombre": "Level 974: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_974",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-46": {
+  "id": "level-46",
+  "wikiTitle": "Level 46",
+  "nombre": "Level 46: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_46",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-49": {
+  "id": "level-49",
+  "wikiTitle": "Level 49",
+  "nombre": "Level 49: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_49",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-73": {
+  "id": "level-73",
+  "wikiTitle": "Level 73",
+  "nombre": "Level 73: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_73",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-21": {
+  "id": "level-21",
+  "wikiTitle": "Level 21",
+  "nombre": "Level 21: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_21",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-137": {
+  "id": "level-137",
+  "wikiTitle": "Level 137",
+  "nombre": "Level 137: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_137",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-690": {
+  "id": "level-690",
+  "wikiTitle": "Level 690",
+  "nombre": "Level 690: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_690",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-488": {
+  "id": "level-488",
+  "wikiTitle": "Level 488",
+  "nombre": "Level 488: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_488",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-899": {
+  "id": "level-899",
+  "wikiTitle": "Level 899",
+  "nombre": "Level 899: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_899",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-138": {
+  "id": "level-138",
+  "wikiTitle": "Level 138",
+  "nombre": "Level 138: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_138",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-192": {
+  "id": "level-192",
+  "wikiTitle": "Level 192",
+  "nombre": "Level 192: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_192",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-202-1": {
+  "id": "level-202-1",
+  "wikiTitle": "Level 202.1",
+  "nombre": "Level 202.1: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_202_1",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-204": {
+  "id": "level-204",
+  "wikiTitle": "Level 204",
+  "nombre": "Level 204: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_204",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-908": {
+  "id": "level-908",
+  "wikiTitle": "Level 908",
+  "nombre": "Level 908: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_908",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-22": {
+  "id": "level-22",
+  "wikiTitle": "Level 22",
+  "nombre": "Level 22: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_22",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-20": {
+  "id": "level-20",
+  "wikiTitle": "Level 20",
+  "nombre": "Level 20: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_20",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-23": {
+  "id": "level-23",
+  "wikiTitle": "Level 23",
+  "nombre": "Level 23: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_23",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-108": {
+  "id": "level-108",
+  "wikiTitle": "Level 108",
+  "nombre": "Level 108: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_108",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-176": {
+  "id": "level-176",
+  "wikiTitle": "Level 176",
+  "nombre": "Level 176: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_176",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-47": {
+  "id": "level-47",
+  "wikiTitle": "Level 47",
+  "nombre": "Level 47: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_47",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-269": {
+  "id": "level-269",
+  "wikiTitle": "Level 269",
+  "nombre": "Level 269: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_269",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-914": {
+  "id": "level-914",
+  "wikiTitle": "Level 914",
+  "nombre": "Level 914: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_914",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-38": {
+  "id": "level-38",
+  "wikiTitle": "Level 38",
+  "nombre": "Level 38: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_38",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-10": {
+  "id": "level-10",
+  "wikiTitle": "Level 10",
+  "nombre": "Level 10: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_10",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-268-1": {
+  "id": "level-268-1",
+  "wikiTitle": "Level 268.1",
+  "nombre": "Level 268.1: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_268_1",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-410": {
+  "id": "level-410",
+  "wikiTitle": "Level 410",
+  "nombre": "Level 410: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_410",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ },
+ "level-256": {
+  "id": "level-256",
+  "wikiTitle": "Level 256",
+  "nombre": "Level 256: «Sala Sellada»",
+  "clase": "Sala Sellada · Sin salidas",
+  "peligro": 0,
+  "bioma": "pasillos",
+  "tam": [
+   12,
+   12
+  ],
+  "paleta": {
+   "suelo": "#2a2a2a",
+   "pared": "#1a1a1a",
+   "detalle": "#111111",
+   "luz": "#555555",
+   "fondo": "#000000"
+  },
+  "vision": 5,
+  "oscuridad": 0.8,
+  "descripcion": "TODO: Implementar desarrollo completo de este nivel. Esta es una sala temporal sellada.",
+  "cita": "TODO: Agregar cita del nivel.",
+  "reglas": [],
+  "entidades": [],
+  "objetos": [],
+  "salidas": [],
+  "esEscape": false,
+  "url": "https://backrooms.fandom.com/wiki/Level_256",
+  "estilo": {
+   "pared": "hormigon",
+   "suelo": "baldosa"
+  },
+  "TODO": "Implementar desarrollo completo de este nivel."
+ }
 }
