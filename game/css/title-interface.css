@@ -293,15 +293,22 @@
 }
 #screen-title.title-interface-enabled .mode-section:first-of-type {
   margin-top: 10px;
+  margin-bottom: 22px;
 }
 
 #screen-title.title-interface-enabled .btn-mode {
   width: 100%;
-  min-height: 92px;
   margin: 0;
   padding: 16px 20px;
   text-align: left;
   border-left-width: 5px;
+}
+
+#screen-title.title-interface-enabled .btn-mode-solo .btn-mode-title {
+  font-size: 13px;
+}
+#screen-title.title-interface-enabled .btn-mode-solo .btn-mode-sub {
+  font-size: 11px;
 }
 
 #screen-title.title-interface-enabled .btn-mode-title {
@@ -430,7 +437,6 @@
   }
 
   #screen-title.title-interface-enabled .btn-mode {
-    min-height: 84px;
     padding: 12px 13px;
   }
 }

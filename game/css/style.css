@@ -94,7 +94,7 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
 .mode-section { margin: 0 0 16px; }
 .mode-section:first-of-type { margin-top: 10px; }
 .btn-mode { display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
-  gap: 6px; min-height: 92px; padding: 16px 20px; cursor: pointer; text-align: left; width: 100%;
+  gap: 6px; padding: 14px 20px; cursor: pointer; text-align: left; width: 100%;
   background: #0d0b07; border: 2px solid var(--borde); color: var(--hueso);
   font-family: var(--font-title); line-height: 1.2; transition: all .15s; }
 .btn-mode:hover { transform: translateY(-2px); }
@@ -102,14 +102,16 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
 .btn-mode:disabled { opacity: .7; cursor: default; transform: none; }
 .btn-mode-title { font-size: 17px; letter-spacing: 3px; }
 .btn-mode-sub { font-size: 13px; letter-spacing: 1px; font-family: inherit; opacity: .8; }
-/* Un Jugador — verde */
-.btn-mode-solo { border-left: 5px solid #4caf50; }
-.btn-mode-solo .btn-mode-title { color: #6fcf73; }
+/* Un Jugador — verde (más pequeño y separado) */
+.btn-mode-solo { border-left: 5px solid #4caf50; min-height: 64px; padding: 10px 20px; margin-top: 14px; }
+.btn-mode-solo .btn-mode-title { color: #6fcf73; font-size: 12px !important; }
+.btn-mode-solo .btn-mode-sub { font-size: 10px !important; }
 .btn-mode-solo:hover { background: rgba(76,175,80,.14); border-color: #4caf50;
   box-shadow: 0 0 26px rgba(76,175,80,.4); }
-/* Multijugador — azul */
-.btn-mode-online { border-left: 5px solid #4a90d9; }
-.btn-mode-online .btn-mode-title { color: #6fb1ee; }
+/* Multijugador — azul (más grande, sin resaltes especiales) */
+.btn-mode-online { border-left: 5px solid #4a90d9; min-height: 104px; padding: 18px 20px; }
+.btn-mode-online .btn-mode-title { color: #6fb1ee; font-size: 27px; }
+.btn-mode-online .btn-mode-sub { font-size: 18px; }
 .btn-mode-online:hover { background: rgba(74,144,217,.14); border-color: #4a90d9;
   box-shadow: 0 0 26px rgba(74,144,217,.4); }
 /* barra inferior: Changelog, Ajustes, Audio y Mando, después de los botones */
