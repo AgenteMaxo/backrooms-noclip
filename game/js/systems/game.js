@@ -1619,6 +1619,11 @@
     const tipo = def.tipo;
 
     if (tipo === 'sellada') {
+      if (def.destino) {                                                                                                                           
+        world.sanity(-2);                                                                                                                          
+        go();                                                                                                
+        return;                                                                                                                                    
+      }
       world.log('El camino se difumina: ese nivel aún no está cartografiado en el piloto.', 'event');
       world.sanity(-2);
       return;
