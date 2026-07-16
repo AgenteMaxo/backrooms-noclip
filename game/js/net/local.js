@@ -87,13 +87,17 @@
   // la sala YA parseados; devuelve el ws falso que cliente.js usará para
   // enviar. TODAS las entregas van por microtarea (FIFO): ni la sala ni el
   // cliente re-entran en su propio envío — el mismo aislamiento que da la red.
-  function conectar(nombre, alRecibir, nivelInicial) {
+  function conectar(nombre, alRecibir, nivelInicial, semilla) {
     const S = window.Salas;
     if (!jug) {
-      // cada carga de página = una run con su propio mundo (semilla aleatoria
-      // de sesión); el registro de salas PERSISTE mientras dure la pestaña —
-      // volver a un nivel te lo devuelve tal y como lo dejaste, como online
-      const base = 'solo::' + Math.random().toString(36).slice(2, 10);
+      // cada carga de página = una run con su propio mundo; el registro de
+      // salas PERSISTE mientras dure la pestaña — volver a un nivel te lo
+      // devuelve tal y como lo dejaste, como online. La semilla del título
+      // (?seed= o campo del menú) fija un mundo reproducible; si no hay,
+      // se genera una base aleatoria de sesión.
+      const base = semilla
+        ? 'solo::' + String(semilla).slice(0, 40)
+        : 'solo::' + Math.random().toString(36).slice(2, 10);
       S.fijarSemillaBase(base);
       // la remodelación no euclidiana vuelve en local (v23.6 la apagó online
       // por el desync entre clientes; aquí el único cliente vive en esta

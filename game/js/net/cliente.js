@@ -64,7 +64,7 @@
     if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg));
   }
 
-  function iniciar(nombre, sala) {
+  function iniciar(nombre, sala, semilla) {
     const w = Game.world;
     const params = new URLSearchParams(location.search);
     salaActual = sala || null;
@@ -79,8 +79,9 @@
       w.local = true;
       rtt = 0;
       // en local la puerta de desarrollo ?nivel= está siempre abierta (es tu
-      // propio mundo); online la decide el servidor con MMO_DEV=1
-      ws = Local.conectar(nombre, (m) => recibir(m, w), params.get('nivel') || undefined);
+      // propio mundo); online la decide el servidor con MMO_DEV=1. La semilla
+      // del título (?seed= o campo) fija el mundo reproducible de la run.
+      ws = Local.conectar(nombre, (m) => recibir(m, w), params.get('nivel') || undefined, semilla);
       return;
     }
     ws = new WebSocket(urlServidor());
@@ -742,6 +743,16 @@
     if (modoMov) { mov.av = 0; mov.giro = 0; }
     else { input.dx = 0; input.dy = 0; }
   }
+  
+  // desconexión completa: cierra WS, limpia timers, evita reintentos
+  function desconectar() {
+    if (modoMov) { mov.av = 0; mov.giro = 0; }
+    else { input.dx = 0; input.dy = 0; }
+    if (reintento !== null) { clearTimeout(reintento); reintento = null; }
+    if (pingTimer !== null) { clearInterval(pingTimer); pingTimer = null; }
+    if (ws && ws.readyState === 1) { try { ws.close(); } catch (e) {} }
+    listo = false;
+  }
 
   function abrirChat() {
     if (!inputChat) return;
@@ -761,13 +772,14 @@
     return !!inputChat && inputChat.style.display !== 'none';
   }
 
-  window.Net = {
-    iniciar, setInput, setMov, setRot, parar, frame,
-    accion, usar, luzToggle, mochila, admin, tp, give, espectar,
-    abrirChat, chatAbierto,
-    get activo() { return listo; },
-    get id() { return miId; },
-    get rtt() { return rtt; },
-    get ultimoError() { return ultimoError; },
-  };
+window.Net = {
+     iniciar, setInput, setMov, setRot, parar, frame,
+     accion, usar, luzToggle, mochila, admin, tp, give, espectar,
+     abrirChat, chatAbierto,
+     desconectar,
+     get activo() { return listo; },
+     get id() { return miId; },
+     get rtt() { return rtt; },
+     get ultimoError() { return ultimoError; },
+   };
 })();

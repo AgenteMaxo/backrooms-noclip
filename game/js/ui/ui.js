@@ -5,17 +5,19 @@
 
   const screens = {
     title: $('screen-title'),
+    mode: $('screen-mode'),
     card: $('screen-card'),
     game: $('screen-game'),
     end: $('screen-end'),
   };
 
   function show(name) {
-    // salir de la pantalla de título apaga SIEMPRE su música, venga por donde
-    // venga el arranque (DESPERTAR, continuar, autostart…) — cinturón además
-    // del stopMenu de conectarAlServidor, que las carreras del primer clic
-    // podían esquivar (v30.1)
-    if (name !== 'title' && window.Sfx) Sfx.stopMenu();
+    // salir de la pantalla de título (o del submenú de modo) apaga la música
+    // del menú; pero ir del título al submenú de modo (y viceversa) NO la corta:
+    // ambos son pantallas del menú y comparten el mismo fondo y la misma música.
+    // conectarAlServidor sigue parándola al entrar en partida (v30.1).
+    const esMenu = name === 'title' || name === 'mode';
+    if (!esMenu && window.Sfx) Sfx.stopMenu();
     if (name !== 'end') document.body.classList.remove('smiler-death');
     // el CSS de controles táctiles/aviso de orientación cuelga de estas
     // clases en <body> (game-active, card-active) — sin esto #touch-controls

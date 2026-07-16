@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BACKROOMS MMO</title>
-<link rel="stylesheet" href="css/style.css?v=294">
-<link rel="stylesheet" href="css/title-interface.css?v=294">
+<link rel="stylesheet" href="css/style.css?v=3100">
+<link rel="stylesheet" href="css/title-interface.css?v=3100">
 </head>
 <body>
 <div id="app">
@@ -21,41 +21,62 @@
         <span class="census-signal" aria-hidden="true"></span>
         <span id="backrooms-census-text">Escuchando tras las paredes…</span>
       </div>
-      <div id="profile-box">
+      <div class="mode-section">
+        <button id="btn-offline" class="btn-mode btn-mode-solo" title="Partida en solitario en este navegador, sin conexión">
+          <span class="btn-mode-title">Un Jugador</span>
+          <span class="btn-mode-sub">modo solo · sin conexión</span>
+        </button>
+      </div>
+      <div class="mode-section">
+        <button id="btn-start" class="btn-mode btn-mode-online" title="Entra al mundo compartido de las Backrooms">
+          <span class="btn-mode-title">Multijugador</span>
+          <span class="btn-mode-sub">mundo compartido en línea</span>
+        </button>
+      </div>
+      <div class="menu-footer">
+        <label class="footer-vol"><span data-icon="altavoz" data-icon-size="13"></span> <input type="range" id="vol-slider-title" min="0" max="100" step="1" style="vertical-align:middle;width:110px"></label>
+        <button id="btn-changelog" class="btn-small"><span data-icon="reloj" data-icon-size="13"></span> Changelog</button>
+        <button id="btn-sound-menu-title" class="btn-small"><span data-icon="engranaje" data-icon-size="13"></span> Ajustes</button>
+        <button id="btn-gamepad-title" class="btn-small">Mando</button>
+      </div>
+      <p class="hint">W/A/S/D: moverte · CLIC para enganchar el ratón (Pointer Lock) y girar la cámara, ESC libera (o clic derecho y arrastrar en Ajustes) · ESPACIO: interactuar y esconderse<br>
+      T: hablar · Q/E: usar manos · F: linterna · B: mochila · M: mapa · L: registro · C: códice · ESC: ajustes</p>
+    </div>
+  </div>
+
+  <!-- Submenú de modo: se abre al elegir Un Jugador / Multijugador, antes de jugar -->
+  <div id="screen-mode" class="screen" style="display:none">
+    <div class="title-box mode-menu-box" id="mode-menu-box">
+      <button id="btn-mode-back" class="btn-small btn-mode-back">‹ Volver</button>
+      <h2 id="mode-menu-title" class="glitch">Un Jugador</h2>
+      <div class="profile-box" id="mode-profile-box">
         <p class="profile-title">— EXPEDIENTE DE ERRANTE —</p>
         <div class="profile-row">
-          <select id="profile-select"></select>
-          <input id="profile-name" type="text" spellcheck="false" placeholder="nuevo errante…" maxlength="24">
-          <button id="btn-profile-create" class="btn-small">Crear</button>
+          <select class="profile-select" id="mode-profile-select"></select>
+          <input class="profile-name" id="mode-profile-name" type="text" spellcheck="false" placeholder="nuevo errante…" maxlength="24">
+          <button class="btn-small btn-profile-create">Crear</button>
         </div>
-        <p id="profile-records"></p>
+        <p class="profile-records" id="mode-profile-records"></p>
         <div class="profile-row">
-          <button id="btn-codex" class="btn-small"><span data-icon="libro" data-icon-size="13"></span> Códice del Errante</button>
-          <button id="btn-changelog" class="btn-small"><span data-icon="reloj" data-icon-size="13"></span> Changelog</button>
-          <button id="btn-profile-del" class="btn-small">Borrar</button>
+          <button class="btn-small btn-codex"><span data-icon="libro" data-icon-size="13"></span> Códice del Errante</button>
+          <button class="btn-small btn-profile-del">Borrar</button>
         </div>
       </div>
-      <div class="seed-row">
-        <input id="seed-input" type="hidden">
-        <label><span data-icon="altavoz" data-icon-size="13"></span> <input type="range" id="vol-slider-title" min="0" max="100" step="1" style="vertical-align:middle;width:110px"></label>
-        <button id="btn-sound-menu-title" class="btn-small" style="margin-left:8px;margin-top:0"><span data-icon="engranaje" data-icon-size="13"></span> Ajustes</button>
-        <button id="btn-gamepad-title" class="btn-small" style="margin-left:8px;margin-top:0">Mando</button>
+      <div class="seed-row mode-seed" id="mode-seed-row">
+        <label>Semilla (opcional):
+          <input id="seed-input-title" type="text" spellcheck="false" placeholder="moqueta-777" maxlength="40">
+        </label>
       </div>
-      <div class="room-row">
+      <div class="room-row mode-room" id="mode-room-row">
         <label>Sala privada opcional:
           <input id="room-input" type="password" spellcheck="false" autocomplete="new-password" placeholder="vacío = pública" maxlength="32">
         </label>
       </div>
-      <button id="btn-start" class="btn-big">DESPERTAR EN LEVEL 0</button>
-      <button id="btn-offline" class="btn-offline" title="Partida en solitario en este navegador, sin conexión">jugar sin conexión (modo solo)</button>
-      <p id="title-net" class="warn" style="display:none"></p>
+      <p class="mode-bug-note" id="mode-bug-note" style="display:none">Aviso: la versión Un Jugador está bugueada. Juega bajo tu propia responsabilidad.</p>
+      <button id="btn-mode-play" class="btn-big btn-mode-go">JUGAR</button>
       <button id="btn-continue" class="btn-small" style="display:none">Continuar partida guardada</button>
-      <p class="hint">W/A/S/D: moverte · CLIC para enganchar el ratón (Pointer Lock) y girar la cámara, ESC libera (o clic derecho y arrastrar en Ajustes) · ESPACIO: interactuar y esconderse<br>
-      T: hablar · Q/E: usar manos · F: linterna · B: mochila · M: mapa · L: registro · C: códice · ESC: ajustes</p>
+      <p id="title-net" class="warn" style="display:none"></p>
     </div>
-    <button id="btn-music-menu" class="btn-music-float" title="Música del menú">
-      <span data-icon="nota" data-icon-size="16"></span>
-    </button>
   </div>
 
   <!-- Tarjeta de entrada a nivel -->
@@ -72,6 +93,12 @@
         <button id="btn-enter" class="btn-big">ENTRAR</button>
       </div>
     </div>
+    </div>
+
+  <!-- Animación de caída al elegir modo (loading, ~6 s, sin texto) -->
+  <div id="fall-screen" class="fall-screen" hidden>
+    <div class="fall-void"></div>
+    <div class="fall-lines" id="fall-lines"></div>
   </div>
 
   <!-- Juego -->
@@ -203,7 +230,7 @@
   <!-- Ajustes de sonido -->
   <div id="sound-menu" style="display:none">
     <div class="modal-box">
-      <h3><span data-icon="engranaje" data-icon-size="15"></span> Ajustes</h3>
+      <h3><span data-icon="engranaje" data-icon-size="15"></span> Pausa · Ajustes</h3>
       <div class="sound-row"><label>General</label><input type="range" id="snd-general" min="0" max="100"><span id="snd-general-v"></span></div>
       <div class="sound-row"><label>Efectos</label><input type="range" id="snd-fx" min="0" max="100"><span id="snd-fx-v"></span></div>
       <div class="sound-row"><label>Ambiente / música</label><input type="range" id="snd-amb" min="0" max="100"><span id="snd-amb-v"></span></div>
@@ -286,22 +313,14 @@
         B mochila · 1-6 usar objeto · M mapa · L registro · J diario · C códice · ESC ajustes
       </div>
       <div class="modal-btns">
+        <button id="btn-noclip-menu" class="btn-small btn-noclip">
+          <span data-icon="vacio" data-icon-size="13"></span> Noclipearse a la realidad (volver al menú)
+        </button>
         <button id="btn-snd-mute" class="btn-small"></button>
         <button id="btn-gamepad-settings" class="btn-small">Configurar Mando</button>
         <button id="btn-snd-close" class="btn-small">Cerrar</button>
       </div>
       <p id="ajustes-version"></p>
-    </div>
-  </div>
-
-  <!-- Selector de Música del Menú -->
-  <div id="music-menu" style="display:none">
-    <div class="modal-box" style="max-width: 380px;">
-      <h3><span data-icon="nota" data-icon-size="15"></span> Música del menú</h3>
-      <div id="music-list" class="music-list-container">
-        <!-- Rellenado por JS dinámicamente -->
-      </div>
-      <button id="btn-music-close" class="btn-small" style="margin-top: 15px; width: 100%;">Cerrar</button>
     </div>
   </div>
 
@@ -391,44 +410,44 @@
 
 <!-- ?v= rompe la caché del edge (Cloudflare cachea .js/.css por defecto aunque
      el origen no lo pida): SUBIR el número en cada versión, junto con VERSION_JUEGO -->
-<script src="js/data.js?v=294"></script>
-<script src="js/engine/rng.js?v=294"></script>
-<script src="js/mapgen/mapgen.js?v=294"></script>
-<script src="js/engine/tiles.js?v=294"></script>
-<script src="js/engine/sprites.js?v=294"></script>
-<script src="js/engine/effects.js?v=294"></script>
-<script src="js/audio-manifest.js?v=294"></script>
-<script src="js/assets-manifest.js?v=294"></script>
-<script src="js/engine/sfx.js?v=294"></script>
-<script src="js/engine/fov.js?v=294"></script>
-<script src="js/systems/entities.js?v=294"></script>
-<script src="js/systems/rules.js?v=294"></script>
-<script src="js/engine/render.js?v=294"></script>
-<script src="js/lib/three.min.js?v=294"></script>
-<script src="js/lib/shaders/CopyShader.js?v=294"></script>
-<script src="js/lib/shaders/LuminosityHighPassShader.js?v=294"></script>
-<script src="js/lib/shaders/GammaCorrectionShader.js?v=294"></script>
-<script src="js/lib/postprocessing/EffectComposer.js?v=294"></script>
-<script src="js/lib/postprocessing/RenderPass.js?v=294"></script>
-<script src="js/lib/postprocessing/ShaderPass.js?v=294"></script>
-<script src="js/lib/postprocessing/UnrealBloomPass.js?v=294"></script>
-<script src="js/engine/atmos3d.js?v=294"></script>
-<script src="js/engine/render3d.js?v=294"></script>
-<script src="js/systems/game.js?v=294"></script>
-<script src="js/ui/icons.js?v=294"></script>
-<script src="js/ui/controllers.js?v=294"></script>
-<script src="js/ui/ui.js?v=294"></script>
-<script src="js/ui/title-interface.js?v=294"></script>
-<script src="js/ui/changelog.js?v=294"></script>
-<script src="js/ui/minimap.js?v=294"></script>
-<script src="js/sim/fisica.js?v=294"></script>
+<script src="js/data.js?v=3100"></script>
+<script src="js/engine/rng.js?v=3100"></script>
+<script src="js/mapgen/mapgen.js?v=3100"></script>
+<script src="js/engine/tiles.js?v=3100"></script>
+<script src="js/engine/sprites.js?v=3100"></script>
+<script src="js/engine/effects.js?v=3100"></script>
+<script src="js/audio-manifest.js?v=3100"></script>
+<script src="js/assets-manifest.js?v=3100"></script>
+<script src="js/engine/sfx.js?v=3100"></script>
+<script src="js/engine/fov.js?v=3100"></script>
+<script src="js/systems/entities.js?v=3100"></script>
+<script src="js/systems/rules.js?v=3100"></script>
+<script src="js/engine/render.js?v=3100"></script>
+<script src="js/lib/three.min.js?v=3100"></script>
+<script src="js/lib/shaders/CopyShader.js?v=3100"></script>
+<script src="js/lib/shaders/LuminosityHighPassShader.js?v=3100"></script>
+<script src="js/lib/shaders/GammaCorrectionShader.js?v=3100"></script>
+<script src="js/lib/postprocessing/EffectComposer.js?v=3100"></script>
+<script src="js/lib/postprocessing/RenderPass.js?v=3100"></script>
+<script src="js/lib/postprocessing/ShaderPass.js?v=3100"></script>
+<script src="js/lib/postprocessing/UnrealBloomPass.js?v=3100"></script>
+<script src="js/engine/atmos3d.js?v=3100"></script>
+<script src="js/engine/render3d.js?v=3100"></script>
+<script src="js/systems/game.js?v=3100"></script>
+<script src="js/ui/icons.js?v=3100"></script>
+<script src="js/ui/controllers.js?v=3100"></script>
+<script src="js/ui/ui.js?v=3100"></script>
+<script src="js/ui/title-interface.js?v=3100"></script>
+<script src="js/ui/changelog.js?v=3100"></script>
+<script src="js/ui/minimap.js?v=3100"></script>
+<script src="js/sim/fisica.js?v=3100"></script>
 <!-- reglas del mundo COMPARTIDAS con el servidor (duales): IA + Sala; el modo
      offline las ejecuta en la pestaña vía el servidor local de net/local.js -->
-<script src="js/sim/entidades.js?v=294"></script>
-<script src="js/sim/sala.js?v=294"></script>
-<script src="js/net/local.js?v=294"></script>
-<script src="js/net/otros.js?v=294"></script>
-<script src="js/net/cliente.js?v=294"></script>
-<script src="js/main.js?v=294"></script>
+<script src="js/sim/entidades.js?v=3100"></script>
+<script src="js/sim/sala.js?v=3100"></script>
+<script src="js/net/local.js?v=3100"></script>
+<script src="js/net/otros.js?v=3100"></script>
+<script src="js/net/cliente.js?v=3100"></script>
+<script src="js/main.js?v=3100"></script>
 </body>
 </html>

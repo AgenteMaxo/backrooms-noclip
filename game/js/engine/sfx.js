@@ -160,6 +160,20 @@
       setTimeout(() => ctx && tono(2400, 0.12, 0.14, 'sine', 2100), 300); // tintineo
     },
     muerte() { tono(220, 1.4, 0.4, 'sawtooth', 40); ruido(1.2, 500, 0.2, 'lowpass', 60); },
+    caida() {
+      // caída de ~6 s: silbido de aire que sube + retumbo grave que baja,
+      // con un golpe seco al final. Sintetizado; si subes game/assets/sounds/caida.mp3
+      // (o .wav/.ogg) el override lo sustituye automáticamente (ver cargarOverrides).
+      const t0 = ctx.currentTime;
+      const aire = ctx.createBufferSource(); aire.buffer = noiseBuffer(6);
+      const af = ctx.createBiquadFilter(); af.type = 'bandpass'; af.frequency.setValueAtTime(300, t0); af.frequency.exponentialRampToValueAtTime(2600, t0 + 5.4);
+      const ag = ctx.createGain(); ag.gain.setValueAtTime(0.0001, t0); ag.gain.exponentialRampToValueAtTime(0.22, t0 + 1.2); ag.gain.exponentialRampToValueAtTime(0.0001, t0 + 6);
+      aire.connect(af).connect(ag).connect(sfxBus); aire.start(t0); aire.stop(t0 + 6);
+      const grave = ctx.createOscillator(); grave.type = 'sine'; grave.frequency.setValueAtTime(140, t0); grave.frequency.exponentialRampToValueAtTime(34, t0 + 5.6);
+      const gg = ctx.createGain(); gg.gain.setValueAtTime(0.0001, t0); gg.gain.exponentialRampToValueAtTime(0.5, t0 + 5.2); gg.gain.exponentialRampToValueAtTime(0.0001, t0 + 6);
+      grave.connect(gg).connect(sfxBus); grave.start(t0); grave.stop(t0 + 6);
+      setTimeout(() => ctx && !muted && golpe(), 5850);
+    },
     victoria() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => ctx && tono(f, 0.5, 0.2), i * 160)); },
     latido() { tono(55, 0.12, 0.5, 'sine', 40); setTimeout(() => ctx && tono(50, 0.14, 0.4, 'sine', 38), 180); },
     ui() { tono(440, 0.05, 0.06, 'sine'); },
@@ -237,7 +251,7 @@
     }
   }
 
-  function play(nombre, arg) {
+  function play(nombre, arg, onEnded) {
     try {
       if (muted) return;
       const ov = overrides[nombre];
@@ -247,7 +261,8 @@
         // pequeña variación de tono/velocidad para que los pasos (mismo clip
         // repetido) no suenen a metralleta idéntica en cada zancada
         if (nombre === 'paso') el.playbackRate = 0.88 + Math.random() * 0.24;
-        el.play().catch(() => {});
+        if (typeof onEnded === 'function') el.addEventListener('ended', onEnded, { once: true });
+        el.play().catch(() => { if (typeof onEnded === 'function') onEnded(); });
         return;
       }
       if (!ctx) return;

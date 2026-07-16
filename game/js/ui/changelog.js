@@ -4,6 +4,12 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
+    { v: 'v31', cambios: [
+      'Mejorada la página principal Con 2 botones',
+      'Nueva animación al entrar: ahora parece que estas cayendo a los Backrooms',
+      'Arreglados varios errores de muerte, generación de terreno y controles',
+      'Varios arreglos de errores de la interfaz y del multijugador al volver al menú. (Jaime Gaming)',
+    ] },
     { v: 'v30.12', cambios: [
       'Level 0 ya no es un secarral: hay más botellas de agua de almendras por el suelo, más taquillas que registrar, y un resultado medio del dado (12-13) en sus taquillas ahora encuentra agua. El resto de niveles no cambia. (josealmon)',
     ] },

@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v30.12';
+  window.VERSION_JUEGO = 'v31';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -344,8 +344,12 @@
     actualizarAdminUI(); // debug y barras solo con la contraseña de guardián
     const enJuego = world.level && !world.over;
     if (enJuego && world.esAdmin) document.getElementById('debug-nivel').value = world.level.id;
+    // el botón «Noclipearse a la realidad» solo tiene sentido DENTRO de una
+    // partida: lo ocultamos en el menú principal (donde ya estás en el menú)
+    const btnNoclip = document.getElementById('btn-noclip-menu');
+    if (btnNoclip) btnNoclip.style.display = enJuego ? '' : 'none';
     sndMenu.style.display = 'flex';
-    if (world.level && !world.over) world.busy = true;
+    if (enJuego) world.busy = true;
   }
   function cerrarSndMenu() {
     sndMenu.style.display = 'none';
@@ -394,6 +398,13 @@
     pintarBtnMute();
   };
   document.getElementById('btn-snd-close').onclick = cerrarSndMenu;
+  // Noclipearse a la realidad: desde la pausa, salir de la partida y volver
+  // al menú (la partida se reinicia limpia al volver a jugar).
+  const btnNoclip = document.getElementById('btn-noclip-menu');
+  if (btnNoclip) btnNoclip.onclick = () => {
+    sndMenu.style.display = 'none';
+    if (typeof window.__volverMenu === 'function') window.__volverMenu();
+  };
 
   // ---------- versión + pantalla completa + guardián (v23) ----------
   document.getElementById('ajustes-version').textContent =
@@ -1810,7 +1821,7 @@
 
   function conectarAlServidor(btnOrigen) {
     cargarOverridesDeJuego(); // los assets del juego se piden AL entrar, no en la portada
-    if (!P.activeName()) P.create($id('profile-name').value.trim() || 'Errante');
+    if (!P.activeName()) P.create('Errante');
     refreshTitle();
     // DESPUÉS de refreshTitle: esta llama a playMenuMusic() al final (para
     // los demás usos legítimos, como cambiar de perfil), y como la pantalla
@@ -1819,18 +1830,35 @@
     if (window.Sfx) Sfx.stopMenu();
     const salaPrivada = salaPrivadaTitulo();
     if (!validarSalaPrivada(salaPrivada)) return;
+    // semilla del modo solo: del campo del menú, o de ?seed= (URL de portada)
+    let semillaSolo = null;
+    if (window.MODO_LOCAL) {
+      const deCampo = ($id('seed-input-title')?.value || '').trim();
+      const deUrl = new URLSearchParams(location.search).get('seed');
+      semillaSolo = deCampo || deUrl || null;
+    }
     const btnStart = $id('btn-start');
     const btnContinue = $id('btn-continue');
     const btn = btnOrigen || btnStart;
     const errNet = $id('title-net');
-    const textoStart = 'DESPERTAR EN LEVEL 0';
+    // conserva la etiqueta original de cada botón para restaurarla tras conectar
+    const textoOrigen = btn.textContent;
+    const textoBtns = [btnStart, btnContinue, $id('btn-offline')]
+      .filter(Boolean)
+      .map((b) => b.textContent);
     const textoContinue = btnContinue.textContent;
+    const guardarTexto = (b) => {
+      if (b === btn) return textoOrigen;
+      const idx = [btnStart, btnContinue, $id('btn-offline')].indexOf(b);
+      return idx >= 0 ? textoBtns[idx] : b.textContent;
+    };
     btnStart.disabled = true;
     btnContinue.disabled = true;
+    $id('btn-offline').disabled = true;
     btn.textContent = 'CRUZANDO LA REALIDAD…';
     errNet.style.display = 'none';
     if (esperaConexion) clearInterval(esperaConexion);
-    Net.iniciar(P.activeName(), salaPrivada || undefined);
+    Net.iniciar(P.activeName(), salaPrivada || undefined, semillaSolo);
     const t0 = Date.now();
     esperaConexion = setInterval(() => {
       if (Net.activo) {
@@ -1838,16 +1866,20 @@
         esperaConexion = null;
         btnStart.disabled = false;
         btnContinue.disabled = false;
-        btnStart.textContent = textoStart;
+        $id('btn-offline').disabled = false;
+        btnStart.textContent = guardarTexto(btnStart);
         btnContinue.textContent = textoContinue;
+        btn.textContent = guardarTexto(btn);
         errNet.style.display = 'none';
       } else if (Net.ultimoError || Date.now() - t0 > 10000) {
         clearInterval(esperaConexion);
         esperaConexion = null;
         btnStart.disabled = false;
         btnContinue.disabled = false;
-        btnStart.textContent = textoStart;
+        $id('btn-offline').disabled = false;
+        btnStart.textContent = guardarTexto(btnStart);
         btnContinue.textContent = textoContinue;
+        btn.textContent = guardarTexto(btn);
         errNet.textContent = Net.ultimoError ||
           'No se pudo conectar con las Backrooms. ¿El servidor está despierto?';
         errNet.style.display = 'block';
@@ -1863,6 +1895,11 @@
 
   function playMenuMusic() {
     if (document.getElementById('screen-title').style.display === 'none') return;
+    // mientras dura la animación de caída el título sigue visible, pero la
+    // música del menú NO debe sonar ahí: el listener de desbloqueo de audio
+    // (primer gesto) burbujea tras el clic de JUGAR y la re-arrancaba (v30.14)
+    const fall = document.getElementById('fall-screen');
+    if (fall && !fall.hidden) return;
     // con la conexión en curso («CRUZANDO LA REALIDAD…») el título sigue
     // visible, pero arrancar música aquí la dejaría sonando dentro de la
     // partida: es el caso del PRIMER clic de la sesión directo en DESPERTAR —
@@ -1878,10 +1915,18 @@
     }
   }
 
+  let modoElegido = null; // 'solo' | 'online' — modo abierto en el submenú
+
   function refreshTitle() {
-    const sel = $id('profile-select');
-    sel.innerHTML = '';
     const names = P.list();
+    const p = P.get();
+    const textoRecords = p
+      ? `Expediciones: ${p.records.runs} · Niveles descubiertos: ${Object.keys(p.codice).length} · Turnos récord: ${p.records.maxTurnos} · Escapes: ${p.records.escapes}`
+      : 'Crea tu perfil para que el Códice registre tu expediente.';
+    // Expediente de Errante COMPARTIDO entre Un Jugador y Multijugador:
+    // un único bloque en el submenú de modo, sincronizado con el almacén.
+    const sel = $id('mode-profile-select');
+    sel.innerHTML = '';
     for (const n of names) {
       const o = document.createElement('option');
       o.value = n; o.textContent = n;
@@ -1893,108 +1938,164 @@
       o.textContent = '— sin perfiles —';
       sel.appendChild(o);
     }
-    const p = P.get();
-    $id('profile-records').textContent = p
-      ? `Expediciones: ${p.records.runs} · Niveles descubiertos: ${Object.keys(p.codice).length} · Turnos récord: ${p.records.maxTurnos} · Escapes: ${p.records.escapes}`
-      : 'Crea tu perfil para que el Códice registre tu expediente.';
+    $id('mode-profile-records').textContent = textoRecords;
     const saveData = Game.loadSave();
     const btn = $id('btn-continue');
     if (saveData && p) {
-      btn.style.display = 'inline-block';
+      btn.style.display = 'block';
       btn.textContent = `Continuar en servidor (${saveData.levelId})`;
       btn.onclick = () => conectarAlServidor(btn);
-    } else btn.style.display = 'none';
+    } else {
+      btn.style.display = 'none';
+    }
 
     playMenuMusic();
   }
 
-  $id('profile-select').onchange = (ev) => { P.select(ev.target.value); refreshTitle(); };
-  $id('btn-profile-create').onclick = () => {
-    const nombre = $id('profile-name').value.trim();
-    if (!nombre) { $id('profile-name').focus(); return; }
+// vuelve al menú de título (usado al MORIR: la partida se reinicia limpia
+   // desde cero). Para a la conexión online si la hubiera y deja la música del
+   // menú sonando. Game.die() lo invoca vía window.__volverMenu.
+   function volverAlMenu() {
+     // Properly disconnect from server and clean up network state
+     if (world.online && window.Net) {
+       try {
+         // Stop the connection and prevent reconnection attempts
+         window.Net.desconectar();
+       } catch (e) {}
+     }
+     world.online = false;
+     if (world.level) { world.level = null; world.over = false; }
+     if (window.Sfx) { try { Sfx.stopAmbient(); } catch (e) {} }
+     // Reset mode styling when returning to title (fix for multiplayer mode style persistence)
+     const screenMode = document.getElementById('screen-mode');
+     if (screenMode) screenMode.classList.remove('modo-solo', 'modo-online');
+     // Al volver desde el juego, recargamos la página para dejarla limpia:
+     // evita estados residuales (estilos de modo, reconexiones, HUD, etc.)
+     location.reload();
+   }
+   window.__volverMenu = volverAlMenu;
+
+  // ---------- wiring del Expediente compartido (submenú de modo) ----------
+  $id('mode-profile-select').onchange = (ev) => { P.select(ev.target.value); refreshTitle(); };
+  $id('mode-profile-box').querySelector('.btn-profile-create').onclick = () => {
+    const nombre = $id('mode-profile-name').value.trim();
+    if (!nombre) { $id('mode-profile-name').focus(); return; }
     P.create(nombre);
-    $id('profile-name').value = '';
+    $id('mode-profile-name').value = '';
     refreshTitle();
   };
-  $id('btn-profile-del').onclick = () => {
+  $id('mode-profile-box').querySelector('.btn-profile-del').onclick = () => {
     const n = P.activeName();
     if (n && confirm(`¿Borrar el perfil «${n}» y todo su códice?`)) { P.remove(n); refreshTitle(); }
   };
-  $id('btn-codex').onclick = () => world.ui.toggleCodex(true);
+  $id('mode-profile-box').querySelector('.btn-codex').onclick = () => world.ui.toggleCodex(true);
   $id('btn-changelog').onclick = () => {
     if (window.Changelog) Changelog.marcarVisto();
     world.ui.toggleChangelog(true);
   };
 
-  // ---------- Selector de Música de Menú ----------
-  const btnMusicMenu = $id('btn-music-menu');
-  const panelMusic = $id('music-menu');
-  const btnMusicClose = $id('btn-music-close');
-  const listMusic = $id('music-list');
-
-  if (btnMusicMenu) {
-    btnMusicMenu.onclick = () => {
-      listMusic.innerHTML = '';
-      const currentTrack = OPTS.menuMusica || 'menu1';
-
-      CANCIONES_MENU.forEach(track => {
-        const item = document.createElement('div');
-        item.className = 'music-item' + (track.id === currentTrack ? ' active' : '');
-        
-        const info = document.createElement('div');
-        info.className = 'music-info';
-        
-        const title = document.createElement('div');
-        title.className = 'music-title';
-        title.textContent = track.titulo;
-        
-        const author = document.createElement('div');
-        author.className = 'music-author';
-        author.textContent = 'por ' + track.autor;
-        
-        info.appendChild(title);
-        info.appendChild(author);
-        
-        const status = document.createElement('div');
-        status.className = 'music-status';
-        if (track.id === currentTrack) {
-          status.textContent = '🔊 SONANDO';
-        }
-        
-        item.appendChild(info);
-        item.appendChild(status);
-        
-        item.onclick = () => {
-          OPTS.menuMusica = track.id;
-          try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
-          playMenuMusic();
-          btnMusicMenu.click(); // refrescar
-        };
-        
-        listMusic.appendChild(item);
-      });
-      
-      panelMusic.style.display = 'flex';
-    };
+  // ---------- submenú de modo: cada botón abre su propia pantalla ----------
+  function abrirMenuModo(tipo) {
+    modoElegido = tipo;
+    const solo = tipo === 'solo';
+    $id('mode-menu-title').textContent = solo ? 'Un Jugador' : 'Multijugador';
+    // el color del modo (verde Un Jugador / azul Multijugador) lo marca la
+    // clase en #screen-mode: el CSS la usa para teñir el título y los acentos.
+    $id('screen-mode').classList.toggle('modo-solo', solo);
+    $id('screen-mode').classList.toggle('modo-online', !solo);
+    $id('mode-seed-row').style.display = solo ? 'block' : 'none';
+    $id('mode-room-row').style.display = solo ? 'none' : 'block';
+    $id('btn-mode-play').textContent = solo ? 'JUGAR' : 'ENTRAR AL MUNDO';
+    // nota de aviso SOLO en el menú de Un Jugador
+    $id('mode-bug-note').style.display = solo ? 'block' : 'none';
+    refreshTitle();
+    world.ui.show('mode');
   }
-
-  if (btnMusicClose) {
-    btnMusicClose.onclick = () => {
-      panelMusic.style.display = 'none';
-    };
+  function arrancarConCaida() {
+    // Animación de caída (loading, sin texto) + sonido: el juego arranca
+    // EXACTAMENTE cuando TERMINA el audio de caída (evento 'ended'). Fallback
+    // de 7 s por si el audio no carga. La caída empieza lenta y va
+    // acelerando (gana velocidad) según avanza el audio.
+    const fall = document.getElementById('fall-screen');
+    // para la música del menú de inmediato (no espere a entrar en partida) para
+    // que no suene durante la animación de caída
+    if (window.Sfx) { try { Sfx.stopMenu(); } catch (e) {} }
+    // genera líneas de caída en PRIMERA PERSONA: nacen en el centro exacto
+    // (punto de fuga) y se expanden radialmente hacia los bordes. Arrancan
+    // pocas y centradas; conforme avanza la caída aparecen muchas más.
+    const lines = document.getElementById('fall-lines');
+    if (lines) {
+      lines.innerHTML = '';
+      const N = 64;
+      for (let i = 0; i < N; i++) {
+        // rayo = contenedor rotado al ángulo (0–360°); dentro, el trazo <i>
+        // se desplaza hacia afuera. Separar rotate (padre) de translateY
+        // (hijo) evita que el keyframe pise la dirección de cada línea.
+        const ray = document.createElement('span');
+        ray.className = 'ray';
+        // ángulo radial repartido uniforme en 360°: las líneas cubren TODOS
+        // los lados desde el primer instante (no aparecen por fases).
+        const ang = (i / N) * Math.PI * 2 + Math.random() * 0.2;
+        ray.style.setProperty('--ang', ang.toFixed(3) + 'rad');
+        const trazo = document.createElement('i');
+        // Sin animationDuration en línea: la velocidad la marca la fase vía
+        // clases CSS (.rapido/.veloz/.turbo). Si pusiéramos un duration en
+        // línea, GANARÍA a las clases y la caída nunca aceleraría (bug).
+        // El retardo repartido (negativo) desincroniza las líneas para que
+        // no latan todas igual al cambiar de fase.
+        trazo.style.animationDelay = (-Math.random() * 1.8).toFixed(2) + 's';
+        trazo.style.opacity = (0.4 + Math.random() * 0.6).toFixed(2);
+        ray.appendChild(trazo);
+        // todas las líneas visibles desde el inicio: solo se aceleran con el tiempo
+        lines.appendChild(ray);
+      }
+    }
+    let terminado = false;
+    function entrar() {
+      if (terminado) return;
+      terminado = true;
+      // desvanece la capa (no corte seco) y luego entra al juego
+      if (fall) {
+        fall.classList.remove('activa');
+        fall.classList.add('saliendo');
+        setTimeout(() => { fall.hidden = true; fall.classList.remove('saliendo'); }, 400);
+      }
+      conectarAlServidor($id('btn-mode-play'));
+    }
+    // PROGRESIÓN: la caída solo se ACELERA con el tiempo (las líneas ya
+    // están todas visibles desde el inicio, en las 360°). El arranque real
+    // lo fija el 'ended' del audio.
+    const boost1 = setTimeout(() => { if (lines) lines.classList.add('rapido'); }, 1500);
+    const boost2 = setTimeout(() => { if (lines) lines.classList.add('veloz'); }, 3000);
+    const boost3 = setTimeout(() => { if (lines) lines.classList.add('turbo'); }, 4500);
+    // asegura el contexto de audio (primer gesto real de la sesión) y suena
+    if (window.Sfx) {
+      try { Sfx.unlock(); } catch (e) {}
+      // recarga por si el override de caida.m4a no se había precargado
+      try { Sfx.cargarOverrides(); } catch (e) {}
+      try { Sfx.play('caida', null, () => { clearTimeout(boost1); clearTimeout(boost2); clearTimeout(boost3); entrar(); }); }
+      catch (e) { clearTimeout(boost1); clearTimeout(boost2); clearTimeout(boost3); entrar(); }
+    }
+    if (fall) {
+      fall.hidden = false;
+      void fall.offsetWidth; // fuerza reflujo para que la transición de opacidad arranque
+      fall.classList.add('activa');
+    }
+    // fallback: si el audio no suena/carga, entra igual tras 7 s
+    setTimeout(() => { clearTimeout(boost1); clearTimeout(boost2); clearTimeout(boost3); entrar(); }, 7000);
   }
-
-  $id('btn-start').onclick = () => {
-    conectarAlServidor($id('btn-start'));
-  };
-  // modo offline (partida en solitario, sin servidor): el MISMO juego online
-  // con el servidor LOCAL de la pestaña (net/local.js) — mismas reglas,
-  // mismo movimiento libre, misma cámara. El modo por turnos clásico queda
-  // aparcado tras ?autostart=1 (referencia y selftest).
-  $id('btn-offline').onclick = () => {
-    window.MODO_LOCAL = true;
-    conectarAlServidor($id('btn-offline'));
-  };
+  function arrancarModo() {
+    if (modoElegido === 'solo') window.MODO_LOCAL = true;
+    const semilla = ($id('seed-input-title')?.value || '').trim();
+    if (semilla) {
+      try { localStorage.setItem('backrooms-seed', semilla); } catch (e) {}
+    }
+    arrancarConCaida();
+  }
+  $id('btn-offline').onclick = () => abrirMenuModo('solo');
+  $id('btn-start').onclick = () => abrirMenuModo('online');
+  $id('btn-mode-back').onclick = () => { world.ui.show('title'); refreshTitle(); };
+  $id('btn-mode-play').onclick = arrancarModo;
   $id('btn-again').onclick = () => {
     refreshTitle();
     world.ui.show('title');

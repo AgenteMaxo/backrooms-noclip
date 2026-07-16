@@ -87,6 +87,40 @@ html, body { height: 100%; background: #060504; color: var(--hueso);
   opacity: .8; transition: all .12s; }
 .btn-offline:hover { color: var(--hueso); border-color: var(--gris); opacity: 1; }
 .btn-offline:active { transform: translateY(1px); }
+
+/* botones de modo del título: Un Jugador (verde) / Multijugador (azul).
+   Grandes, cada uno en su propia fila; al pulsarlos se abre el submenú de
+   modo (screen-mode) como otra pantalla del menú, antes de jugar. */
+.mode-section { margin: 0 0 16px; }
+.mode-section:first-of-type { margin-top: 10px; }
+.btn-mode { display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+  gap: 6px; min-height: 92px; padding: 16px 20px; cursor: pointer; text-align: left; width: 100%;
+  background: #0d0b07; border: 2px solid var(--borde); color: var(--hueso);
+  font-family: var(--font-title); line-height: 1.2; transition: all .15s; }
+.btn-mode:hover { transform: translateY(-2px); }
+.btn-mode:active { transform: translateY(1px); }
+.btn-mode:disabled { opacity: .7; cursor: default; transform: none; }
+.btn-mode-title { font-size: 17px; letter-spacing: 3px; }
+.btn-mode-sub { font-size: 13px; letter-spacing: 1px; font-family: inherit; opacity: .8; }
+/* Un Jugador — verde */
+.btn-mode-solo { border-left: 5px solid #4caf50; }
+.btn-mode-solo .btn-mode-title { color: #6fcf73; }
+.btn-mode-solo:hover { background: rgba(76,175,80,.14); border-color: #4caf50;
+  box-shadow: 0 0 26px rgba(76,175,80,.4); }
+/* Multijugador — azul */
+.btn-mode-online { border-left: 5px solid #4a90d9; }
+.btn-mode-online .btn-mode-title { color: #6fb1ee; }
+.btn-mode-online:hover { background: rgba(74,144,217,.14); border-color: #4a90d9;
+  box-shadow: 0 0 26px rgba(74,144,217,.4); }
+/* barra inferior: Changelog, Ajustes, Audio y Mando, después de los botones */
+.menu-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 6px; }
+.menu-footer .btn-small { margin-top: 0; }
+.menu-footer .footer-vol { display: flex; align-items: center; gap: 6px; color: var(--gris);
+  font-size: 13px; }
+@media (prefers-reduced-motion: reduce) {
+  .btn-mode { transition: none; }
+  .btn-mode:hover, .btn-mode:active { transform: none; }
+}
 /* aviso sutil de "hay novedades" (changelog no visto): desaparece al abrirlo */
 .btn-small.novedad { border-color: var(--amarillo); color: var(--amarillo);
   animation: glow-novedad 2.2s ease-in-out infinite; }
@@ -284,7 +318,7 @@ input[type="range"]::-moz-range-thumb {
   z-index: 17; overflow-y: auto; padding: 24px 12px; -webkit-overflow-scrolling: touch; }
 #item-icon { font-size: 22px; }
 .item-effect { color: var(--amarillo); font-size: 13px; }
-#sound-menu, #music-menu { position: absolute; inset: 0; background: rgba(0,0,0,.6);
+#sound-menu { position: absolute; inset: 0; background: rgba(0,0,0,.6);
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
   z-index: 25; overflow-y: auto; padding: 24px 12px; -webkit-overflow-scrolling: touch; }
 .sound-row { display: flex; align-items: center; gap: 12px; margin: 12px 0; font-size: 13px; }
@@ -673,33 +707,6 @@ details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
   .card-quote { display: none; }
 }
 
-/* --- Estilos para la selección de música de menú (v26) --- */
-.btn-music-float {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 20;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #0a0906;
-  border: 1px solid var(--borde);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-  transition: transform 0.15s, background-color 0.15s, border-color 0.15s;
-}
-.btn-music-float:hover {
-  background: #1a1811;
-  border-color: var(--amarillo);
-  transform: scale(1.08);
-}
-.btn-music-float:active {
-  transform: scale(0.95);
-}
-
 .music-list-container {
   width: 100%;
   margin-top: 15px;
@@ -745,8 +752,17 @@ details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
   color: var(--amarillo);
   font-weight: bold;
 }
-.btn-music-float * {
-  pointer-events: none;
+.btn-noclip {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 6px;
+  color: var(--amarillo);
+  border-color: rgba(217, 198, 110, .55);
+  background: rgba(217, 198, 110, .08);
+}
+.btn-noclip:hover {
+  background: rgba(217, 198, 110, .16);
+  border-color: var(--amarillo);
 }
 
 

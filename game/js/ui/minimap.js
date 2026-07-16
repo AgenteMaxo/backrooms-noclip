@@ -108,10 +108,14 @@
       }
     }
 
-    // jugador — triángulo orientado en la dirección que mira
-    const ang = world.online
-      ? -(Math.PI / 2) + (p.rot || 0)
-      : ((p.rot ?? 2) - 1) * Math.PI / 2;
+    // jugador — triángulo orientado en la dirección que mira.
+    // El triángulo base apunta hacia arriba (norte). En solitario rot es 0-3
+    // (ROT_VEC: 0=norte,1=este,2=sur,3=oeste) → basta rot * 90°. En online
+    // p.rot es un ángulo continuo θ con 0=norte (render3d: camYaw=-p.rot),
+    // y como el canvas gira en el mismo sentido, el ángulo del triángulo es θ.
+    let ang;
+    if (world.online) ang = p.rot || 0;
+    else ang = (p.rot ?? 0) * Math.PI / 2;
     const pxC = ox + p.x * S + S / 2, pyC = oy + p.y * S + S / 2;
     const trLen = Math.max(3, S * 0.75);
     const trBase = trLen * 0.55;
