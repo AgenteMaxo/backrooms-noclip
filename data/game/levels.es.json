@@ -302,18 +302,21 @@
    },
    {
     "texto": "Una puerta dorada marcada con el símbolo «Φ» conduce a Level Phi",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-phi",
+    "tipo": "sellada",
+    "destinoNombre": "Level Phi"
    },
    {
     "texto": "Un túnel de alcantarillado desemboca en Level 34",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-34",
+    "tipo": "sellada",
+    "destinoNombre": "Level 34"
    },
    {
     "texto": "El aumento gradual de luces de neón anuncia una salida a Level 699",
-    "destino": null,
-    "tipo": "sellada"
+    "destino": "level-699",
+    "tipo": "sellada",
+    "destinoNombre": "Level 699"
    }
   ],
   "esEscape": false,
@@ -1806,7 +1809,7 @@
    },
    {
     "texto": "Hacer no-clip por un espejo de neón tiene una mínima probabilidad de llevar a Level 699",
-    "destino": null,
+    "destino": "level-699",
     "tipo": "sellada"
    }
   ],
@@ -3449,5 +3452,86 @@
   },
   "particulas": "lluvia",
   "sonido": "viento"
- }
+ },
+ "level-phi": {                                                                                                                                   
+    "id": "level-phi",                                                                                                                             
+    "wikiTitle": "Level Phi",                                                                                                                      
+    "nombre": "Level Phi: «Sala Sellada»",                                                                                                         
+    "clase": "Sala Sellada · Sin salidas",                                                                                                         
+    "peligro": 0,                                                                                                                                  
+    "bioma": "pasillos",                                                                                                                           
+    "tam": [12, 12],                                                                                                                               
+    "paleta": {                                                                                                                                    
+        "suelo": "#2a2a2a",                                                                                                                          
+        "pared": "#1a1a1a",                                                                                                                          
+        "detalle": "#111111",                                                                                                                        
+        "luz": "#555555",                                                                                                                            
+        "fondo": "#000000"                                                                                                                           
+    },                                                                                                                                             
+    "vision": 5,                                                                                                                                   
+    "oscuridad": 0.8,                                                                                                                              
+    "descripcion": "Una sala completamente sellada y sumida en el silencio. No hay salidas visibles. Solo queda desandar tus pasos.",              
+    "cita": "No hay nada más aquí. El camino termina.",                                                                                            
+    "reglas": [],                                                                                                                                  
+    "entidades": [],                                                                                                                               
+    "objetos": [],                                                                                                                                 
+    "salidas": [],                                                                                                                                 
+    "esEscape": false,                                                                                                                             
+    "url": "https://backrooms.fandom.com/wiki/Level_Phi",                                                                                          
+    "estilo": { "pared": "hormigon", "suelo": "baldosa" }                                                                                          
+},
+"level-34": {                                                                                                                                    
+    "id": "level-34",                                                                                                                              
+    "wikiTitle": "Level 34",                                                                                                                       
+    "nombre": "Level 34: «Sala Sellada»",                                                                                                          
+    "clase": "Sala Sellada · Sin salidas",                                                                                                         
+    "peligro": 0,                                                                                                                                  
+    "bioma": "tuneles",                                                                                                                            
+    "tam": [12, 12],                                                                                                                               
+    "paleta": {                                                                                                                                    
+        "suelo": "#1e1e1e",                                                                                                                          
+        "pared": "#2d2d2d",                                                                                                                          
+        "detalle": "#141414",                                                                                                                        
+        "luz": "#444444",                                                                                                                            
+        "fondo": "#050505"                                                                                                                           
+    },                                                                                                                                             
+    "vision": 5,                                                                                                                                   
+    "oscuridad": 0.8,                                                                                                                              
+    "descripcion": "Un túnel bloqueado por escombros y planchas de acero. Las tuberías están frías. Debes regresar.",                              
+    "cita": "El eco de tus pasos es el único sonido aquí.",                                                                                        
+    "reglas": [],                                                                                                                                  
+    "entidades": [],                                                                                                                               
+    "objetos": [],                                                                                                                                 
+    "salidas": [],                                                                                                                                 
+    "esEscape": false,                                                                                                                             
+    "url": "https://backrooms.fandom.com/wiki/Level_34",                                                                                           
+    "estilo": { "pared": "ladrillo", "suelo": "cemento" }                                                                                          
+},
+"level-699": {                                                                                                                                   
+    "id": "level-699",                                                                                                                             
+    "wikiTitle": "Level 699",                                                                                                                      
+    "nombre": "Level 699: «Sala Sellada»",                                                                                                         
+    "clase": "Sala Sellada · Sin salidas",                                                                                                         
+    "peligro": 0,                                                                                                                                  
+    "bioma": "pasillos",                                                                                                                           
+    "tam": [12, 12],                                                                                                                               
+    "paleta": {                                                                                                                                    
+        "suelo": "#332233",                                                                                                                          
+        "pared": "#442244",                                                                                                                          
+        "detalle": "#221122",                                                                                                                        
+        "luz": "#aa66aa",                                                                                                                            
+        "fondo": "#0f050f"                                                                                                                           
+    },                                                                                                                                             
+    "vision": 6,                                                                                                                                   
+    "oscuridad": 0.6,                                                                                                                              
+    "descripcion": "Habitación donde las luces de neón parpadean débilmente. Las puertas laterales están soldadas. Debes volver atrás.",           
+    "cita": "La luz parpadea, pero el camino está cerrado.",                                                                                       
+    "reglas": [],                                                                                                                                  
+    "entidades": [],                                                                                                                               
+    "objetos": [],                                                                                                                                 
+    "salidas": [],                                                                                                                                 
+    "esEscape": false,                                                                                                                             
+    "url": "https://backrooms.fandom.com/wiki/Level_699",                                                                                          
+    "estilo": { "pared": "hormigon", "suelo": "baldosa" }                                                                                          
+}
 }
