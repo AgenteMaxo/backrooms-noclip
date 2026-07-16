@@ -2071,7 +2071,7 @@
     // asegura el contexto de audio (primer gesto real de la sesión) y suena
     if (window.Sfx) {
       try { Sfx.unlock(); } catch (e) {}
-      // recarga por si el override de caida.m4a no se había precargado
+      // recarga por si el override de caida.mp3 no se había precargado
       try { Sfx.cargarOverrides(); } catch (e) {}
       try { Sfx.play('caida', null, () => { clearTimeout(boost1); clearTimeout(boost2); clearTimeout(boost3); entrar(); }); }
       catch (e) { clearTimeout(boost1); clearTimeout(boost2); clearTimeout(boost3); entrar(); }
