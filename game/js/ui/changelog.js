@@ -5,10 +5,11 @@
 (function () {
   const CHANGELOG = [
     { v: 'v31', cambios: [
-      'Mejorada la página principal Con 2 botones',
-      'Nueva animación al entrar: ahora parece que estas cayendo a los Backrooms',
-      'Arreglados varios errores de muerte, generación de terreno y controles',
-      'Varios arreglos de errores de la interfaz y del multijugador al volver al menú. (Jaime Gaming)',
+      'Ahora el menú principal tiene dos botones para jugar los dos diferentes modos (inspirado en la idea de Roykyu).',
+      'Botón de volver al menú desde el menú de pausa dentro del juego.',
+      'Ahora hay una animación al entrar a cualquiera de los dos modos.',
+      'Muchos arreglos de errores con las muertes, interfaz, generación de terreno y controles.',
+      'Añadí un Splash screen al inicio. (Jaime Gaming)',
     ] },
     { v: 'v30.12', cambios: [
       'Level 0 ya no es un secarral: hay más botellas de agua de almendras por el suelo, más taquillas que registrar, y un resultado medio del dado (12-13) en sus taquillas ahora encuentra agua. El resto de niveles no cambia. (josealmon)',

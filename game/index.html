@@ -8,7 +8,25 @@
 <link rel="stylesheet" href="css/title-interface.css?v=3100">
 </head>
 <body>
-<div id="app">
+  <!-- Splash screen de presentación (cinematográfico) -->
+  <div id="splash" class="splash">
+    <div class="splash-bar splash-bar-top"></div>
+    <div class="splash-bar splash-bar-bottom"></div>
+    <div class="splash-vignette"></div>
+    <div class="splash-inner">
+      <img class="splash-logo" src="https://static-cdn.jtvnw.net/jtv_user_pictures/4e1c48fc-010a-47e9-8097-6b474d846064-profile_image-150x150.png" alt="Logo" width="150" height="150">
+      <p class="splash-text">AgenteMaxo</p>
+      <p class="splash-comunidad">(y su comunidad)</p>
+      <p class="splash-presenta">Presenta</p>
+    </div>
+    <div class="splash-loader" id="splash-loader" aria-hidden="true">
+      <span class="sl-side sl-top"></span>
+      <span class="sl-side sl-right"></span>
+      <span class="sl-side sl-bottom"></span>
+      <span class="sl-side sl-left"></span>
+    </div>
+  </div>
+  <div id="app">
   <!-- Pantalla de título -->
   <div id="screen-title" class="screen">
     <div class="title-box">

@@ -5,6 +5,44 @@
   const world = Game.world;
   world.data = window.GAME_DATA;
 
+  // ---------- splash screen de presentación (cinematográfico) ----------
+  (function () {
+    const splash = document.getElementById('splash');
+    if (!splash) return;
+    let cerrado = false;
+
+    // loader de esquina: un solo lado iluminado a la vez, cambia cada segundo
+    const lados = ['sl-top', 'sl-right', 'sl-bottom', 'sl-left'];
+    let ladoIdx = 0;
+    const loader = document.getElementById('splash-loader');
+    let loaderTimer = null;
+    if (loader) {
+      const pintar = () => {
+        loader.querySelectorAll('.sl-side').forEach((el) =>
+          el.classList.toggle('activo', el.classList.contains(lados[ladoIdx])));
+      };
+      pintar();
+      loaderTimer = setInterval(() => {
+        ladoIdx = (ladoIdx + 1) % lados.length;
+        pintar();
+      }, 500);
+    }
+
+    // anima las barras de letterbox al entrar
+    requestAnimationFrame(() => splash.classList.add('mostrar'));
+    function cerrarSplash() {
+      if (cerrado) return;
+      cerrado = true;
+      if (loaderTimer) clearInterval(loaderTimer);
+      splash.classList.add('oculto');
+      setTimeout(() => splash.remove(), 1200);
+    }
+    // se cierra solo tras 3.4 s (tono de cine), o antes si el usuario interactúa
+    setTimeout(cerrarSplash, 3400);
+    window.addEventListener('pointerdown', cerrarSplash, { once: true });
+    window.addEventListener('keydown', cerrarSplash, { once: true });
+  })();
+
   // Censo discreto de la portada: una petición pequeña al arrancar y cada 30 s.
   const census = document.getElementById('backrooms-census');
   const censusText = document.getElementById('backrooms-census-text');
