@@ -670,7 +670,7 @@
     if (world.turn % 15 === 0) world.hunger(-1);
     if (world.player.sed <= 0 && world.turn % 3 === 0) world.hurt(2, 'la deshidratación', true);
     if (world.player.hambre <= 0 && world.turn % 5 === 0) world.hurt(1, 'la inanición', true);
-    // agotamiento (v31): caminar cansa (1 aguante cada 10 pasos); descansar
+    // agotamiento: caminar cansa (1 aguante cada 10 pasos); descansar
     // repone (esperar/escondido/Sala Manila). El tercer peligro del canon.
     const movioAgota = world.pasosNivel > (world._agotPrevPasos || 0);
     world._agotPrevPasos = world.pasosNivel;

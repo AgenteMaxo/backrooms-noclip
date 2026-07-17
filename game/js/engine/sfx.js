@@ -240,7 +240,7 @@
     } catch (e) {}
   }
 
-  // ---------- susurros de la Sala Manila (v31) ----------
+  // ---------- susurros de la Sala Manila ----------
   // «a faint, disquieting whispering noise emanating from behind the walls»
   // (wiki de Level 0). Ráfagas de ruido con formante de voz susurrada (bandpass
   // estrecho que barre + corte de graves «aireado»), en 2-4 «sílabas» y paneo

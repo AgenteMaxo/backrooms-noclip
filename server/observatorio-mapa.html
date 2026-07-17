@@ -31,6 +31,13 @@
  #estado-linea{color:var(--gris);font-size:11px;margin-left:auto}
  #anuncio-txt{width:340px}
  #buscar{width:200px}
+ select{background:#0a0906;border:1px solid var(--borde);color:var(--hueso);
+  font-family:inherit;font-size:12px;padding:6px 8px;border-radius:4px;cursor:pointer}
+ .apagon-ctl{display:inline-flex;gap:6px;align-items:center;padding:3px 8px 3px 6px;
+  border:1px solid var(--borde);border-radius:6px;background:#0c0a06}
+ .apagon-ctl #apagon-seg{width:52px;text-align:right}
+ .apagon-ctl .seg{color:var(--gris);font-size:11px;margin-left:-3px}
+ #btn-apagon:hover{border-color:var(--aviso);color:var(--aviso)}
  main{flex:1;display:flex;min-height:0}
  .wrap{flex:1;overflow:auto;background:radial-gradient(ellipse at 30% 20%, #12100a 0%, #0a0906 70%)}
  aside{width:400px;border-left:1px solid var(--borde);background:var(--panel);
@@ -109,6 +116,15 @@
  <div class="fila" id="controles" hidden>
   <input id="anuncio-txt" maxlength="200" placeholder="📢 anuncio para TODOS (reto, premio, ganador…)">
   <button id="btn-anuncio">📢 Anunciar</button>
+  <span class="apagon-ctl" title="Provoca un apagón ahora mismo con la duración elegida">
+   <select id="apagon-nivel">
+    <option value="apagon-manila">💡 Level 0 · Sala Manila</option>
+    <option value="apagon-nivel1">💡 Level 1 · global</option>
+   </select>
+   <input id="apagon-seg" type="number" min="1" max="30" step="1" value="5" title="segundos de oscuridad">
+   <span class="seg">s</span>
+   <button id="btn-apagon">⚡ Apagón</button>
+  </span>
   <button id="btn-dejar" title="El guardián vuelve al mundo (deja de espectar)">✕ Dejar de espectar</button>
   <input id="buscar" placeholder="buscar nivel o errante…" spellcheck="false">
   <span id="estado-linea"></span>
@@ -439,6 +455,10 @@
     if (await accion({ accion: 'anuncio', txt })) $('anuncio-txt').value = '';
   };
   $('anuncio-txt').onkeydown = (e) => { if (e.key === 'Enter') $('btn-anuncio').onclick(); };
+  $('btn-apagon').onclick = () => {
+    const seg = Math.max(1, Math.min(30, parseInt($('apagon-seg').value, 10) || 5));
+    accion({ accion: $('apagon-nivel').value, ms: seg * 1000 });
+  };
   $('btn-dejar').onclick = () => accion({ accion: 'espectar-fin' });
   $('buscar').oninput = () => {
     const t = $('buscar').value.trim().toLowerCase();

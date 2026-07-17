@@ -401,7 +401,7 @@
       // La luz la maneja el render (actualizarLucesTecho lee w.manilaApagon);
       // los susurros solo suenan si estás cerca de la sala (el driver de
       // ambiente en main.js decide). El apagón lo vive toda la instancia a la vez.
-      case 'apagon': {
+      case 'apagonManila': {
         w.manilaApagon = { hasta: performance.now() + (m.ms || 2000) };
         const rect = w.map && w.map.manila;
         const cerca = rect && Math.hypot(

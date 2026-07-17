@@ -13,7 +13,7 @@ const db = require('./db');
 const {
   Sala, salas, asignar, todas, totalJugadores,
   prepararSala, cambiarDeSala, esSinRetorno, moverEspectador,
-  tickEventosGlobales,
+  tickEventosGlobales, forzarApagonNivel1, forzarApagonManila,
   metricas, SALA_PUBLICA, GRACIA_SALA_VACIA,
 } = compartido;
 
@@ -148,5 +148,6 @@ setInterval(() => {
 module.exports = {
   Sala, asignar, tickTodas, estado, totalJugadores, observa, chatReciente, todas,
   prepararSala, cambiarDeSala, esSinRetorno, moverEspectador,
+  forzarApagonNivel1, forzarApagonManila,
   SALA_PUBLICA, GRACIA_SALA_VACIA,
 };

@@ -13,6 +13,7 @@ const filtro = require('./filtro');
 const {
   asignar, tickTodas, estado, totalJugadores, observa, chatReciente,
   prepararSala, cambiarDeSala, moverEspectador,
+  forzarApagonNivel1, forzarApagonManila,
 } = require('./sala');
 const { DATA } = require('./sim/mundo');
 const db = require('./db');
@@ -181,6 +182,17 @@ const servidor = http.createServer((req, res) => {
         for (const s of salasVivas()) s.difundir({ t: 'anuncio', txt });
         console.log(`[obs] anuncio: ${txt}`);
         responder(200, { ok: true, msg: 'Anunciado a todas las Backrooms.' });
+        return;
+      }
+      // apagones a demanda del guardián: Level 1 (aunque ahora mismo es un global por el nombre) o Level 0
+      if (m.accion === 'apagon-nivel1' || m.accion === 'apagon-manila') {
+        const ms = Math.max(1000, Math.min(30000, (m.ms | 0) || 5000));
+        const n = m.accion === 'apagon-nivel1' ? forzarApagonNivel1(ms) : forzarApagonManila(ms);
+        const donde = m.accion === 'apagon-nivel1' ? 'Level 1 (global)' : 'Level 0 (Sala Manila)';
+        console.log(`[obs] apagón ${donde} ${ms}ms → ${n} jugador(es)`);
+        responder(200, { ok: true, msg: n
+          ? `Apagón en ${donde} durante ${(ms / 1000).toFixed(1)} s para ${n} jugador(es).`
+          : `Nadie hay ahora mismo en ${donde}.` });
         return;
       }
       if (m.accion === 'espectar' || m.accion === 'espectar-fin') {

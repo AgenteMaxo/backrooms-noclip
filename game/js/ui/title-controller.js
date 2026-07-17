@@ -13,6 +13,46 @@
     const profiles = window.Game.Profiles;
     const opts = window.Options.valores;
     let connectionTimer = null;
+    const fallScreen = byId('fall-screen');
+    const reduceFall = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    let fallStartedAt = 0;
+
+    function showFall() {
+      if (!fallScreen || reduceFall) return;
+      const lines = byId('fall-lines');
+      if (lines && !lines.childElementCount) {
+        const total = 64;
+        for (let index = 0; index < total; index++) {
+          const ray = document.createElement('span');
+          ray.className = 'ray';
+          const angle = (index / total) * Math.PI * 2 + Math.random() * 0.2;
+          ray.style.setProperty('--ang', `${angle.toFixed(3)}rad`);
+          const stroke = document.createElement('i');
+          stroke.style.animationDelay = `${(-Math.random() * 1.1).toFixed(2)}s`;
+          stroke.style.opacity = (0.4 + Math.random() * 0.6).toFixed(2);
+          ray.appendChild(stroke);
+          lines.appendChild(ray);
+        }
+      }
+      fallStartedAt = Date.now();
+      fallScreen.hidden = false;
+      void fallScreen.offsetWidth;
+      fallScreen.classList.add('activa');
+      try { window.Sfx?.play('caida'); } catch (error) {}
+    }
+
+    function hideFall(immediate) {
+      if (!fallScreen || fallScreen.hidden) return;
+      const delay = immediate ? 0 : Math.max(0, 2600 - (Date.now() - fallStartedAt));
+      setTimeout(() => {
+        fallScreen.classList.remove('activa');
+        fallScreen.classList.add('saliendo');
+        setTimeout(() => {
+          fallScreen.hidden = true;
+          fallScreen.classList.remove('saliendo');
+        }, 400);
+      }, delay);
+    }
 
     function privateRoom() {
       return (byId('room-input')?.value || '').trim();
@@ -74,14 +114,17 @@
       if (!validateRoom(room)) return;
       const startButton = byId('btn-start');
       const continueButton = byId('btn-continue');
+      const offlineButton = byId('btn-offline');
       const button = originButton || startButton;
       const error = byId('title-net');
+      const buttonHtml = button.innerHTML;
       const continueText = continueButton.textContent;
       startButton.disabled = true;
       continueButton.disabled = true;
-      button.disabled = true;
+      offlineButton.disabled = true;
       button.textContent = 'PREPARANDO EL UMBRAL…';
       error.style.display = 'none';
+      showFall();
       clearInterval(connectionTimer);
       await prepararRender();
       button.textContent = 'CRUZANDO LA REALIDAD…';
@@ -102,10 +145,11 @@
         connectionTimer = null;
         startButton.disabled = false;
         continueButton.disabled = false;
-        button.disabled = false;
-        startButton.textContent = 'DESPERTAR EN LEVEL 0';
+        offlineButton.disabled = false;
         continueButton.textContent = continueText;
+        button.innerHTML = buttonHtml;
         if (window.Net.activo) error.style.display = 'none';
+        hideFall(!window.Net.activo);
       }
     }
 
@@ -158,26 +202,33 @@
         refresh();
       }
     };
-    byId('btn-profile-export').onclick = () => {
-      const json = profiles.exportar();
-      if (!json) return;
-      const link = document.createElement('a');
-      link.href = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
-      link.download = `backrooms-perfil-${profiles.activeName()}.json`;
-      link.click();
-    };
-    byId('btn-profile-import').onclick = () => byId('profile-import-file').click();
-    byId('profile-import-file').onchange = (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (profiles.importar(reader.result)) refresh();
-        else alert('Ese archivo no parece un perfil válido.');
+    const exportButton = byId('btn-profile-export');
+    if (exportButton) {
+      exportButton.onclick = () => {
+        const json = profiles.exportar();
+        if (!json) return;
+        const link = document.createElement('a');
+        link.href = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
+        link.download = `backrooms-perfil-${profiles.activeName()}.json`;
+        link.click();
       };
-      reader.readAsText(file);
-      event.target.value = '';
-    };
+    }
+    const importButton = byId('btn-profile-import');
+    const importInput = byId('profile-import-file');
+    if (importButton && importInput) {
+      importButton.onclick = () => importInput.click();
+      importInput.onchange = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (profiles.importar(reader.result)) refresh();
+          else alert('Ese archivo no parece un perfil válido.');
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+      };
+    }
     byId('btn-codex').onclick = () => world.ui.toggleCodex(true);
     byId('btn-changelog').onclick = () => {
       window.Changelog?.marcarVisto();

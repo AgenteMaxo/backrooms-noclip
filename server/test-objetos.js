@@ -179,10 +179,20 @@ assert(MANIFIESTO && MANIFIESTO.sprites, 'falta window.ASSETS_MANIFEST (node pip
 {
   const fsm = require('fs');
   const pm = require('path');
-  for (const [seccion, entradas] of Object.entries(MANIFIESTO))
-    for (const [id, ruta] of Object.entries(entradas))
-      assert(fsm.existsSync(pm.join(__dirname, '..', 'game', ruta)),
-        `manifiesto desactualizado: ${seccion}/${id} → ${ruta} no existe (node pipeline/build-assets-manifest.js)`);
+  function comprobarRutas(valor, clave) {
+    if (typeof valor === 'string') {
+      assert(fsm.existsSync(pm.join(__dirname, '..', 'game', valor)),
+        `manifiesto desactualizado: ${clave} → ${valor} no existe (node pipeline/build-assets-manifest.js)`);
+      return;
+    }
+    if (Array.isArray(valor)) {
+      valor.forEach((item, index) => comprobarRutas(item, `${clave}/${index}`));
+      return;
+    }
+    for (const [id, item] of Object.entries(valor || {}))
+      comprobarRutas(item, `${clave}/${id}`);
+  }
+  comprobarRutas(MANIFIESTO, 'assets');
 }
 assert.strictEqual(MANIFIESTO.sprites.agua_almendras, 'assets/sprites/agua_almendras.png',
   'agua_almendras debería estar inventariado desde assets/sprites/');

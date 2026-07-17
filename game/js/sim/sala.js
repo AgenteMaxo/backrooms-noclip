@@ -50,6 +50,7 @@ function crearControlApagon(rng) {
   let proximo = 0;
   let secuencia = 0;
   let duracion = 0;
+  let oscuroForzado = 0; // ms de oscuridad pedidos por el guardián (0 = natural)
 
   const programar = (ahora) => {
     proximo = ahora + rng.int(APAGON_ESPERA_MIN_MS, APAGON_ESPERA_MAX_MS);
@@ -79,7 +80,8 @@ function crearControlApagon(rng) {
       }
       if (ahora < hasta) return;
       if (fase === 'pre') {
-        cambiar('oscuro', ahora, APAGON_OSCURO_MS, emitir);
+        cambiar('oscuro', ahora, oscuroForzado || APAGON_OSCURO_MS, emitir);
+        oscuroForzado = 0;
       } else if (fase === 'oscuro') {
         cambiar('vuelve', ahora, APAGON_RECUPERA_MS, emitir);
       } else {
@@ -88,6 +90,15 @@ function crearControlApagon(rng) {
         duracion = 0;
         programar(ahora);
       }
+    },
+    // El guardián (observatorio) dispara el apagón AHORA con una duración de
+    // oscuridad elegida. Recorre las mismas fases pre→oscuro→vuelve que uno
+    // natural, así que el cliente no nota diferencia; si ya había uno en curso
+    // arranca una secuencia nueva (override del guardián).
+    forzar(ahora, oscuroMs, emitir) {
+      oscuroForzado = Math.max(500, Math.min(30000, oscuroMs || APAGON_OSCURO_MS));
+      secuencia++;
+      cambiar('pre', ahora, APAGON_PREAVISO_MS, emitir);
     },
     snapshot(ahora) {
       if (fase === 'idle') return null;
@@ -104,6 +115,7 @@ function crearControlApagon(rng) {
       proximo = 0;
       secuencia = 0;
       duracion = 0;
+      oscuroForzado = 0;
     },
   };
 }
@@ -136,7 +148,7 @@ function activarRemodel(v) { REMODEL_ONLINE = !!v; }
 
 const PROTECCION_ENTRADA_MS = 3000;
 
-// Agotamiento (v31): el TERCER peligro que nombra la wiki de Level 0 (junto a
+// Agotamiento: el TERCER peligro que nombra la wiki de Level 0 (junto a
 // la sed y el hambre). Caminar cansa; se recupera descansando. Constantes
 // compartidas navegador/servidor para que ambos mundos se cansen igual.
 const CAD_AGOTA = 12;         // tiles caminados por cada punto de aguante perdido
@@ -144,7 +156,7 @@ const AGOTA_REC_QUIETO = 2000;  // ms parado por cada punto recuperado
 const AGOTA_REC_DESCANSO = 800; // ídem escondido o en la Sala Manila (más rápido)
 const AGOTA_IDLE = 600;         // ms sin moverte para considerarte «en reposo»
 
-// Apagones de la Sala Manila (v31): la wiki dice que la sala «reportedly
+// Apagones de la Sala Manila: la wiki dice que la sala «reportedly
 // experiences occasional blackouts». Es un EVENTO de sala (lo ve toda la
 // instancia a la vez); los susurros que lo acompañan los sintetiza cada
 // cliente. El intervalo sale del RNG determinista de la sala.
@@ -1103,12 +1115,12 @@ class Sala {
     return false;
   }
 
-  // ---------- recuperación de aguante por reposo (v31) ----------
+  // ---------- recuperación de aguante por reposo ----------
   // El agotamiento solo se drena al caminar (supervivencia); aquí se repone
   // mientras estás quieto. La Sala Manila es un «rudimentary resting point»
   // según la wiki, así que descansar dentro (o escondido) recupera más rápido.
   regenAguante(ahora) {
-    const rect = this.map.manila;
+    const rect = this.map?.manila;
     for (const jug of this.jugadores.values()) {
       if (jug.muerto || jug.espectador) { jug._aguanteT = ahora; continue; }
       const reposo = ahora - (jug._ultMovReal || 0) > AGOTA_IDLE;
@@ -1127,12 +1139,12 @@ class Sala {
     }
   }
 
-  // ---------- apagones de la Sala Manila (v31, EVENTO de sala) ----------
+  // ---------- apagones de la Sala Manila (EVENTO de sala) ----------
   // La wiki: la Manila «reportedly experiences occasional blackouts». Se
   // difunde a TODA la instancia (que lo vive a la vez); cada cliente decide si
   // le afecta visualmente/sonoramente según su cercanía a la sala.
   apagonManila(ahora) {
-    const rect = this.map.manila;
+    const rect = this.map?.manila;
     if (!rect) return;
     if (this._apagonEn === undefined) {
       this._apagonEn = ahora + APAGON_MIN + this.rng.int(0, APAGON_MAX - APAGON_MIN);
@@ -1147,7 +1159,17 @@ class Sala {
       (j) => !j.espectador && !j.muerto && Fisica.dist(j.x, j.y, cx, cy) <= radio);
     if (!testigos) return;
     const ms = APAGON_DUR_MIN + this.rng.int(0, APAGON_DUR_MAX - APAGON_DUR_MIN);
-    this.difundir({ t: 'apagon', ms });
+    this.difundir({ t: 'apagonManila', ms });
+  }
+
+  // Igual que apagonManila() pero a demanda del guardián (observatorio): sin
+  // temporizador ni requisito de testigos — el guardián decide cuándo y cuánto
+  // dura. Devuelve a cuántos jugadores les llegó (para el feedback del panel).
+  apagonManilaForzado(ms) {
+    if (!this.map?.manila) return 0;
+    const dur = Math.max(500, Math.min(30000, ms || 2000));
+    this.difundir({ t: 'apagonManila', ms: dur });
+    return this.jugadores.size;
   }
 
   // ---------- tick de simulación (lo llama el anfitrión a 20 Hz) ----------
@@ -1280,6 +1302,27 @@ function tickEventosGlobales(ahora) {
   });
 }
 
+// ---------- apagones a demanda del guardián (observatorio) ----------
+// Level 1 = evento GLOBAL del nivel (todas las instancias a la vez, por el
+// mismo control compartido). Manila = por instancia de Level 0. Ambos aceptan
+// la duración de oscuridad en ms; devuelven a cuántos jugadores llegó.
+function forzarApagonNivel1(oscuroMs) {
+  const objetivo = [...salas.values()].filter(
+    (s) => s.nivelId === APAGON_NIVEL && s.jugadores.size);
+  if (!objetivo.length) return 0;
+  controlApagon.forzar(Date.now(), oscuroMs, (msg) => {
+    for (const sala of objetivo) sala.difundir(msg);
+  });
+  return objetivo.reduce((n, s) => n + s.jugadores.size, 0);
+}
+
+function forzarApagonManila(ms) {
+  let n = 0;
+  for (const s of salas.values())
+    if (s.nivelId === 'level-0' && s.jugadores.size) n += s.apagonManilaForzado(ms);
+  return n;
+}
+
 // ---------- cruce de salas y respawn (compartidos servidor/local) ----------
 
 function prepararSala(sala) {
@@ -1385,7 +1428,7 @@ function moverEspectador(esp, salaVieja, nueva, objetivo) {
 const api = {
   Sala, salas, crearSala, asignar, todas, totalJugadores,
   prepararSala, cambiarDeSala, esSinRetorno: Shared.esSinRetorno, moverEspectador,
-  tickEventosGlobales, crearControlApagon,
+  tickEventosGlobales, crearControlApagon, forzarApagonNivel1, forzarApagonManila,
   usarDb, ganchos, metricas, activarRemodel, fijarSemillaBase,
   generarMapa, esTransitable,
   SALA_PUBLICA, GRACIA_SALA_VACIA, CAP_SALA, COOLDOWN_CHAT, RADIO_CHAT, INTERVALO_POS_MS,

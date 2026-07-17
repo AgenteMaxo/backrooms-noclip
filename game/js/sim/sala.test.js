@@ -46,6 +46,27 @@ test('la simulación es la fuente de verdad del aforo', () => {
   assert.equal(CAP_SALA, 60);
 });
 
+test('la Sala Manila usa un mensaje distinto del apagón global de Level 1', () => {
+  const sala = new Sala('level-0', 1, 'prueba-apagon-manila', 'test');
+  const ws = socketFake();
+  const jug = sala.entrar(ws, 'Testigo', 'token-manila', {});
+  const rect = sala.map.manila || { x: jug.x - 2, y: jug.y - 2, w: 4, h: 4 };
+  sala.map.manila = rect;
+  jug.x = rect.x + rect.w / 2;
+  jug.y = rect.y + rect.h / 2;
+  sala._apagonEn = 0;
+  sala.rng.int = () => 0;
+  ws.mensajes.length = 0;
+
+  sala.apagonManila(10_000);
+
+  const mensaje = ws.mensajes.find((item) => item.t === 'apagonManila');
+  assert.ok(mensaje, 'los clientes reciben apagonManila');
+  assert.equal(Number.isFinite(mensaje.ms), true);
+  assert.equal(ws.mensajes.some((item) => item.t === 'apagon'), false,
+    'no se confunde con las fases del apagón global');
+});
+
 test('usar un objeto con sed cero no causa una muerte instantánea', () => {
   const sala = new Sala('level-0', 1, 'prueba-sed', 'test');
   const ws = socketFake();
@@ -115,4 +136,38 @@ test('el apagón global de Level 1 respeta espera, oscuridad y recuperación', (
 
   control.tick(ahora + APAGON_RECUPERA_MS, true, emitir);
   assert.equal(control.snapshot(ahora + APAGON_RECUPERA_MS), null);
+});
+
+test('el guardián fuerza el apagón de Level 1 con la duración de oscuridad elegida', () => {
+  const control = crearControlApagon({ int: (a) => a });
+  const mensajes = [];
+  const emitir = (m) => mensajes.push(m);
+  const t0 = 10_000;
+
+  // arranca AHORA, sin esperar los 30-60 s naturales
+  control.forzar(t0, 8000, emitir);
+  assert.equal(mensajes[0].fase, 'pre');
+
+  control.tick(t0 + APAGON_PREAVISO_MS, true, emitir);
+  assert.equal(mensajes[1].fase, 'oscuro');
+  assert.equal(mensajes[1].duracion, 8000, 'la oscuridad dura lo que pidió el guardián');
+
+  // tras el apagón forzado, el ciclo vuelve a la normalidad (idle)
+  control.tick(t0 + APAGON_PREAVISO_MS + 8000, true, emitir);
+  assert.equal(mensajes[2].fase, 'vuelve');
+});
+
+test('el guardián fuerza el apagón de la Sala Manila sin temporizador ni testigos', () => {
+  const sala = new Sala('level-0', 1, 'prueba-apagon-forzado', 'test');
+  const ws = socketFake();
+  const jug = sala.entrar(ws, 'Testigo', 'token-forzado', {});
+  sala.map.manila ||= { x: jug.x - 2, y: jug.y - 2, w: 4, h: 4 };
+  ws.mensajes.length = 0;
+
+  // duración fuera de rango → recortada a [500, 30000]
+  const n = sala.apagonManilaForzado(999999);
+  assert.equal(n, 1, 'llega a todos los jugadores de la instancia');
+  const msg = ws.mensajes.find((m) => m.t === 'apagonManila');
+  assert.ok(msg, 'se difunde apagonManila aunque nadie esté dentro de la sala');
+  assert.equal(msg.ms, 30000, 'la duración se recorta al techo de 30 s');
 });

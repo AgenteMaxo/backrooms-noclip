@@ -1227,7 +1227,7 @@
     }
     const m = world.map.manila;
     const pal = world.level.paleta;
-    // apagón de la Sala Manila (v31): la luz naranja se corta unos segundos.
+    // apagón de la Sala Manila: la luz naranja se corta unos segundos.
     // Parpadeo brusco casi siempre a oscuras, con algún destello agónico.
     const apagado = m && world.manilaApagon && performance.now() < world.manilaApagon.hasta;
     const apagonF = apagado ? (Math.random() < 0.82 ? 0.02 : 0.28) : 1;

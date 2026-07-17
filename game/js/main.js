@@ -7,6 +7,7 @@
   const guardarOpciones = window.Options.guardar;
   const input = window.InputState;
   let gamepadSettings;
+  let titleController = null;
   world.data = window.GAME_DATA;
 
   // Presentación de v30.14: se cierra sola o con el primer gesto.
@@ -154,8 +155,8 @@
   };
 
   // el audio se desbloquea con el primer gesto (política de los navegadores)
-  document.addEventListener('keydown', () => { Sfx.unlock(); titleController.playMusic(); }, { once: true });
-  document.addEventListener('click', () => { Sfx.unlock(); titleController.playMusic(); }, { once: true });
+  document.addEventListener('keydown', () => { Sfx.unlock(); titleController?.playMusic(); }, { once: true });
+  document.addEventListener('click', () => { Sfx.unlock(); titleController?.playMusic(); }, { once: true });
 
   // Cierre global consistente de paneles mediante tecla ESC o C (Reportado por aimar667 [HYTL])
   document.addEventListener('keydown', (ev) => {
@@ -263,6 +264,8 @@
     actualizarAdminUI(); // debug y barras solo con la contraseña de guardián
     const enJuego = world.level && !world.over;
     if (enJuego && world.esAdmin) document.getElementById('debug-nivel').value = world.level.id;
+    const btnNoclip = document.getElementById('btn-noclip-menu');
+    if (btnNoclip) btnNoclip.style.display = enJuego ? '' : 'none';
     sndMenu.style.display = 'flex';
     if (world.level && !world.over) world.busy = true;
   }
@@ -313,6 +316,8 @@
     pintarBtnMute();
   };
   document.getElementById('btn-snd-close').onclick = cerrarSndMenu;
+  const btnNoclip = document.getElementById('btn-noclip-menu');
+  if (btnNoclip) btnNoclip.onclick = () => location.reload();
 
   // contraseña de guardián: valida contra el servidor (online) y desbloquea
   // el teleport de debug + las barras de salud/comida/bebida/cordura
@@ -893,7 +898,7 @@
 
   window.SelfTest.init({ params, world, input, cargarOverrides: cargarOverridesDeJuego });
 
-  const titleController = window.TitleController.init({
+  titleController = window.TitleController.init({
     world,
     cargarOverrides: cargarOverridesDeJuego,
     prepararRender: cargar3D,
