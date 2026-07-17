@@ -11,25 +11,37 @@
     if (!splash) return;
     let cerrado = false;
 
-    // loader de esquina: un solo lado iluminado a la vez, cambia cada segundo
+    // loader de esquina: aparece tiempo después y parece cargar de verdad
     const lados = ['sl-top', 'sl-right', 'sl-bottom', 'sl-left'];
-    let ladoIdx = 0;
     const loader = document.getElementById('splash-loader');
     let loaderTimer = null;
-    if (loader) {
-      const pintar = () => {
-        loader.querySelectorAll('.sl-side').forEach((el) =>
-          el.classList.toggle('activo', el.classList.contains(lados[ladoIdx])));
-      };
-      pintar();
+    let loaderActive = false;
+
+    // pintar un solo lado encendido (efecto de carga secuencial)
+    const pintar = (idx) => {
+      if (!loader) return;
+      loader.querySelectorAll('.sl-side').forEach((el) =>
+        el.classList.toggle('activo', el.classList.contains(lados[idx])));
+    };
+
+    // arranca el loader tras 2.5 s, luego cicla cada 450 ms
+    const arrancarLoader = () => {
+      if (!loader || loaderActive) return;
+      loaderActive = true;
+      loader.classList.add('activo');
+      let idx = 0;
+      pintar(idx);
       loaderTimer = setInterval(() => {
-        ladoIdx = (ladoIdx + 1) % lados.length;
-        pintar();
-      }, 500);
-    }
+        idx = (idx + 1) % lados.length;
+        pintar(idx);
+      }, 450);
+    };
 
     // anima las barras de letterbox al entrar
     requestAnimationFrame(() => splash.classList.add('mostrar'));
+    // el loader aparece 2 s después, dando sensación de carga real
+    setTimeout(arrancarLoader, 2000);
+
     function cerrarSplash() {
       if (cerrado) return;
       cerrado = true;
@@ -2033,7 +2045,7 @@
   };
 
   // ---------- submenú de modo: cada botón abre su propia pantalla ----------
-  function abrirMenuModo(tipo) {
+  function abrirMenuModo(tipo, btn) {
     modoElegido = tipo;
     const solo = tipo === 'solo';
     $id('mode-menu-title').textContent = solo ? 'Un Jugador' : 'Multijugador';
@@ -2047,7 +2059,7 @@
     // nota de aviso SOLO en el menú de Un Jugador
     $id('mode-bug-note').style.display = solo ? 'block' : 'none';
     refreshTitle();
-    world.ui.show('mode');
+    world.ui.showMode(btn);
   }
   function arrancarConCaida() {
     // Animación de caída (loading, sin texto) + sonido: el juego arranca
@@ -2130,9 +2142,17 @@
     }
     arrancarConCaida();
   }
-  $id('btn-offline').onclick = () => abrirMenuModo('solo');
-  $id('btn-start').onclick = () => abrirMenuModo('online');
-  $id('btn-mode-back').onclick = () => { world.ui.show('title'); refreshTitle(); };
+  // Al pulsar un modo: animación de clic en el botón antes de abrir el submenú
+  // de modo (el fondo panorámico del título se mantiene visible).
+  function elegirModo(btn, tipo) {
+    if (!btn || btn.classList.contains('clic-mode')) return;
+    btn.classList.add('clic-mode');
+    abrirMenuModo(tipo, btn);
+    setTimeout(() => btn.classList.remove('clic-mode'), 400);
+  }
+  $id('btn-offline').onclick = () => elegirModo($id('btn-offline'), 'solo');
+  $id('btn-start').onclick = () => elegirModo($id('btn-start'), 'online');
+  $id('btn-mode-back').onclick = () => { world.ui.showTitleFromMode($id('btn-mode-back')); refreshTitle(); };
   $id('btn-mode-play').onclick = arrancarModo;
   $id('btn-again').onclick = () => {
     refreshTitle();

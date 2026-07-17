@@ -399,8 +399,34 @@
     return [cx, cy];
   }
 
-  function enterLevel(id, via, entrada) {
-    const def = world.data.levels[id];
+function enterLevel(id, via, entrada) {
+        const def = world.data.levels[id];
+        if (!def) { world.log('Ese camino no lleva a ninguna parte.', 'event'); return; }
+        
+        // ------------------- Loader entre niveles -------------------
+        // Crear pantalla negra con loader
+        const overlay = document.createElement('div');
+        overlay.id = 'level-transit-overlay';
+        overlay.style.cssText = 'position:fixed; inset:0; background:#000; z-index:9999; opacity:1;';
+        document.body.appendChild(overlay);
+        
+        // Clonar el loader para que aparezca en la pantalla negra
+        const loader = document.getElementById('splash-loader');
+        if (loader) {
+            const clonedLoader = loader.cloneNode(true);
+            clonedLoader.classList.add('active');
+            // Estilo especial para loader en pantalla negra
+            clonedLoader.style.cssText = 'position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);';
+            overlay.appendChild(clonedLoader);
+        }
+        
+        // Mostrar loader durante 2 segundos
+        setTimeout(() => {
+            overlay.remove();
+        }, 2000);
+        
+        // Continuar con la carga del nivel (esto ya estaba después)
+        const def = world.data.levels[id];
     if (!def) { world.log('Ese camino no lleva a ninguna parte.', 'event'); return; }
 
     // el ambiente del nivel anterior muere AQUÍ (nada de sonidos acumulados)
@@ -1698,13 +1724,20 @@
       salida: '☠ ' + causa,
     });
     Profiles.registrarFin(false, world.journal, world.turnTotal, world.runSeed, world.level.id);
-    // la partida guardada se borra: al morir no hay "continuar"
-    localStorage.removeItem(saveKey());
-    if (window.Sfx) { Sfx.stopAmbient(); Sfx.play('muerte'); }
-    // al morir se vuelve al menú (limpio): una partida nueva regenera el
-    // mundo desde cero, así que objetos e interactables se reinician solos.
-    if (typeof window.__volverMenu === 'function') window.__volverMenu();
-    else world.ui.showEnd(false, causa);
+// la partida guardada se borra: al morir no hay "continuar"
+localStorage.removeItem(saveKey());
+if (window.Sfx) { Sfx.stopAmbient(); Sfx.play('muerte'); }
+// al morir se vuelve al menú (limpio): una partida nueva regenera el
+// mundo desde cero, así que objetos e interactivos se reinician solos.
+if (typeof window.__volverMenu === 'function') {
+  window.__volverMenu();
+} else {
+  // Si no existe __volverMenu, ir directamente a la pantalla de título
+  // sin pasar por pantalla de fin
+  if (typeof world !== 'undefined' && world.ui) {
+    world.ui.show('title'); // Mostrar directamente la pantalla de título
+  }
+}
   }
 
   function win() {

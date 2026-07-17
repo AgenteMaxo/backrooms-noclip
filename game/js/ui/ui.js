@@ -40,6 +40,85 @@
     }
   }
 
+  function showMode(btn) {
+    const screenMode = screens.mode;
+    const screenTitle = screens.title;
+    if (!screenMode || !screenTitle) { show('mode'); return; }
+
+    screenMode.style.display = 'flex';
+    const modeBox = screenMode.querySelector('.title-box');
+    const panel = screenMode;
+
+    if (btn && modeBox) {
+      const btnRect = btn.getBoundingClientRect();
+      const modeRect = modeBox.getBoundingClientRect();
+      const ox = ((btnRect.left + btnRect.width / 2) - modeRect.left) / modeRect.width * 100;
+      const oy = ((btnRect.top + btnRect.height / 2) - modeRect.top) / modeRect.height * 100;
+      modeBox.style.transformOrigin = `${Math.max(0, Math.min(100, ox))}% ${Math.max(0, Math.min(100, oy))}%`;
+    }
+
+    screenTitle.style.transition = 'opacity .18s ease';
+    screenTitle.style.opacity = '0';
+
+    requestAnimationFrame(() => {
+      const anim = modeBox.animate([
+        { transform: 'scale(0.15)', opacity: 0, filter: 'blur(6px)' },
+        { opacity: 1, filter: 'blur(0)' },
+        { transform: 'scale(1)', opacity: 1 }
+      ], {
+        duration: 400,
+        easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+        fill: 'backwards'
+      });
+      anim.onfinish = () => {
+        screenTitle.style.display = 'none';
+        screenTitle.style.opacity = '';
+        screenTitle.style.transition = '';
+        modeBox.style.transformOrigin = '';
+        panel.classList.remove('morphing');
+      };
+    });
+  }
+
+  function showTitleFromMode(backBtn) {
+    const screenTitle = screens.title;
+    const screenMode = screens.mode;
+    if (!screenTitle || !screenMode) { show('title'); return; }
+
+    const modeBox = screenMode.querySelector('.title-box');
+    const panel = screenMode;
+
+    screenTitle.style.display = 'flex';
+    screenTitle.style.opacity = '0';
+    screenTitle.style.transition = 'none';
+
+    const anim = modeBox.animate([
+      { transform: 'translateX(0)', opacity: 1 },
+      { opacity: 0.4 },
+      { transform: 'translateX(-28px)', opacity: 0 }
+    ], {
+      duration: 280,
+      easing: 'cubic-bezier(0.5, 0, 0.8, 1)',
+      fill: 'forwards'
+    });
+    anim.onfinish = () => {
+      screenMode.style.display = 'none';
+      modeBox.style.transformOrigin = '';
+      panel.classList.remove('morphing');
+      modeBox.getAnimations().forEach(a => a.cancel());
+    };
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        screenTitle.style.transition = 'opacity .22s ease';
+        screenTitle.style.opacity = '1';
+        setTimeout(() => {
+          screenTitle.style.transition = '';
+        }, 260);
+      });
+    });
+  }
+
   // ---------- registro (v16): mensajes pequeños arriba a la izquierda que se
   // desvanecen solos; el historial completo vive tras el botón-pergamino (L) ----------
   const historia = [];
@@ -928,7 +1007,7 @@
   world.ui = {
     log, updateHUD, flashDamage, showLevelCard, showDice,
     showExitModal, showLevelPicker, showChoice, toggleJournal, showEnd, show, toggleCodex,
-    toggleBackpack, toggleLog, pulsarMano, toggleChangelog,
+    toggleBackpack, toggleLog, pulsarMano, toggleChangelog, showMode, showTitleFromMode,
     get flashT() { return flashT; },
   };
 })();
