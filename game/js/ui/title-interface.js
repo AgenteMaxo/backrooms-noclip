@@ -4,6 +4,7 @@
   'use strict';
 
   const screen = document.getElementById('screen-title');
+  const app = document.getElementById('app');
   if (!screen || document.getElementById('title-panorama')) return;
 
   const images = [
@@ -29,8 +30,14 @@
     return layer;
   });
 
-  screen.insertBefore(panorama, screen.firstChild);
+  // El fondo panorámico vive en #app (global), NO dentro de #screen-title,
+  // para que persista al abrir el submenú de modo (screen-mode): ambas
+  // pantallas son transparentes y dejan ver el mismo fondo detrás.
+  (app || screen).insertBefore(panorama, (app || screen).firstChild);
   screen.classList.add('title-interface-enabled');
+  // el submenú de modo comparte el mismo fondo panorámico y el layout del título
+  const screenMode = document.getElementById('screen-mode');
+  if (screenMode) screenMode.classList.add('title-interface-enabled');
 
   let currentIndex = 0;
   let activeLayer = 0;

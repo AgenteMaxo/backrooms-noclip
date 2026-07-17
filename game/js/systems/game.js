@@ -762,6 +762,9 @@
       world._ignoraExit = null;
     const ex = world.map.exits.find((e) => e.x === world.player.x && e.y === world.player.y);
     if (ex && !world._ignoraExit) {
+      // ver una salida la desbloquea en el códice (las de retorno no cuentan)
+      if (ex.def.tipo !== 'retorno' && world.level)
+        Profiles.registrarDescubierto('salidas', `${world.level.id}::${ex.def.texto}`);
       // pared agrietada (v20): primero hay que ABRIRLA (ESPACIO)
       if ((ex.def._mec === 'romper' || ex.def._mec === 'romper_suelo') && !ex.def._abierta) {
         if (!ex._avisado) {
@@ -1651,6 +1654,11 @@
   function crossExit(def) {
     const tipo = def.tipo;
 
+    // colección: cruzar una salida la desbloquea en el códice (las de retorno
+    // y las selladas no cuentan — no aportan un camino nuevo descubrible)
+    if (tipo !== 'retorno' && tipo !== 'sellada' && world.level)
+      Profiles.registrarDescubierto('salidas', `${world.level.id}::${def.texto}`);
+
     if (tipo === 'sellada') {
       world.log('El camino se difumina: ese nivel aún no está cartografiado en el piloto.', 'event');
       world.sanity(-2);
@@ -1723,8 +1731,10 @@
       salida: '☠ ' + causa,
     });
     Profiles.registrarFin(false, world.journal, world.turnTotal, world.runSeed, world.level.id);
+    // la partida guardada se borra: al morir no hay "continuar"
     localStorage.removeItem(saveKey());
     if (window.Sfx) { Sfx.stopAmbient(); Sfx.play('muerte'); }
+    // pantalla de fin con resumen, causa de muerte y efecto del Smiler
     world.ui.showEnd(false, causa);
   }
 

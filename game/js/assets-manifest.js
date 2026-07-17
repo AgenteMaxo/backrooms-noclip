@@ -29,6 +29,7 @@ window.ASSETS_MANIFEST = {
   },
   "sonidos": {
     "smiler": "assets/sounds/entidades/smiler.wav",
+    "caida": "assets/sounds/caida.mp3",
     "dado": "assets/sounds/dado.wav",
     "dano": "assets/sounds/dano.mp3",
     "golpe": "assets/sounds/golpe.mp3",

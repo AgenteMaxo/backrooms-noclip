@@ -5,21 +5,52 @@
   const world = Game.world;
   world.data = window.GAME_DATA;
 
-  // ---------- splash de presentación (v30.14, idea de Jaime Gaming #81) ----------
+  // ---------- splash screen de presentación (cinematográfico) ----------
   (function () {
     const splash = document.getElementById('splash');
     if (!splash) return;
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     let cerrado = false;
+
+    // loader de esquina: aparece tiempo después y parece cargar de verdad
+    const lados = ['sl-top', 'sl-right', 'sl-bottom', 'sl-left'];
+    const loader = document.getElementById('splash-loader');
+    let loaderTimer = null;
+    let loaderActive = false;
+
+    // pintar un solo lado encendido (efecto de carga secuencial)
+    const pintar = (idx) => {
+      if (!loader) return;
+      loader.querySelectorAll('.sl-side').forEach((el) =>
+        el.classList.toggle('activo', el.classList.contains(lados[idx])));
+    };
+
+    // arranca el loader tras 2.5 s, luego cicla cada 450 ms
+    const arrancarLoader = () => {
+      if (!loader || loaderActive) return;
+      loaderActive = true;
+      loader.classList.add('activo');
+      let idx = 0;
+      pintar(idx);
+      loaderTimer = setInterval(() => {
+        idx = (idx + 1) % lados.length;
+        pintar(idx);
+      }, 450);
+    };
+
+    // anima las barras de letterbox al entrar
+    requestAnimationFrame(() => splash.classList.add('mostrar'));
+    // el loader aparece 2 s después, dando sensación de carga real
+    setTimeout(arrancarLoader, 2000);
+
     function cerrarSplash() {
       if (cerrado) return;
       cerrado = true;
+      if (loaderTimer) clearInterval(loaderTimer);
       splash.classList.add('oculto');
-      setTimeout(() => splash.remove(), 1000);
+      setTimeout(() => splash.remove(), 1200);
     }
-    // barras de letterbox al entrar; con reduced-motion se despacha enseguida
-    requestAnimationFrame(() => splash.classList.add('mostrar'));
-    setTimeout(cerrarSplash, reduce ? 600 : 3200);
+    // se cierra solo tras 3.4 s (tono de cine), o antes si el usuario interactúa
+    setTimeout(cerrarSplash, 3400);
     window.addEventListener('pointerdown', cerrarSplash, { once: true });
     window.addEventListener('keydown', cerrarSplash, { once: true });
   })();
@@ -1190,7 +1221,7 @@
       if (Math.abs(gp.axes[0]) > 0.1) dx = gp.axes[0];
       if (Math.abs(gp.axes[1]) > 0.1) dy = gp.axes[1];
     } else {
-      // In game mode, use analog precision for movement vector (if supported)
+      // En modo juego, usar precisión analógica para el vector de movimiento (si hay soporte)
       if (Math.abs(gp.axes[0]) > 0.1) dx = gp.axes[0];
       if (Math.abs(gp.axes[1]) > 0.1) dy = gp.axes[1];
       window.gamepadDx = dx;
@@ -1881,7 +1912,7 @@
 
   function conectarAlServidor(btnOrigen) {
     cargarOverridesDeJuego(); // los assets del juego se piden AL entrar, no en la portada
-    if (!P.activeName()) P.create($id('profile-name').value.trim() || 'Errante');
+    if (!P.activeName()) P.create('Errante');
     refreshTitle();
     // DESPUÉS de refreshTitle: esta llama a playMenuMusic() al final (para
     // los demás usos legítimos, como cambiar de perfil), y como la pantalla
@@ -1890,6 +1921,13 @@
     if (window.Sfx) Sfx.stopMenu();
     const salaPrivada = salaPrivadaTitulo();
     if (!validarSalaPrivada(salaPrivada)) return;
+    // semilla del modo solo: del campo del menú, o de ?seed= (URL de portada)
+    let semillaSolo = null;
+    if (window.MODO_LOCAL) {
+      const deCampo = ($id('seed-input-title')?.value || '').trim();
+      const deUrl = new URLSearchParams(location.search).get('seed');
+      semillaSolo = deCampo || deUrl || null;
+    }
     const btnStart = $id('btn-start');
     const btnContinue = $id('btn-continue');
     const btnOffline = $id('btn-offline');
@@ -1899,6 +1937,11 @@
     // del botón pulsado para restaurarlo tal cual tras conectar o fallar
     const htmlBtn = btn.innerHTML;
     const textoContinue = btnContinue.textContent;
+    const guardarTexto = (b) => {
+      if (b === btn) return textoOrigen;
+      const idx = [btnStart, btnContinue, $id('btn-offline')].indexOf(b);
+      return idx >= 0 ? textoBtns[idx] : b.textContent;
+    };
     btnStart.disabled = true;
     btnContinue.disabled = true;
     btnOffline.disabled = true;
@@ -1906,7 +1949,7 @@
     errNet.style.display = 'none';
     mostrarCaida();
     if (esperaConexion) clearInterval(esperaConexion);
-    Net.iniciar(P.activeName(), salaPrivada || undefined);
+    Net.iniciar(P.activeName(), salaPrivada || undefined, semillaSolo);
     const t0 = Date.now();
     const restaurar = () => {
       btnStart.disabled = false;
@@ -1942,6 +1985,11 @@
 
   function playMenuMusic() {
     if (document.getElementById('screen-title').style.display === 'none') return;
+    // mientras dura la animación de caída el título sigue visible, pero la
+    // música del menú NO debe sonar ahí: el listener de desbloqueo de audio
+    // (primer gesto) burbujea tras el clic de JUGAR y la re-arrancaba (v30.14)
+    const fall = document.getElementById('fall-screen');
+    if (fall && !fall.hidden) return;
     // con la conexión en curso («CRUZANDO LA REALIDAD…») el título sigue
     // visible, pero arrancar música aquí la dejaría sonando dentro de la
     // partida: es el caso del PRIMER clic de la sesión directo en DESPERTAR —
@@ -1957,10 +2005,18 @@
     }
   }
 
+  let modoElegido = null; // 'solo' | 'online' — modo abierto en el submenú
+
   function refreshTitle() {
-    const sel = $id('profile-select');
-    sel.innerHTML = '';
     const names = P.list();
+    const p = P.get();
+    const textoRecords = p
+      ? `Expediciones: ${p.records.runs} · Niveles descubiertos: ${Object.keys(p.codice).length} · Turnos récord: ${p.records.maxTurnos} · Escapes: ${p.records.escapes}`
+      : 'Crea tu perfil para que el Códice registre tu expediente.';
+    // Expediente de Errante COMPARTIDO entre Un Jugador y Multijugador:
+    // un único bloque en el submenú de modo, sincronizado con el almacén.
+    const sel = $id('mode-profile-select');
+    sel.innerHTML = '';
     for (const n of names) {
       const o = document.createElement('option');
       o.value = n; o.textContent = n;
@@ -1972,108 +2028,170 @@
       o.textContent = '— sin perfiles —';
       sel.appendChild(o);
     }
-    const p = P.get();
-    $id('profile-records').textContent = p
-      ? `Expediciones: ${p.records.runs} · Niveles descubiertos: ${Object.keys(p.codice).length} · Turnos récord: ${p.records.maxTurnos} · Escapes: ${p.records.escapes}`
-      : 'Crea tu perfil para que el Códice registre tu expediente.';
+    $id('mode-profile-records').textContent = textoRecords;
     const saveData = Game.loadSave();
     const btn = $id('btn-continue');
     if (saveData && p) {
-      btn.style.display = 'inline-block';
+      btn.style.display = 'block';
       btn.textContent = `Continuar en servidor (${saveData.levelId})`;
       btn.onclick = () => conectarAlServidor(btn);
-    } else btn.style.display = 'none';
+    } else {
+      btn.style.display = 'none';
+    }
 
     playMenuMusic();
   }
 
-  $id('profile-select').onchange = (ev) => { P.select(ev.target.value); refreshTitle(); };
-  $id('btn-profile-create').onclick = () => {
-    const nombre = $id('profile-name').value.trim();
-    if (!nombre) { $id('profile-name').focus(); return; }
+// vuelve al menú de título (usado al MORIR: la partida se reinicia limpia
+   // desde cero). Para a la conexión online si la hubiera y deja la música del
+   // menú sonando. Game.die() lo invoca vía window.__volverMenu.
+    function volverAlMenu() {
+      // Desconecta del servidor y limpia el estado de red de forma adecuada
+      if (world.online && window.Net) {
+        try {
+          // Cortar la conexión e impedir intentos de reconexión
+          window.Net.desconectar();
+        } catch (e) {}
+      }
+      world.online = false;
+      if (world.level) { world.level = null; world.over = false; }
+      if (window.Sfx) { try { Sfx.stopAmbient(); } catch (e) {} }
+      // Quita el estilo de modo al volver al título (evita que persista el de multijugador)
+     const screenMode = document.getElementById('screen-mode');
+     if (screenMode) screenMode.classList.remove('modo-solo', 'modo-online');
+     // Al volver desde el juego, recargamos la página para dejarla limpia:
+     // evita estados residuales (estilos de modo, reconexiones, HUD, etc.)
+     location.reload();
+   }
+   window.__volverMenu = volverAlMenu;
+
+  // ---------- wiring del Expediente compartido (submenú de modo) ----------
+  $id('mode-profile-select').onchange = (ev) => { P.select(ev.target.value); refreshTitle(); };
+  $id('mode-profile-box').querySelector('.btn-profile-create').onclick = () => {
+    const nombre = $id('mode-profile-name').value.trim();
+    if (!nombre) { $id('mode-profile-name').focus(); return; }
     P.create(nombre);
-    $id('profile-name').value = '';
+    $id('mode-profile-name').value = '';
     refreshTitle();
   };
-  $id('btn-profile-del').onclick = () => {
+  $id('mode-profile-box').querySelector('.btn-profile-del').onclick = () => {
     const n = P.activeName();
     if (n && confirm(`¿Borrar el perfil «${n}» y todo su códice?`)) { P.remove(n); refreshTitle(); }
   };
-  $id('btn-codex').onclick = () => world.ui.toggleCodex(true);
+  $id('mode-profile-box').querySelector('.btn-codex').onclick = () => world.ui.toggleCodex(true);
   $id('btn-changelog').onclick = () => {
     if (window.Changelog) Changelog.marcarVisto();
     world.ui.toggleChangelog(true);
   };
 
-  // ---------- Selector de Música de Menú ----------
-  const btnMusicMenu = $id('btn-music-menu');
-  const panelMusic = $id('music-menu');
-  const btnMusicClose = $id('btn-music-close');
-  const listMusic = $id('music-list');
-
-  if (btnMusicMenu) {
-    btnMusicMenu.onclick = () => {
-      listMusic.innerHTML = '';
-      const currentTrack = OPTS.menuMusica || 'menu1';
-
-      CANCIONES_MENU.forEach(track => {
-        const item = document.createElement('div');
-        item.className = 'music-item' + (track.id === currentTrack ? ' active' : '');
-        
-        const info = document.createElement('div');
-        info.className = 'music-info';
-        
-        const title = document.createElement('div');
-        title.className = 'music-title';
-        title.textContent = track.titulo;
-        
-        const author = document.createElement('div');
-        author.className = 'music-author';
-        author.textContent = 'por ' + track.autor;
-        
-        info.appendChild(title);
-        info.appendChild(author);
-        
-        const status = document.createElement('div');
-        status.className = 'music-status';
-        if (track.id === currentTrack) {
-          status.textContent = '🔊 SONANDO';
-        }
-        
-        item.appendChild(info);
-        item.appendChild(status);
-        
-        item.onclick = () => {
-          OPTS.menuMusica = track.id;
-          try { localStorage.setItem('backrooms-opts', JSON.stringify(OPTS)); } catch (e) {}
-          playMenuMusic();
-          btnMusicMenu.click(); // refrescar
-        };
-        
-        listMusic.appendChild(item);
-      });
-      
-      panelMusic.style.display = 'flex';
-    };
+  // ---------- submenú de modo: cada botón abre su propia pantalla ----------
+  function abrirMenuModo(tipo, btn) {
+    modoElegido = tipo;
+    const solo = tipo === 'solo';
+    $id('mode-menu-title').textContent = solo ? 'Un Jugador' : 'Multijugador';
+    // el color del modo (verde Un Jugador / azul Multijugador) lo marca la
+    // clase en #screen-mode: el CSS la usa para teñir el título y los acentos.
+    $id('screen-mode').classList.toggle('modo-solo', solo);
+    $id('screen-mode').classList.toggle('modo-online', !solo);
+    $id('mode-seed-row').style.display = solo ? 'block' : 'none';
+    $id('mode-room-row').style.display = solo ? 'none' : 'block';
+    $id('btn-mode-play').textContent = solo ? 'JUGAR' : 'ENTRAR AL MUNDO';
+    refreshTitle();
+    world.ui.showMode(btn);
   }
-
-  if (btnMusicClose) {
-    btnMusicClose.onclick = () => {
-      panelMusic.style.display = 'none';
-    };
+  function arrancarConCaida() {
+    // Animación de caída (loading, sin texto) + sonido: el juego arranca
+    // EXACTAMENTE cuando TERMINA el audio de caída (evento 'ended'). Fallback
+    // de 7 s por si el audio no carga. La caída empieza lenta y va
+    // acelerando (gana velocidad) según avanza el audio.
+    const fall = document.getElementById('fall-screen');
+    // para la música del menú de inmediato (no espere a entrar en partida) para
+    // que no suene durante la animación de caída
+    if (window.Sfx) { try { Sfx.stopMenu(); } catch (e) {} }
+    // genera líneas de caída en PRIMERA PERSONA: nacen en el centro exacto
+    // (punto de fuga) y se expanden radialmente hacia los bordes. Arrancan
+    // pocas y centradas; conforme avanza la caída aparecen muchas más.
+    const lines = document.getElementById('fall-lines');
+    if (lines) {
+      lines.innerHTML = '';
+      const N = 64;
+      for (let i = 0; i < N; i++) {
+        // rayo = contenedor rotado al ángulo (0–360°); dentro, el trazo <i>
+        // se desplaza hacia afuera. Separar rotate (padre) de translateY
+        // (hijo) evita que el keyframe pise la dirección de cada línea.
+        const ray = document.createElement('span');
+        ray.className = 'ray';
+        // ángulo radial repartido uniforme en 360°: las líneas cubren TODOS
+        // los lados desde el primer instante (no aparecen por fases).
+        const ang = (i / N) * Math.PI * 2 + Math.random() * 0.2;
+        ray.style.setProperty('--ang', ang.toFixed(3) + 'rad');
+        const trazo = document.createElement('i');
+        // Sin animationDuration en línea: la velocidad la marca la fase vía
+        // clases CSS (.rapido/.veloz/.turbo). Si pusiéramos un duration en
+        // línea, GANARÍA a las clases y la caída nunca aceleraría (bug).
+        // El retardo repartido (negativo) desincroniza las líneas para que
+        // no latan todas igual al cambiar de fase.
+        trazo.style.animationDelay = (-Math.random() * 1.8).toFixed(2) + 's';
+        trazo.style.opacity = (0.4 + Math.random() * 0.6).toFixed(2);
+        ray.appendChild(trazo);
+        // todas las líneas visibles desde el inicio: solo se aceleran con el tiempo
+        lines.appendChild(ray);
+      }
+    }
+    let terminado = false;
+    function entrar() {
+      if (terminado) return;
+      terminado = true;
+      // desvanece la capa (no corte seco) y luego entra al juego
+      if (fall) {
+        fall.classList.remove('activa');
+        fall.classList.add('saliendo');
+        setTimeout(() => { fall.hidden = true; fall.classList.remove('saliendo'); }, 400);
+      }
+      conectarAlServidor($id('btn-mode-play'));
+    }
+    // PROGRESIÓN: la caída solo se ACELERA con el tiempo (las líneas ya
+    // están todas visibles desde el inicio, en las 360°). El arranque real
+    // lo fija el 'ended' del audio.
+    const boost1 = setTimeout(() => { if (lines) lines.classList.add('rapido'); }, 1500);
+    const boost2 = setTimeout(() => { if (lines) lines.classList.add('veloz'); }, 3000);
+    const boost3 = setTimeout(() => { if (lines) lines.classList.add('turbo'); }, 4500);
+    // asegura el contexto de audio (primer gesto real de la sesión) y suena
+    if (window.Sfx) {
+      try { Sfx.unlock(); } catch (e) {}
+      // recarga por si la sobrescritura de caida.mp3 no se había precargado
+      try { Sfx.cargarOverrides(); } catch (e) {}
+      try { Sfx.play('caida', null, () => { clearTimeout(boost1); clearTimeout(boost2); clearTimeout(boost3); entrar(); }); }
+      catch (e) { clearTimeout(boost1); clearTimeout(boost2); clearTimeout(boost3); entrar(); }
+    }
+    if (fall) {
+      fall.hidden = false;
+      void fall.offsetWidth; // fuerza reflujo para que la transición de opacidad arranque
+      fall.classList.add('activa');
+    }
+    // fallback: si el audio no suena/carga, entra igual tras 7 s
+    setTimeout(() => { clearTimeout(boost1); clearTimeout(boost2); clearTimeout(boost3); entrar(); }, 7000);
   }
-
-  $id('btn-start').onclick = () => {
-    conectarAlServidor($id('btn-start'));
-  };
-  // modo offline (partida en solitario, sin servidor): el MISMO juego online
-  // con el servidor LOCAL de la pestaña (net/local.js) — mismas reglas,
-  // mismo movimiento libre, misma cámara. El modo por turnos clásico queda
-  // aparcado tras ?autostart=1 (referencia y selftest).
-  $id('btn-offline').onclick = () => {
-    window.MODO_LOCAL = true;
-    conectarAlServidor($id('btn-offline'));
-  };
+  function arrancarModo() {
+    if (modoElegido === 'solo') window.MODO_LOCAL = true;
+    const semilla = ($id('seed-input-title')?.value || '').trim();
+    if (semilla) {
+      try { localStorage.setItem('backrooms-seed', semilla); } catch (e) {}
+    }
+    arrancarConCaida();
+  }
+  // Al pulsar un modo: animación de clic en el botón antes de abrir el submenú
+  // de modo (el fondo panorámico del título se mantiene visible).
+  function elegirModo(btn, tipo) {
+    if (!btn || btn.classList.contains('clic-mode')) return;
+    btn.classList.add('clic-mode');
+    abrirMenuModo(tipo, btn);
+    setTimeout(() => btn.classList.remove('clic-mode'), 400);
+  }
+  $id('btn-offline').onclick = () => elegirModo($id('btn-offline'), 'solo');
+  $id('btn-start').onclick = () => elegirModo($id('btn-start'), 'online');
+  $id('btn-mode-back').onclick = () => { world.ui.showTitleFromMode($id('btn-mode-back')); refreshTitle(); };
+  $id('btn-mode-play').onclick = arrancarModo;
   $id('btn-again').onclick = () => {
     refreshTitle();
     world.ui.show('title');

@@ -1,7 +1,58 @@
-/*
- * Interfaz panorámica de la pantalla principal.
- * Se aplica en escritorio y móvil sin alterar la lógica del juego.
- */
+/* velocidad de la caída: número animable que transiciona de forma continua
+   con las fases (1→8) para acelerar SIN saltos de frame */
+@property --vel {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+/* La interfaz del menú usa la tipografía pixel del juego (Press Start 2P
+   para títulos/botones, VT323 para el texto). El subtítulo ("sandbox
+   multijugador · fiel a la wiki") y la barra inferior (Changelog, Ajustes,
+   Mando) QUEDAN con la fuente normal del cuerpo, por petición del autor. */
+#screen-title.title-interface-enabled .title-box,
+#screen-mode .title-box {
+  font-family: var(--font-body);
+}
+#screen-title.title-interface-enabled .title-box h1,
+#screen-title.title-interface-enabled .btn-mode-title,
+#screen-title.title-interface-enabled .profile-title,
+#screen-mode .mode-menu-box h2,
+#screen-mode .profile-title,
+#screen-mode .btn-mode-title,
+#screen-title.title-interface-enabled .btn-mode,
+#screen-title.title-interface-enabled .btn-small,
+#screen-title.title-interface-enabled .btn-big,
+#screen-mode .btn-small,
+#screen-mode .btn-big {
+  font-family: var(--font-title);
+}
+#screen-title.title-interface-enabled .intro-text,
+#screen-title.title-interface-enabled .hint,
+#screen-title.title-interface-enabled .profile-records,
+#screen-title.title-interface-enabled .seed-row,
+#screen-title.title-interface-enabled .room-row,
+#screen-mode .intro-text,
+#screen-mode .hint,
+#screen-mode .profile-records,
+#screen-mode .seed-row,
+#screen-mode .room-row,
+#screen-mode .mode-bug-note {
+  font-family: var(--font-body);
+}
+/* explícitamente FUERA de la regla pixel: subtítulo y barra inferior */
+#screen-title.title-interface-enabled .subtitle,
+#screen-title.title-interface-enabled .menu-footer,
+#screen-mode .menu-footer {
+  font-family: inherit;
+}
+/* los botones de la barra inferior (Changelog, Ajustes, Mando) NO usan la
+   tipografía pixel: conservan la fuente normal del cuerpo */
+#screen-title.title-interface-enabled .menu-footer .btn-small,
+#screen-mode .menu-footer .btn-small {
+  font-family: inherit;
+}
+
+
 
 #screen-title.title-interface-enabled {
   position: absolute;
@@ -14,9 +65,13 @@
     max(22px, env(safe-area-inset-right))
     max(18px, env(safe-area-inset-bottom))
     max(22px, env(safe-area-inset-left));
-  background: #050403;
+  background: transparent;
 }
 
+/* El fondo panorámico vive en #app (global): persiste al pasar del título
+   al submenú de modo, que son transparentes y lo dejan ver detrás. */
+#app { position: relative; }
+#app .title-panorama { position: absolute; inset: 0; z-index: 0; }
 .title-panorama {
   position: absolute;
   inset: 0;
@@ -45,15 +100,20 @@
   animation: title-panorama-drift 18s ease-in-out infinite alternate;
 }
 
+/* viñeta y sombra interior sobre CADA pantalla del menú (título y submenú),
+   por encima del cuadro pero sin tapar el fondo panorámico global */
 #screen-title.title-interface-enabled::before,
-#screen-title.title-interface-enabled::after {
+#screen-title.title-interface-enabled::after,
+#screen-mode.title-interface-enabled::before,
+#screen-mode.title-interface-enabled::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
-#screen-title.title-interface-enabled::before {
+#screen-title.title-interface-enabled::before,
+#screen-mode.title-interface-enabled::before {
   z-index: 1;
   background:
     linear-gradient(90deg,
@@ -65,7 +125,8 @@
     linear-gradient(0deg, rgba(0, 0, 0, .55), transparent 35%, rgba(0, 0, 0, .35));
 }
 
-#screen-title.title-interface-enabled::after {
+#screen-title.title-interface-enabled::after,
+#screen-mode.title-interface-enabled::after {
   z-index: 1;
   box-shadow: inset 0 0 140px 35px rgba(0, 0, 0, .78);
 }
@@ -130,7 +191,7 @@
   line-height: 1.38;
 }
 
-#screen-title.title-interface-enabled #profile-box {
+#screen-title.title-interface-enabled .profile-box {
   margin: 0 0 10px;
   padding: 10px 12px 9px;
   background: rgba(10, 9, 6, .72);
@@ -162,8 +223,8 @@
   margin-top: 0;
 }
 
-#screen-title.title-interface-enabled #profile-select,
-#screen-title.title-interface-enabled #profile-name,
+#screen-title.title-interface-enabled .profile-select,
+#screen-title.title-interface-enabled .profile-name,
 #screen-title.title-interface-enabled #room-input {
   min-width: 0;
   min-height: 36px;
@@ -174,18 +235,18 @@
   font-size: 16px;
 }
 
-#screen-title.title-interface-enabled #profile-select,
-#screen-title.title-interface-enabled #profile-name {
+#screen-title.title-interface-enabled .profile-select,
+#screen-title.title-interface-enabled .profile-name {
   flex: 1 1 170px;
 }
 
-#screen-title.title-interface-enabled #btn-profile-create {
+#screen-title.title-interface-enabled .btn-profile-create {
   flex: 0 0 auto;
   margin-top: 0;
   white-space: nowrap;
 }
 
-#screen-title.title-interface-enabled #profile-records {
+#screen-title.title-interface-enabled .profile-records {
   margin: 6px 0 8px;
   text-align: left;
   line-height: 1.25;
@@ -226,25 +287,54 @@
   padding: 6px 10px;
 }
 
-#screen-title.title-interface-enabled .btn-mode {
-  display: flex;
+#screen-title.title-interface-enabled .mode-section {
+  margin: 0 0 16px;
   width: 100%;
-  margin: 2px 0 0;
+}
+#screen-title.title-interface-enabled .mode-section:first-of-type {
+  margin-top: 10px;
+  margin-bottom: 22px;
+}
+
+#screen-title.title-interface-enabled .btn-mode {
+  width: 100%;
+  margin: 0;
+  padding: 16px 20px;
   text-align: left;
   border-left-width: 5px;
-  line-height: 1.25;
 }
 
-#screen-title.title-interface-enabled #btn-continue {
+#screen-title.title-interface-enabled .btn-mode-solo .btn-mode-title {
+  font-size: 13px;
+}
+#screen-title.title-interface-enabled .btn-mode-solo .btn-mode-sub {
+  font-size: 11px;
+}
+
+#screen-title.title-interface-enabled .btn-mode-title {
+  font-size: 17px;
+  letter-spacing: 3px;
+}
+
+#screen-title.title-interface-enabled .btn-mode-sub {
+  font-size: 13px;
+  letter-spacing: 1px;
+  opacity: .8;
+}
+
+#screen-title.title-interface-enabled .btn-mode-go {
   width: 100%;
-  margin-top: 10px;
-  text-align: left;
+  margin-top: 4px;
 }
 
-#screen-title.title-interface-enabled #title-net {
-  margin: 10px 0 0;
-  text-align: left;
+#screen-title.title-interface-enabled .menu-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 6px;
 }
+#screen-title.title-interface-enabled .menu-footer .btn-small { margin-top: 0; }
 
 #screen-title.title-interface-enabled .hint {
   margin-top: 10px;
@@ -252,11 +342,6 @@
   font-size: 13px;
   line-height: 1.35;
   opacity: .8;
-}
-
-#screen-title.title-interface-enabled .btn-music-float {
-  right: max(16px, env(safe-area-inset-right));
-  bottom: max(16px, env(safe-area-inset-bottom));
 }
 
 /* El fundido ya existe en el juego; aquí se vuelve más suave y consistente. */
@@ -309,6 +394,8 @@
     max-width: min(620px, calc(100vw - 28px));
     margin: auto;
   }
+
+  /* las secciones ya van en columna; nada que reescribir aquí */
 }
 
 /* Teléfonos horizontales de poca altura. */
@@ -329,13 +416,13 @@
   }
 
   #screen-title.title-interface-enabled .subtitle,
-  #screen-title.title-interface-enabled #profile-box,
+  #screen-title.title-interface-enabled .profile-box,
   #screen-title.title-interface-enabled .seed-row,
   #screen-title.title-interface-enabled .room-row {
     margin-bottom: 9px;
   }
 
-  #screen-title.title-interface-enabled #profile-box {
+  #screen-title.title-interface-enabled .profile-box {
     padding: 9px 10px;
   }
 
@@ -384,10 +471,277 @@
   .title-panorama-layer,
   .title-panorama-layer.is-active,
   #screen-title.title-interface-enabled .title-box,
+  #screen-mode .title-box,
   #screen-card .level-card,
   #screen-end .end-box,
   #fade {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ---------- Submenú de modo (pantalla propia antes de jugar) ----------
+   Reutiliza el mismo cuadro y estética del título. */
+#screen-mode.title-interface-enabled {
+  position: absolute;
+  isolation: isolate;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: hidden;
+  padding:
+    max(18px, env(safe-area-inset-top))
+    max(22px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom))
+    max(22px, env(safe-area-inset-left));
+  background: transparent;
+}
+#screen-mode.title-interface-enabled::before,
+#screen-mode.title-interface-enabled::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+#screen-mode.title-interface-enabled::before {
+  z-index: 1;
+  background:
+    linear-gradient(90deg,
+      rgba(3, 3, 2, .98) 0%,
+      rgba(3, 3, 2, .91) 31%,
+      rgba(3, 3, 2, .62) 55%,
+      rgba(3, 3, 2, .24) 78%,
+      rgba(3, 3, 2, .56) 100%),
+    linear-gradient(0deg, rgba(0, 0, 0, .55), transparent 35%, rgba(0, 0, 0, .35));
+}
+#screen-mode.title-interface-enabled::after {
+  z-index: 1;
+  box-shadow: inset 0 0 140px 35px rgba(0, 0, 0, .78);
+}
+#screen-mode.title-interface-enabled .title-box {
+  position: relative;
+  z-index: 2;
+  box-sizing: border-box;
+  width: min(610px, 48vw);
+  max-width: min(610px, 48vw);
+  max-height: calc(100dvh - max(36px, env(safe-area-inset-top)) - max(36px, env(safe-area-inset-bottom)));
+  margin: auto 0 auto clamp(8px, 4.5vw, 74px);
+  padding: 20px 24px 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  text-align: left;
+  background: linear-gradient(135deg, rgba(8, 7, 5, .82), rgba(8, 7, 5, .56));
+  border: 1px solid rgba(217, 198, 110, .24);
+  border-left: 3px solid rgba(217, 198, 110, .72);
+  box-shadow: 0 18px 58px rgba(0, 0, 0, .54);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#screen-mode.title-interface-enabled .title-box::-webkit-scrollbar { display: none; }
+#screen-mode.title-interface-enabled .mode-menu-box h2 {
+  margin: 0 0 10px;
+  text-align: left;
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.18;
+  letter-spacing: clamp(3px, .5vw, 7px);
+  color: var(--amarillo);
+  text-shadow: 0 3px 18px rgba(0, 0, 0, .74);
+}
+#screen-mode.title-interface-enabled.modo-solo .mode-menu-box h2 { color: #6fcf73; }
+#screen-mode.title-interface-enabled.modo-online .mode-menu-box h2 { color: #6fb1ee; }
+/* El color del modo (verde Un Jugador / azul Multijugador) se extiende a todo
+   el acento de la pantalla: borde del botón JUGAR, del expediente y del título. */
+#screen-mode.title-interface-enabled.modo-solo  { --modo: #6fcf73; }
+#screen-mode.title-interface-enabled.modo-online { --modo: #6fb1ee; }
+#screen-mode.title-interface-enabled .mode-menu-box {
+  border: 1px solid color-mix(in srgb, var(--modo, #d9c66e) 45%, transparent);
+  box-shadow: 0 0 26px color-mix(in srgb, var(--modo, #d9c66e) 16%, transparent);
+}
+#screen-mode.title-interface-enabled .btn-mode-go {
+  border-left: 4px solid var(--modo, var(--amarillo));
+  color: var(--modo, var(--amarillo));
+}
+#screen-mode.title-interface-enabled.modo-solo  .btn-mode-go:hover { background: rgba(111, 207, 115, .14); }
+#screen-mode.title-interface-enabled.modo-online .btn-mode-go:hover { background: rgba(111, 177, 238, .14); }
+#screen-mode.title-interface-enabled .profile-box {
+  border-left: 3px solid var(--modo, rgba(217, 198, 110, .72));
+}
+#screen-mode .btn-mode-back { margin: 0 0 12px; text-align: left; }
+#screen-mode .mode-bug-note {
+  margin: 12px 0 0;
+  padding: 9px 11px;
+  color: #f0c9a0;
+  font-size: 17px;
+  line-height: 1.35;
+  background: rgba(120, 60, 20, .22);
+  border: 1px solid rgba(201, 74, 58, .5);
+  border-left: 3px solid var(--rojo);
+}
+#screen-mode .btn-mode-go { display: block; width: 100%; margin: 14px 0 0; text-align: left; border-left-width: 4px; }
+
+/* Los controles del Expediente/semilla/sala del submenú de modo reutilizan
+   el mismo estilo que el título (perfil, filas, inputs, botones pequeños). */
+#screen-mode .profile-box {
+  margin: 0 0 10px;
+  padding: 10px 12px 9px;
+  background: rgba(10, 9, 6, .72);
+  border: 1px solid rgba(138, 122, 61, .38);
+  border-left: 3px solid rgba(217, 198, 110, .72);
+}
+#screen-mode .profile-title { margin: 0 0 7px; text-align: left; letter-spacing: 2px; }
+#screen-mode .profile-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 7px; margin: 0 0 7px; }
+#screen-mode .profile-row:last-child { margin-bottom: 0; }
+#screen-mode .profile-row .btn-small { flex: 1 1 auto; margin-top: 0; }
+#screen-mode .profile-select, #screen-mode .profile-name, #screen-mode #room-input {
+  min-width: 0; min-height: 36px; padding: 6px 9px; color: var(--hueso);
+  background-color: #0d0b07; border-color: rgba(217, 198, 110, .22); font-size: 16px;
+}
+#screen-mode .profile-select, #screen-mode .profile-name { flex: 1 1 170px; }
+#screen-mode .btn-profile-create { flex: 0 0 auto; margin-top: 0; white-space: nowrap; }
+#screen-mode .profile-records { margin: 6px 0 8px; text-align: left; line-height: 1.25; }
+#screen-mode .seed-row, #screen-mode .room-row {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start;
+  gap: 8px; margin: 0 0 9px; text-align: left; color: var(--gris); font-size: 16px;
+}
+#screen-mode .seed-row label, #screen-mode .room-row label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+#screen-mode .seed-row input, #screen-mode .room-row input {
+  min-width: 0; min-height: 36px; padding: 6px 9px; color: var(--amarillo);
+  background-color: #0d0b07; border: 1px solid rgba(217, 198, 110, .22); font-size: 16px;
+}
+#screen-mode .btn-small { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#screen-mode .btn-small {
+  min-height: 34px; margin-top: 0; padding: 6px 10px;
+  background: transparent; color: var(--gris); border: 1px solid var(--borde);
+  font-family: var(--font-title); font-size: 11px; cursor: pointer; transition: all .12s;
+}
+
+/* Submenú de modo en pantallas estrechas: misma adaptación que el título. */
+@media (max-width: 980px), (orientation: portrait) {
+  #screen-mode.title-interface-enabled {
+    align-items: center;
+    padding:
+      max(12px, env(safe-area-inset-top))
+      max(14px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(14px, env(safe-area-inset-left));
+  }
+  #screen-mode.title-interface-enabled::before {
+    background:
+      linear-gradient(90deg, rgba(3, 3, 2, .85), rgba(3, 3, 2, .58), rgba(3, 3, 2, .85)),
+      linear-gradient(0deg, rgba(0, 0, 0, .68), transparent 42%, rgba(0, 0, 0, .44));
+  }
+  #screen-mode.title-interface-enabled .title-box {
+    width: min(620px, calc(100vw - 28px));
+    max-width: min(620px, calc(100vw - 28px));
+    margin: auto;
+  }
+}
+@media (max-width: 620px) {
+  #screen-mode.title-interface-enabled .title-box {
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+    padding: 16px 15px 14px;
+  }
+  #screen-mode .profile-row > * { flex: 1 1 100%; }
+  #screen-mode .room-row label, #screen-mode #room-input { width: 100%; }
+}
+
+/* ---------- Animación de caída al elegir modo (loading ~6 s, sin texto) ----------
+   Líneas que pasan veloces de arriba a abajo: sensación de estar cayendo
+   hacia las Backrooms antes de entrar en partida. */
+.fall-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  overflow: hidden;
+  background: #000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+.fall-screen.activa {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* agujero negro en el centro (punto de fuga de la caída): círculo grande
+   que se funde con el fondo, para que las líneas parezcan nacer de un pozo */
+.fall-void {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34vmin;
+  height: 34vmin;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at center,
+    #000 0%, #000 62%, rgba(0, 0, 0, .85) 78%, rgba(0, 0, 0, 0) 100%);
+  box-shadow: 0 0 12vmin 6vmin #000;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ---------- Líneas de caída (primera persona: salen del centro) ---------- */
+.fall-lines {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+  --vel: 1;
+  /* la velocidad transiciona de forma continua entre fases (sin saltos) */
+  transition: --vel 1.4s ease-in;
+}
+/* cada rayo: un contenedor rotado al ángulo (0–360°) cuyo origen es el
+   centro de la pantalla; dentro, el trazo se desplaza hacia afuera. */
+.fall-lines .ray {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform: rotate(var(--ang, 0rad));
+  transform-origin: 0 0;
+}
+.fall-lines .ray i {
+  position: absolute;
+  left: -1px;
+  top: 0;
+  width: 2px;
+  height: 30vh;
+  background: linear-gradient(to top,
+    rgba(255,247,210,0) 0%,
+    rgba(255,247,210,.5) 45%,
+    rgba(217,198,110,.95) 100%);
+  border-radius: 2px;
+  filter: blur(.3px);
+  transform-origin: center top;
+  /* --vel (1→8) se transiciona de forma continua con las fases, así la
+     duración baja poco a poco y la caída ACELERA SIN SALTOS (sin "frames").
+     ease-in: cada rayo arranca lento y se lanza hacia fuera. */
+  animation: fall-line calc(1.8s / var(--vel, 1)) cubic-bezier(.5, 0, .95, 1) infinite;
+  will-change: transform, opacity;
+}
+/* fases de velocidad: solo cambian --vel, que transiciona suavemente */
+.fall-lines.rapido { --vel: 3; }
+.fall-lines.veloz  { --vel: 6; }
+.fall-lines.turbo  { --vel: 14; }
+/* El trazo nace en el centro (translateY 0) y se aleja en la dirección del
+   rayo (su padre ya está rotado) hasta salir de la pantalla. Por eso cada
+   línea apunta y se mueve en una dirección distinta de las 360°. */
+@keyframes fall-line {
+  from {
+    transform: translateY(0) scaleY(.12);
+    opacity: 0;
+  }
+  12%  { opacity: 1; }
+  85%  { opacity: 1; }
+  to {
+    transform: translateY(-95vmax) scaleY(1);
+    opacity: 0;
+  }
+}
+/* desvanecido final al terminar el audio (sin corte seco) */
+.fall-screen.saliendo {
+  opacity: 0;
+  transition: opacity .4s ease;
 }

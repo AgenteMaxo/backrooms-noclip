@@ -63,10 +63,10 @@ const iconos = elegir(
 );
 
 // ---- sonidos: misma prioridad que el viejo bucle de sfx.js ----
-// (ext-mayor: mp3>ogg>wav; dir: entidades > entities > raíz de sounds).
+// (ext-mayor: mp3>m4a>ogg>wav; dir: entidades > entities > raíz de sounds).
 // Menu/ y niveles/ van aparte (música de menú y ambientes por nivel).
 const sonidos = elegir(
-  porPrioridad(['assets/sounds/entidades', 'assets/sounds/entities', 'assets/sounds'], ['mp3', 'ogg', 'wav']),
+  porPrioridad(['assets/sounds/entidades', 'assets/sounds/entities', 'assets/sounds'], ['mp3', 'm4a', 'ogg', 'wav']),
   (a, b) => a.extI - b.extI || a.dirI - b.dirI
 );
 
