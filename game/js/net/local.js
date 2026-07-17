@@ -122,6 +122,7 @@
       // segundo plano el navegador lo ralentiza — el mundo «se pausa» contigo.
       bucle = setInterval(() => {
         const ahora = Date.now();
+        S.tickEventosGlobales(ahora);
         for (const s of S.todas()) {
           if (!s.jugadores.size) continue;
           try { s.tick(ahora); } catch (e) { console.error('[local] tick:', e); }

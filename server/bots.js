@@ -30,7 +30,7 @@ function bot(i) {
   const st = { x: 0, y: 0, rot: Math.PI, sec: 0, map: null, id: null };
   ws.on('open', () => {
     conectados++;
-    ws.send(JSON.stringify({ t: 'hola', nombre: `Bot-${i}`, token: `bot-${i}`, v: 8, nivel: NIVEL }));
+    ws.send(JSON.stringify({ t: 'hola', nombre: `Bot-${i}`, token: `bot-${i}`, v: 9, nivel: NIVEL }));
     let giro = 0;
     const paso = setInterval(() => {
       if (ws.readyState !== 1) { clearInterval(paso); return; }

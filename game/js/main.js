@@ -394,8 +394,7 @@
     actualizarAdminUI(); // debug y barras solo con la contraseña de guardián
     const enJuego = world.level && !world.over;
     if (enJuego && world.esAdmin) document.getElementById('debug-nivel').value = world.level.id;
-    // el botón «Noclipearse a la realidad» solo tiene sentido DENTRO de una
-    // partida: lo ocultamos en el menú principal (donde ya estás en el menú)
+    // «Noclipearse a la realidad» solo tiene sentido DENTRO de una partida
     const btnNoclip = document.getElementById('btn-noclip-menu');
     if (btnNoclip) btnNoclip.style.display = enJuego ? '' : 'none';
     sndMenu.style.display = 'flex';
@@ -448,13 +447,11 @@
     pintarBtnMute();
   };
   document.getElementById('btn-snd-close').onclick = cerrarSndMenu;
-  // Noclipearse a la realidad: desde la pausa, salir de la partida y volver
-  // al menú (la partida se reinicia limpia al volver a jugar).
+  // Noclipearse a la realidad (v30.14): salir de la partida y volver al menú.
+  // La recarga cierra el WebSocket limpio y deja la portada sin estados
+  // residuales (HUD, música, reconexiones) — el guardado por perfil persiste.
   const btnNoclip = document.getElementById('btn-noclip-menu');
-  if (btnNoclip) btnNoclip.onclick = () => {
-    sndMenu.style.display = 'none';
-    if (typeof window.__volverMenu === 'function') window.__volverMenu();
-  };
+  if (btnNoclip) btnNoclip.onclick = () => location.reload();
 
   // ---------- versión + pantalla completa + guardián (v23) ----------
   document.getElementById('ajustes-version').textContent =
@@ -1869,6 +1866,50 @@
     return false;
   }
 
+  // ---------- caída hacia las Backrooms (v30.14, idea del PR #81) ----------
+  // Tapa la conexión con líneas radiales que nacen del punto de fuga; se
+  // desvanece al estar DENTRO (con un mínimo para que no parpadee) o al
+  // instante si la conexión falla (el error debe verse en la portada).
+  const fallScreen = document.getElementById('fall-screen');
+  const REDUCE_CAIDA = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  let fallDesde = 0;
+  function mostrarCaida() {
+    if (!fallScreen || REDUCE_CAIDA) return;
+    const lines = document.getElementById('fall-lines');
+    if (lines && !lines.childElementCount) {
+      const N = 64;
+      for (let i = 0; i < N; i++) {
+        // rayo = contenedor rotado al ángulo; dentro, el trazo <i> se aleja.
+        // Separar rotate (padre) de translateY (hijo) evita que el keyframe
+        // pise la dirección de cada línea.
+        const ray = document.createElement('span');
+        ray.className = 'ray';
+        const ang = (i / N) * Math.PI * 2 + Math.random() * 0.2;
+        ray.style.setProperty('--ang', ang.toFixed(3) + 'rad');
+        const trazo = document.createElement('i');
+        // retardo negativo repartido: que no latan todas a la vez
+        trazo.style.animationDelay = (-Math.random() * 1.1).toFixed(2) + 's';
+        trazo.style.opacity = (0.4 + Math.random() * 0.6).toFixed(2);
+        ray.appendChild(trazo);
+        lines.appendChild(ray);
+      }
+    }
+    fallDesde = Date.now();
+    fallScreen.hidden = false;
+    void fallScreen.offsetWidth; // fuerza reflujo: la transición de opacidad arranca
+    fallScreen.classList.add('activa');
+    if (window.Sfx) { try { Sfx.play('caida'); } catch (e) {} }
+  }
+  function ocultarCaida(inmediato) {
+    if (!fallScreen || fallScreen.hidden) return;
+    const espera = inmediato ? 0 : Math.max(0, 2600 - (Date.now() - fallDesde));
+    setTimeout(() => {
+      fallScreen.classList.remove('activa');
+      fallScreen.classList.add('saliendo');
+      setTimeout(() => { fallScreen.hidden = true; fallScreen.classList.remove('saliendo'); }, 400);
+    }, espera);
+  }
+
   function conectarAlServidor(btnOrigen) {
     cargarOverridesDeJuego(); // los assets del juego se piden AL entrar, no en la portada
     if (!P.activeName()) P.create('Errante');
@@ -1889,13 +1930,12 @@
     }
     const btnStart = $id('btn-start');
     const btnContinue = $id('btn-continue');
+    const btnOffline = $id('btn-offline');
     const btn = btnOrigen || btnStart;
     const errNet = $id('title-net');
-    // conserva la etiqueta original de cada botón para restaurarla tras conectar
-    const textoOrigen = btn.textContent;
-    const textoBtns = [btnStart, btnContinue, $id('btn-offline')]
-      .filter(Boolean)
-      .map((b) => b.textContent);
+    // los botones de modo llevan <span> dentro (v30.14): se guarda el HTML
+    // del botón pulsado para restaurarlo tal cual tras conectar o fallar
+    const htmlBtn = btn.innerHTML;
     const textoContinue = btnContinue.textContent;
     const guardarTexto = (b) => {
       if (b === btn) return textoOrigen;
@@ -1904,32 +1944,32 @@
     };
     btnStart.disabled = true;
     btnContinue.disabled = true;
-    $id('btn-offline').disabled = true;
+    btnOffline.disabled = true;
     btn.textContent = 'CRUZANDO LA REALIDAD…';
     errNet.style.display = 'none';
+    mostrarCaida();
     if (esperaConexion) clearInterval(esperaConexion);
     Net.iniciar(P.activeName(), salaPrivada || undefined, semillaSolo);
     const t0 = Date.now();
+    const restaurar = () => {
+      btnStart.disabled = false;
+      btnContinue.disabled = false;
+      btnOffline.disabled = false;
+      btnContinue.textContent = textoContinue;
+      btn.innerHTML = htmlBtn; // el último: cubre también btn === btnContinue
+    };
     esperaConexion = setInterval(() => {
       if (Net.activo) {
         clearInterval(esperaConexion);
         esperaConexion = null;
-        btnStart.disabled = false;
-        btnContinue.disabled = false;
-        $id('btn-offline').disabled = false;
-        btnStart.textContent = guardarTexto(btnStart);
-        btnContinue.textContent = textoContinue;
-        btn.textContent = guardarTexto(btn);
+        restaurar();
         errNet.style.display = 'none';
+        ocultarCaida(false);
       } else if (Net.ultimoError || Date.now() - t0 > 10000) {
         clearInterval(esperaConexion);
         esperaConexion = null;
-        btnStart.disabled = false;
-        btnContinue.disabled = false;
-        $id('btn-offline').disabled = false;
-        btnStart.textContent = guardarTexto(btnStart);
-        btnContinue.textContent = textoContinue;
-        btn.textContent = guardarTexto(btn);
+        restaurar();
+        ocultarCaida(true);
         errNet.textContent = Net.ultimoError ||
           'No se pudo conectar con las Backrooms. ¿El servidor está despierto?';
         errNet.style.display = 'block';

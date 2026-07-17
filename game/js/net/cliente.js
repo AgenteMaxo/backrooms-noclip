@@ -86,7 +86,7 @@
     }
     ws = new WebSocket(urlServidor());
     ws.onopen = () => enviar({
-      t: 'hola', nombre, token: token(), v: 8, // debe coincidir con protocolo.js
+      t: 'hola', nombre, token: token(), v: 9, // debe coincidir con protocolo.js
       nivel: params.get('nivel') || undefined, // puerta de desarrollo (solo MMO_DEV=1)
       sala: salaActual || undefined,
     });
@@ -131,6 +131,30 @@
     if (id === miId) return [w.player.x, w.player.y, w.player];
     const o = Otros.lista.find((x) => x.id === id);
     return o ? [o.x, o.y, o] : null;
+  }
+
+  function aplicarApagon(m, w, silencioso = false) {
+    if (w.level?.id !== 'level-1') return;
+    if (!['pre', 'oscuro', 'vuelve'].includes(m.fase)) return;
+    const ahora = performance.now();
+    const duracion = Math.max(1, Number(m.duracion || m.restante || 1));
+    const restante = Math.max(0, Math.min(duracion, Number(m.restante ?? duracion)));
+    w.apagon = {
+      fase: m.fase,
+      duracion,
+      desde: ahora - (duracion - restante),
+      hasta: ahora + restante,
+      secuencia: m.secuencia || 0,
+    };
+    if (silencioso) return;
+    if (m.fase === 'pre') {
+      w.log('Los fluorescentes empiezan a fallar al mismo tiempo…', 'danger');
+      if (window.Effects)
+        Effects.bubble(w.player.x, w.player.y, 'Las luces…', w.player);
+    } else if (m.fase === 'vuelve') {
+      w.log('La corriente regresa a golpes. Algo vuelve a esconderse.', 'event');
+    }
+    if (window.Sfx) Sfx.level1Blackout?.(m.fase, restante);
   }
 
   function recibir(m, w) {
@@ -333,6 +357,9 @@
           if (window.Sfx) Sfx.play('ui');
         } else Otros.luz(m.id, m.si);
         break;
+      case 'apagon':
+        aplicarApagon(m, w);
+        break;
       case 'admin': // respuesta a la contraseña de guardián (Ajustes)
         w.esAdmin = !!m.si;
         if (window.onAdminCambia) window.onAdminCambia(w.esAdmin);
@@ -449,6 +476,8 @@
     w.player.inv = m.inv || [];
     w.player.manos = m.manos || [null, null];
     w.player.equipo = m.equipo || { cara: null, cuerpo: null, pies: null };
+    w.apagon = null;
+    if (m.apagon) aplicarApagon(m.apagon, w, true);
     w.pasosNivel = m.caminata ? m.caminata.pasos : 0;
     w._caminataObjetivo = m.caminata ? m.caminata.objetivo : 0;
     w._caminataAvisos = {};

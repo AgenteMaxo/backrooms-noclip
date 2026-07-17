@@ -543,6 +543,7 @@
     const g = world.map.grid;
     const cam = world.camera;
     const dark = world.level.oscuridad;
+    const apagon = world.apagonIntensidad ? world.apagonIntensidad(t) : 0;
 
     const [shx, shy] = window.NOFX ? [0, 0] : Effects.shakeOffset(t);
     ctx.save();
@@ -554,7 +555,7 @@
     let flicker = 1;
     if (Math.random() < 0.012) flicker = 0.72;
     world._flicker = world._flicker === undefined ? 1 : world._flicker * 0.85 + flicker * 0.15;
-    const fl = world._flicker;
+    const fl = world._flicker * (1 - apagon * 0.88);
 
     const x0 = Math.max(0, Math.floor(cam.x / TILE) - 1);
     const y0 = Math.max(0, Math.floor(cam.y / TILE) - 1);
@@ -787,6 +788,17 @@
       ctx.fillRect(0, 0, W, H);
     } else if (reglasClima.includes('calor')) {
       ctx.fillStyle = `rgba(235,110,30,${0.055 + 0.03 * Math.sin(t * 0.002)})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    if (apagon > 0.001) {
+      const px = world.player.rx * TILE - cam.x + TILE / 2;
+      const py = world.player.ry * TILE - cam.y + TILE / 2;
+      const radio = TILE * (world.player.luz ? 4.5 : 1.8);
+      const sombra = ctx.createRadialGradient(px, py, 8, px, py, radio);
+      sombra.addColorStop(0, `rgba(0,2,7,${apagon * (world.player.luz ? 0.08 : 0.34)})`);
+      sombra.addColorStop(1, `rgba(0,1,5,${apagon * 0.78})`);
+      ctx.fillStyle = sombra;
       ctx.fillRect(0, 0, W, H);
     }
 

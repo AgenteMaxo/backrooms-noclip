@@ -30,7 +30,7 @@ function cliente(token) {
     const ws = new WebSocket(`ws://127.0.0.1:${PUERTO}/ws`);
     const msgs = [];
     ws.on('open', () => {
-      ws.send(JSON.stringify({ t: 'hola', nombre: 'Arnes', token, v: 8, nivel: 'level-1' }));
+      ws.send(JSON.stringify({ t: 'hola', nombre: 'Arnes', token, v: 9, nivel: 'level-1' }));
     });
     ws.on('message', (raw) => {
       const m = JSON.parse(raw.toString());

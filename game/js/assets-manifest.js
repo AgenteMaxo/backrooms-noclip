@@ -40,10 +40,13 @@ window.ASSETS_MANIFEST = {
   },
   "ambientes": {
     "level-0": "assets/sounds/niveles/level-0.mp3",
+    "level-13": "assets/sounds/niveles/level-13.wav",
+    "level-14": "assets/sounds/niveles/level-14.wav",
     "level-15": "assets/sounds/niveles/level-15.wav",
     "level-2": "assets/sounds/niveles/level-2.mp3",
     "level-306": "assets/sounds/niveles/level-306.mp3",
     "level-385": "assets/sounds/niveles/level-385.wav",
+    "level-45": "assets/sounds/niveles/level-45.wav",
     "level-6": "assets/sounds/niveles/level-6.mp3",
     "level-777": "assets/sounds/niveles/level-777.mp3",
     "the-hub": "assets/sounds/niveles/the-hub.mp3"

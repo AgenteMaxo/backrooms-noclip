@@ -13,6 +13,7 @@ const db = require('./db');
 const {
   Sala, salas, asignar, todas, totalJugadores,
   prepararSala, cambiarDeSala, esSinRetorno, moverEspectador,
+  tickEventosGlobales,
   metricas, SALA_PUBLICA, GRACIA_SALA_VACIA,
 } = compartido;
 
@@ -35,6 +36,7 @@ function chatReciente(nivel, desdeSeq) {
 
 function tickTodas(ahora) {
   const t0 = process.hrtime.bigint();
+  tickEventosGlobales(ahora);
   for (const [clave, s] of salas) {
     if (!s.jugadores.size) {
       if (!s._vaciaDesde) s._vaciaDesde = ahora;

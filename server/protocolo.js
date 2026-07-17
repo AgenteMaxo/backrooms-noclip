@@ -19,7 +19,7 @@
 //   {t:'pong'}
 'use strict';
 
-const VERSION = 8; // v30: modo espectador del guardián (mensaje 'espectar')
+const VERSION = 9; // v30.13: apagones globales de Level 1 (mensaje 'apagon' + campo en estadoDinamico)
 const MAX_MSG = 512;          // bytes por mensaje entrante
 const MAX_CHAT = 120;         // caracteres de un chat
 const COOLDOWN_MOVER = 165;   // ms entre pasos (el cliente usa 170: margen de jitter)

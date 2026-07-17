@@ -288,6 +288,43 @@
     } catch (e) {}
   }
 
+  // Level 1: fallo de balastos, corte seco del zumbido y reencendido desigual.
+  // También se hunde el bus ambiental para que el silencio se note de verdad;
+  // los pasos, entidades y la linterna conservan su propio canal.
+  function level1Blackout(fase) {
+    try {
+      if (!ctx || muted) return;
+      const ahora = ctx.currentTime;
+      const destinoAmb = fase === 'oscuro' ? volAmb * 0.07
+        : fase === 'pre' ? volAmb * 0.42 : volAmb;
+      const factor = volAmb > 0 ? destinoAmb / volAmb : 1;
+      ambBus.gain.cancelScheduledValues(ahora);
+      ambBus.gain.setValueAtTime(Math.max(0.001, ambBus.gain.value), ahora);
+      ambBus.gain.exponentialRampToValueAtTime(
+        Math.max(0.001, destinoAmb),
+        ahora + (fase === 'vuelve' ? 1.45 : 0.22));
+      if (ambientAudioEl)
+        ambientAudioEl.volume = Math.min(1, 0.62 * vol * volAmb * factor);
+
+      if (fase === 'pre') {
+        ruido(0.18, 3600, 0.11, 'bandpass', 700);
+        tono(118, 0.42, 0.075, 'square', 82);
+        setTimeout(() => ctx && !muted && ruido(0.08, 2600, 0.09, 'bandpass', 500), 420);
+        setTimeout(() => ctx && !muted && ruido(0.06, 3300, 0.075, 'bandpass', 650), 820);
+      } else if (fase === 'oscuro') {
+        ruido(0.075, 2100, 0.16, 'bandpass', 180);
+        tono(92, 0.28, 0.12, 'square', 38);
+        setTimeout(() => ctx && !muted && tono(34, 0.8, 0.06, 'sine', 27), 90);
+      } else if (fase === 'vuelve') {
+        ruido(0.09, 2900, 0.12, 'bandpass', 700);
+        tono(76, 0.18, 0.08, 'square', 108);
+        setTimeout(() => ctx && !muted && ruido(0.055, 3900, 0.08, 'bandpass', 1200), 260);
+        setTimeout(() => ctx && !muted && tono(120, 0.32, 0.045, 'sine'), 620);
+        setTimeout(() => ctx && !muted && ruido(0.05, 3400, 0.055, 'bandpass', 1000), 980);
+      }
+    } catch (e) {}
+  }
+
   // ---------- recetas de ambiente por nivel ----------
   // cada receta devuelve nodos; el gain común hace fade in/out
   const RECETAS = {
@@ -556,6 +593,14 @@
     try {
       stopAmbient();
       if (muted) return;
+      const apagado = levelDef.id === 'level-1' && window.Game?.world?.apagon;
+      const factorApagon = apagado?.fase === 'oscuro' ? 0.07
+        : apagado?.fase === 'pre' ? 0.42
+        : apagado?.fase === 'vuelve' ? 0.7 : 1;
+      if (ctx && ambBus) {
+        ambBus.gain.cancelScheduledValues(ctx.currentTime);
+        ambBus.gain.setTargetAtTime(volAmb * factorApagon, ctx.currentTime, 0.08);
+      }
       const gen = ++ambientGen;
       // 1) archivo del nivel (del usuario o de la wiki) — SOLO rutas que
       // existen según los manifiestos (v30.6: antes se probaban 3 extensiones
@@ -577,7 +622,7 @@
         }
         const el = new window.Audio(candidatos[i++]);
         el.loop = true;
-        el.volume = Math.min(1, 0.62 * vol * volAmb);
+        el.volume = Math.min(1, 0.62 * vol * volAmb * factorApagon);
         // un archivo fallido dispara TANTO el evento 'error' COMO el rechazo de
         // play(): sin este candado la cadena se bifurcaba en dos (acumulación)
         let siguiente = false;
@@ -616,9 +661,23 @@
     } else if (canal === 'amb') {
       volAmb = v;
       try { localStorage.setItem('backrooms-volamb', String(volAmb)); } catch (e) {}
-      if (ambBus) ambBus.gain.value = volAmb;
+      if (ambBus) {
+        const a = window.Game?.world?.level?.id === 'level-1'
+          ? window.Game.world.apagon : null;
+        const factor = a?.fase === 'oscuro' ? 0.07
+          : a?.fase === 'pre' ? 0.42
+          : a?.fase === 'vuelve' ? 0.7 : 1;
+        ambBus.gain.value = volAmb * factor;
+      }
     }
-    if (ambientAudioEl) ambientAudioEl.volume = Math.min(1, 0.62 * vol * volAmb);
+    if (ambientAudioEl) {
+      const a = window.Game?.world?.level?.id === 'level-1'
+        ? window.Game.world.apagon : null;
+      const factor = a?.fase === 'oscuro' ? 0.07
+        : a?.fase === 'pre' ? 0.42
+        : a?.fase === 'vuelve' ? 0.7 : 1;
+      ambientAudioEl.volume = Math.min(1, 0.62 * vol * volAmb * factor);
+    }
     if (menuAudioEl) menuAudioEl.volume = Math.min(1, 0.62 * vol * volAmb);
   }
 
@@ -708,7 +767,7 @@
 
   window.Sfx = {
     unlock, cargarOverrides, play, cue, cueDist, entityLoop, updateEntityLoops, ambient, stopAmbient, toggleMute, setVolume, idle,
-    level0Flicker, playMenu, stopMenu,
+    level0Flicker, level1Blackout, playMenu, stopMenu,
     get muted() { return muted; },
     get volumen() { return vol; },
     get volumenFx() { return volFx; },

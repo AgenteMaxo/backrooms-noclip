@@ -28,7 +28,7 @@ class Cliente {
     return new Promise((res, rej) => {
       this.ws = new WebSocket(`ws://127.0.0.1:${PUERTO}/ws`);
       this.ws.on('open', () => {
-        this.enviar({ t: 'hola', nombre: this.nombre, token: 'arnes2-' + this.nombre, v: 8, nivel: this.nivelPedido });
+        this.enviar({ t: 'hola', nombre: this.nombre, token: 'arnes2-' + this.nombre, v: 9, nivel: this.nivelPedido });
         res();
       });
       this.ws.on('message', (raw) => {

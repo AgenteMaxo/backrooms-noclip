@@ -55,6 +55,83 @@ const RADIO_CHAT = 14;        // casillas: el chat es de PROXIMIDAD (voz, no meg
 // cliente interpola esas muestras a sus FPS de render sin perder fluidez.
 const INTERVALO_POS_MS = 100;
 
+// Level 1: apagón ambiental GLOBAL. No pertenece a una instancia concreta:
+// todas las salas públicas/privadas del nivel reciben las mismas fases a la
+// vez. La linterna del jugador sigue funcionando y no se alteran spawns ni IA;
+// es tensión ambiental, no una emboscada gratuita.
+const APAGON_NIVEL = 'level-1';
+const APAGON_ESPERA_MIN_MS = 30 * 1000;
+const APAGON_ESPERA_MAX_MS = 60 * 1000;
+const APAGON_PREAVISO_MS = 1400;
+const APAGON_OSCURO_MS = 5000;
+const APAGON_RECUPERA_MS = 1800;
+
+function crearControlApagon(rng) {
+  let fase = 'idle';
+  let hasta = 0;
+  let proximo = 0;
+  let secuencia = 0;
+  let duracion = 0;
+
+  const programar = (ahora) => {
+    proximo = ahora + rng.int(APAGON_ESPERA_MIN_MS, APAGON_ESPERA_MAX_MS);
+  };
+  const cambiar = (nueva, ahora, ms, emitir) => {
+    fase = nueva;
+    duracion = ms;
+    hasta = ahora + ms;
+    emitir({
+      t: 'apagon',
+      fase: nueva,
+      duracion: ms,
+      restante: ms,
+      secuencia,
+    });
+  };
+
+  return {
+    tick(ahora, hayJugadores, emitir) {
+      if (fase === 'idle') {
+        if (!hayJugadores) { proximo = 0; return; }
+        if (!proximo) { programar(ahora); return; }
+        if (ahora < proximo) return;
+        secuencia++;
+        cambiar('pre', ahora, APAGON_PREAVISO_MS, emitir);
+        return;
+      }
+      if (ahora < hasta) return;
+      if (fase === 'pre') {
+        cambiar('oscuro', ahora, APAGON_OSCURO_MS, emitir);
+      } else if (fase === 'oscuro') {
+        cambiar('vuelve', ahora, APAGON_RECUPERA_MS, emitir);
+      } else {
+        fase = 'idle';
+        hasta = 0;
+        duracion = 0;
+        programar(ahora);
+      }
+    },
+    snapshot(ahora) {
+      if (fase === 'idle') return null;
+      return {
+        fase,
+        duracion,
+        restante: Math.max(0, hasta - ahora),
+        secuencia,
+      };
+    },
+    reset() {
+      fase = 'idle';
+      hasta = 0;
+      proximo = 0;
+      secuencia = 0;
+      duracion = 0;
+    },
+  };
+}
+
+const controlApagon = crearControlApagon(RNG.create('mundo::level-1::apagones'));
+
 // Base de datos INYECTABLE: el servidor real registra expedientes (usarDb en
 // server/sala.js); el modo local del navegador se queda con estos no-op.
 let db = {
@@ -181,6 +258,7 @@ class Sala {
         uid: e.uid, id: e.id, x: e.x, y: e.y, viva: e.viva, revelada: e.revelada,
       })),
       abiertas: this.map.exits.map((ex, i) => ex.def._abierta ? i : -1).filter((i) => i >= 0),
+      apagon: this.nivelId === APAGON_NIVEL ? controlApagon.snapshot(Date.now()) : null,
     };
   }
 
@@ -274,14 +352,14 @@ class Sala {
     const chaqueta = jug.equipo.cuerpo === 'chaqueta' || trajeHostil;
     const botas = jug.equipo.pies === 'botas_reforzadas';
     // sed y cordura drenan por TILES reales acumulados con la MISMA cadencia
-    // que el modo offline (1 turno ≈ 1 tile: sed base -1/9, calor -1/4;
+    // que el modo offline (1 turno ≈ 1 tile: sed base -1/11, calor -1/5;
     // cordura -1/20 con zumbido o -1/25 con alucinaciones/aislamiento/
     // vigilado, doblado con máscara/protección). Antes se descontaba por
     // "pasos" de 4 tiles con Math.ceil(), 5-6× más rápido de lo debido y sin
     // que la máscara marcara diferencia real (ceil(1/8) y ceil(1/4) daban 1).
     const tiles = pasos * 4;
     jug._sedAcum = (jug._sedAcum || 0) + tiles;
-    const cadSed = reglas.includes('calor') ? 4 : 9;
+    const cadSed = reglas.includes('calor') ? 5 : 11;
     if (jug._sedAcum >= cadSed) {
       const n = Math.floor(jug._sedAcum / cadSed);
       jug._sedAcum -= n * cadSed;
@@ -623,7 +701,10 @@ class Sala {
     if (ef.cordura) jug.cordura = Math.max(0, Math.min(100, jug.cordura + ef.cordura));
     if (ef.ruido) this.hacerRuido(jug.x, jug.y, ef.ruido);
     this.enviarEstado(jug);
-    if (!jug.muerto && (jug.salud <= 0 || jug.sed <= 0 || jug.cordura <= 0))
+    // La sed a 0 no mata de golpe: supervivencia() aplica el daño gradual
+    // por deshidratación. Usar un objeto sin efecto de sed no debe saltarse
+    // esa mecánica y convertirlo en la causa de una muerte instantánea.
+    if (!jug.muerto && (jug.salud <= 0 || jug.cordura <= 0))
       this.morir(jug, def.nombre);
   }
 
@@ -1140,6 +1221,16 @@ function totalJugadores() {
 
 function todas() { return [...salas.values()]; }
 
+// Se llama UNA vez por tick de mundo (server/sala.js y net/local.js), no una
+// vez por Sala. Así el evento cruza instancias y grupos privados sin duplicarse.
+function tickEventosGlobales(ahora) {
+  const objetivo = [...salas.values()].filter(
+    (s) => s.nivelId === APAGON_NIVEL && s.jugadores.size);
+  controlApagon.tick(ahora, objetivo.length > 0, (msg) => {
+    for (const sala of objetivo) sala.difundir(msg);
+  });
+}
+
 // ---------- cruce de salas y respawn (compartidos servidor/local) ----------
 
 function prepararSala(sala) {
@@ -1254,9 +1345,12 @@ function moverEspectador(esp, salaVieja, nueva, objetivo) {
 const api = {
   Sala, salas, crearSala, asignar, todas, totalJugadores,
   prepararSala, cambiarDeSala, esSinRetorno, moverEspectador,
+  tickEventosGlobales, crearControlApagon,
   usarDb, ganchos, metricas, activarRemodel, fijarSemillaBase,
   generarMapa, esTransitable,
   SALA_PUBLICA, GRACIA_SALA_VACIA, CAP_SALA, COOLDOWN_CHAT, RADIO_CHAT, INTERVALO_POS_MS,
+  APAGON_ESPERA_MIN_MS, APAGON_ESPERA_MAX_MS,
+  APAGON_PREAVISO_MS, APAGON_OSCURO_MS, APAGON_RECUPERA_MS,
 };
 if (esNode) module.exports = api;
 else window.Salas = api;

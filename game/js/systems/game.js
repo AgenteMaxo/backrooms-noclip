@@ -27,6 +27,7 @@
     over: false,
     visionMod: 0,
     luzBloqueada: false,
+    apagon: null,
     extraWorldStep: false,
     moving: false,
     tutorial: {},
@@ -213,6 +214,36 @@
     return Math.max(2, v);
   };
 
+  // Intensidad visual [0,1] del apagón sincronizado de Level 1. Las fases
+  // llegan del servidor; aquí solo se dibuja una caída/recuperación inquietante
+  // sin tocar la linterna ni las reglas de combate.
+  world.apagonIntensidad = function (t = performance.now()) {
+    const a = world.apagon;
+    if (!a || world.level?.id !== 'level-1') return 0;
+    const dur = Math.max(1, a.duracion || 1);
+    const e = Math.max(0, t - a.desde);
+    const p = Math.max(0, Math.min(1, e / dur));
+    const suave = !!window.NOFX;
+    if (a.fase === 'pre') {
+      if (suave) return p * 0.22;
+      const fallo = Math.sin(e * 0.032) + Math.sin(e * 0.087) * 0.55 >
+        0.82 - p * 0.65;
+      return Math.min(0.82, p * 0.16 + (fallo ? 0.25 + p * 0.48 : 0));
+    }
+    if (a.fase === 'oscuro') {
+      return Math.min(0.96, 0.82 + e / 700);
+    }
+    if (a.fase === 'vuelve') {
+      if (p >= 1) { world.apagon = null; return 0; }
+      if (suave) return (1 - p) * 0.92;
+      const base = (1 - p) * 0.82;
+      const recaida = p < 0.78 &&
+        Math.sin(e * 0.051) + Math.sin(e * 0.123) * 0.5 > 0.72 + p * 0.35;
+      return Math.min(0.95, Math.max(base, recaida ? 0.86 - p * 0.25 : 0));
+    }
+    return 0;
+  };
+
   world.hurt = function (n, causa, ambiental) {
     if (world.over) return;
     world.player.salud = Math.max(0, world.player.salud - n);
@@ -370,6 +401,7 @@
     world.turnTotal = 0;
     world.dadosN = 0;         // nº de tiradas de dado (secuencia determinista por semilla)
     world.over = false;
+    world.apagon = null;
     world._muerteSmiler = false;
     world._fuenteDano = null;
     // run NUEVA de verdad: si venías de morir, el nivel anterior sigue en
@@ -432,6 +464,7 @@
     world.turn = 0;
     world.visionMod = 0;
     world.luzBloqueada = false;
+    world.apagon = null;
     world.escondido = null;
     world.ruido = null;
     if (!world.visited.includes(id)) world.visited.push(id);
@@ -801,7 +834,7 @@
     // descansar en niveles seguros repone la mente (hasta 70)
     if (world.level.peligro <= 1 && world.player.cordura < 70 && world.turn % 25 === 0)
       world.sanity(1);
-    if (world.turn % 9 === 0) world.thirst(-1);
+    if (world.turn % 11 === 0) world.thirst(-1);
     if (world.turn % 15 === 0) world.hunger(-1);
     if (world.player.sed <= 0 && world.turn % 3 === 0) world.hurt(2, 'la deshidratación', true);
     if (world.player.hambre <= 0 && world.turn % 5 === 0) world.hurt(1, 'la inanición', true);

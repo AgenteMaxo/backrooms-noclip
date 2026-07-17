@@ -34,7 +34,7 @@
       icono: '🔥',
       desc: 'El vapor y el calor duplican tu sed.',
       turno(world) {
-        if (world.turn % 4 === 0) world.thirst(-1);
+        if (world.turn % 5 === 0) world.thirst(-1);
       },
     },
     aire_contaminado: {

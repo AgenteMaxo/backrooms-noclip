@@ -30,6 +30,9 @@
   let composer = null;           // postprocesado (bloom + gamma); null => render directo
   let bloomPass = null;          // pase de bloom para el pulso dinámico por cordura baja
   let fogBase = 0.08;
+  let ambBase = 0.35;
+  let dlightBase = 0.35;
+  let exposureBase = 1.1;
   let nivelClaro = 0;      // [0,1] cuánto se pasa de CLARA la paleta del nivel (v30.2)
   let glCanvas, overlay, octx, W, H;
   let levelKey = null;
@@ -1237,10 +1240,13 @@
     const cSuelo = new THREE.Color(pal.suelo);
     const lumSuelo = 0.2126 * cSuelo.r + 0.7152 * cSuelo.g + 0.0722 * cSuelo.b;
     nivelClaro = Math.max(0, Math.min(1, (lumSuelo - 0.55) / 0.35));
-    amb.intensity = esLevel0 ? 0.22
+    ambBase = esLevel0 ? 0.22
       : Math.max(0.12, 0.55 - world.level.oscuridad * 0.4) * (1 - 0.35 * nivelClaro);
-    dlight.intensity = esLevel0 ? 0.14 : 0.35 * (1 - 0.3 * nivelClaro);
-    renderer.toneMappingExposure = esLevel0 ? 0.96 : 1.15 - 0.25 * nivelClaro;
+    dlightBase = esLevel0 ? 0.14 : 0.35 * (1 - 0.3 * nivelClaro);
+    exposureBase = esLevel0 ? 0.96 : 1.15 - 0.25 * nivelClaro;
+    amb.intensity = ambBase;
+    dlight.intensity = dlightBase;
+    renderer.toneMappingExposure = exposureBase;
     plight.color = new THREE.Color(pal.luz);
     plight.distance = (world.visionActual() + 3) * 1.6;
     plight.castShadow = !esLevel0;
@@ -1501,6 +1507,7 @@
 
     const p = world.player;
     const px = p.rx + 0.5, pz = p.ry + 0.5;
+    const apagon = world.apagonIntensidad ? world.apagonIntensidad(t) : 0;
     if (!playerSprite) {
       playerSprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true }));
       playerSprite.scale.set(1, SPRITE_H, 1);
@@ -1683,6 +1690,7 @@
         const locuraFondo = new THREE.Color(0x13010b);
         baseFondo.lerp(locuraFondo, sc * 0.85);
       }
+      if (apagon > 0) baseFondo.multiplyScalar(1 - apagon * 0.78);
       scene.background.copy(baseFondo);
       scene.fog.color.copy(baseFondo);
     }
@@ -1699,6 +1707,7 @@
         targetBloom = 0.55 + sc * 0.65 + pulso;
         targetThreshold = 0.82 - sc * 0.3; // con locura baja hasta 0.52: brilla, no ciega
       }
+      targetBloom *= 1 - apagon * 0.72;
       bloomPass.strength = targetBloom;
       bloomPass.threshold = targetThreshold;
     }
@@ -1713,7 +1722,8 @@
     // en paletas casi blancas la luz del jugador quema un disco alrededor
     // (albedo claro × 1.7 satura el ACES): se normaliza con nivelClaro
     const luzJugador = world.level.id === 'level-0' ? 0.72 : 1.7 * (1 - 0.5 * nivelClaro);
-    plight.intensity = plight.intensity * 0.85 + (luzJugador * flicker) * 0.15;
+    const luzApagon = p.luz ? 1 - apagon * 0.5 : 1 - apagon * 0.92;
+    plight.intensity = plight.intensity * 0.85 + (luzJugador * flicker * luzApagon) * 0.15;
     plight.position.set(px, 1.6, pz);
     plight.distance = (world.visionActual() + 3) * (p.luz ? 2.4 : 1.6);
 
@@ -1746,6 +1756,7 @@
         const sc = (50 - cordura) / 50;
         targetFogBase = fogBase * (1 + sc * 0.9); // hasta +90% de niebla (claustrofobia)
       }
+      if (!luzOn) targetFogBase *= 1 + apagon * 0.38;
       // espectador (v30): desde 14 de altura la niebla normal funde el suelo
       // a negro — casi fuera, que el guardián vea el plano entero
       if (world.espectador) targetFogBase = Math.min(fogBase, 0.015);
@@ -1788,6 +1799,26 @@
       dlight.intensity = 0.14 - 0.025 * fase0;
     }
     actualizarLucesTecho(world, px, pz, fase0);
+
+    // Apagón sincronizado de Level 1: caen todas las luminarias del mapa,
+    // mientras el foco de la linterna sigue siendo útil.
+    if (world.level.id === 'level-1') {
+      const corriente = Math.max(0.025, 1 - apagon);
+      const objetivoAmb = ambBase * (0.06 + corriente * 0.94);
+      amb.intensity += (objetivoAmb - amb.intensity) * 0.28;
+      const objetivoCenital = dlightBase * corriente;
+      dlight.intensity += (objetivoCenital - dlight.intensity) * 0.35;
+      for (const l of ceilingLights) l.intensity *= corriente;
+      panelMats.forEach((m, i) => {
+        if (!m) return;
+        const falla = i === flkGrupo && !flkOn ? 0.18 : 1;
+        const f = corriente * falla;
+        m.color.setRGB(f, 0.965 * f, 0.863 * f);
+      });
+      const objetivoExposicion = exposureBase * (0.48 + corriente * 0.52);
+      renderer.toneMappingExposure +=
+        (objetivoExposicion - renderer.toneMappingExposure) * 0.24;
+    }
 
     // ---------- modo espectador (v30): casa de muñecas ----------
     // el techo y sus fluorescentes taparían TODO desde una cámara cenital:
@@ -1977,7 +2008,7 @@
     } else {
       renderer.render(scene, camera);
     }
-    drawOverlay(world, t);
+    drawOverlay(world, t, apagon);
 
     if (window.DEBUG3D_ON) {
       window.DEBUG3D = {
@@ -1999,7 +2030,7 @@
     return [(v.x * 0.5 + 0.5) * W, (-v.y * 0.5 + 0.5) * H, v.z > 1];
   }
 
-  function drawOverlay(world, t) {
+  function drawOverlay(world, t, apagon) {
     octx.clearRect(0, 0, W, H);
     if (!window.NOFX) Effects.draw(octx, 0, 0, t, 48, project);
     // capa social del MMO: nombres flotantes y bocadillos de chat
@@ -2026,6 +2057,15 @@
     } else if (reglas.includes('calor')) {
       const resp = 0.055 + 0.03 * Math.sin(t * 0.002);
       octx.fillStyle = `rgba(235,110,30,${resp})`;
+      octx.fillRect(0, 0, W, H);
+    }
+    if (apagon > 0.001) {
+      const sombra = octx.createRadialGradient(
+        W / 2, H * 0.56, H * 0.08,
+        W / 2, H * 0.56, Math.max(W, H) * 0.72);
+      sombra.addColorStop(0, `rgba(0,2,8,${apagon * (world.player.luz ? 0.02 : 0.13)})`);
+      sombra.addColorStop(1, `rgba(0,1,6,${apagon * 0.42})`);
+      octx.fillStyle = sombra;
       octx.fillRect(0, 0, W, H);
     }
     const fase0 = level0Phase(world);
