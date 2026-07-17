@@ -19,13 +19,9 @@
 //   {t:'pong'}
 'use strict';
 
-const VERSION = 9; // v30.13: apagones globales de Level 1 (mensaje 'apagon' + campo en estadoDinamico)
+const VERSION = 10; // agotamiento + apagonManila sobre los apagones globales de Level 1
 const MAX_MSG = 512;          // bytes por mensaje entrante
 const MAX_CHAT = 120;         // caracteres de un chat
-const COOLDOWN_MOVER = 165;   // ms entre pasos (el cliente usa 170: margen de jitter)
-const COOLDOWN_CHAT = 1500;   // ms entre mensajes de chat
-const RADIO_CHAT = 14;        // casillas: el chat es de PROXIMIDAD (voz, no megafonía)
-const CAP_SALA = 60;          // jugadores por instancia de nivel
 const CAP_POR_IP = 8;         // conexiones simultáneas por IP
 const MAX_SALA_PRIVADA = 32;  // caracteres máximos del código de sala privada
 
@@ -100,7 +96,6 @@ function leer(raw) {
 }
 
 module.exports = {
-  VERSION, MAX_MSG, MAX_CHAT, COOLDOWN_MOVER, COOLDOWN_CHAT, RADIO_CHAT,
-  CAP_SALA, CAP_POR_IP, MAX_SALA_PRIVADA,
+  VERSION, MAX_MSG, MAX_CHAT, CAP_POR_IP, MAX_SALA_PRIVADA,
   leer,
 };

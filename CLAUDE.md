@@ -12,7 +12,8 @@ El contenido del juego (niveles, entidades, objetos) se deriva de la wiki backro
 
 ## Comandos
 
-No hay tests ni linter. Los scripts del pipeline usan solo la stdlib de Node (requiere Node 18+ por `fetch` global).
+No hay linter ni build del cliente. Los scripts del pipeline y los tests unitarios
+usan solo la stdlib de Node (requiere Node 18+ por `fetch` global).
 
 ```
 node pipeline/download.js      # Fase 0: descarga la wiki → data/raw/<pageid>.json (re-ejecutable, salta lo ya descargado)
@@ -21,6 +22,8 @@ node pipeline/select-pilot.js  # Fase 2a: elige los ~30 niveles del piloto (BFS 
 node pipeline/make-map.js      # Fase 2b: regenera data/game/mapa-piloto.html (diagrama SVG del grafo) desde levels.es.json
 node pipeline/build-data.js    # empaqueta data/game/*.es.json → game/js/data.js  ← RE-EJECUTAR tras editar cualquier ficha
 node pipeline/build-assets-manifest.js  # inventaría game/assets/ → game/js/assets-manifest.js ← RE-EJECUTAR tras añadir/quitar sprites/sonidos/iconos (el juego solo carga lo inventariado; sin sondeos ni 404)
+node pipeline/test-unit.js  # todos los tests unitarios, sin procesos hijo
+node server/test-riesgo-void.js  # ramas éxito/muerte del Vacío con d20 forzado, sin azar ni servidor externo
 ```
 
 Para jugar (modo PRINCIPAL, online): `node server/server.js` → http://localhost:8080 (WebSocket `/ws`; `MMO_DEV=1` habilita `?nivel=`, `MMO_ADMIN` fija la clave de guardián). Ver la entrada v21-v22 más abajo.
@@ -43,13 +46,53 @@ wiki fandom → data/raw/ (crudo, 1100+ archivos, NO editar) → data/parsed/ (g
 Sin módulos ES: cada archivo de `game/js/` es un IIFE que expone un global en `window` (`RNG`, `MapGen`, `GAME_DATA`...). **El orden de los `<script>` en `game/index.html` es la gestión de dependencias** — si añades un archivo, insértalo en el orden correcto:
 
 ```
-data.js → engine/rng.js → mapgen/mapgen.js → engine/tiles.js → engine/sprites.js
+data.js → engine/rng.js → engine/cargador.js → config/{options,identity}.js
+  → input/{state,touch,camera}.js
+  → levels/level.js → levels/<id>/<id>.js → mapgen/mapgen.js
+  → engine/tiles.js → engine/sprites.js
   → engine/effects.js → audio-manifest.js → engine/sfx.js → engine/fov.js
-  → systems/entities.js → systems/rules.js → engine/render.js
-  → lib/three.min.js → lib/shaders/* → lib/postprocessing/* (postpro UMD r147)
-  → engine/atmos3d.js → engine/render3d.js → systems/game.js
-  → ui/icons.js → ui/ui.js → ui/minimap.js → main.js
+  → sim/{mundo,shared-rules}.js → systems/entities.js → systems/rules.js → engine/render.js
+  → systems/{profiles,savegame,game}.js → ui/icons.js → ui/controllers.js
+  → input/{gamepad-settings,gamepad}.js
+  → ui/{display-settings,modals,codex,ui,title-interface,changelog,minimap}.js
+  → sim/fisica.js → sim/entidades.js → sim/sala.js → net/*
+  → debug/selftest.js → ui/title-controller.js → main.js
 ```
+
+El **chunk 3D NO está en index.html**: `lib/three.min.js` → `lib/shaders/*` →
+`lib/postprocessing/*` (UMD r147) → `engine/{atmos3d,render3d-painters,render3d}.js`
+son 721 KB (52% del JS) que la portada no usa (su fondo son los WebP del panorama),
+así que los inyecta `CHUNK_3D` en main.js vía `Cargador.scripts()` — `async=false`
+mantiene el MISMO orden de ejecución, y el `?v=` se hereda del `<script>` del propio
+cargador (sin él, el edge de Cloudflare serviría JS viejo). Se pide al iniciar,
+continuar o conectar (inmediato si hay arranque directo por URL); permanecer en la
+portada no descarga Three.js. Si añades un archivo al 3D va en esa lista, no en el HTML. `use3D` se decide
+sondeando WebGL con un canvas de usar y tirar (NO con `window.Render3D`, que aún no
+existe); hasta que el chunk ejecuta, TODO acceso al 3D va tras
+`use3D && window.Render3D?.` y el bucle salta el frame.
+
+`input/` contiene adaptadores de dispositivo y un único estado combinado; no
+debe implementar reglas del juego. `config/options.js` es el único propietario
+de `backrooms-opts`; `config/identity.js`, de `mmo-token`. Cámara, táctil y mando
+se conectan al juego desde sus adaptadores y `main.js` se limita a orquestarlos.
+`ui/display-settings.js` administra resolución, pantalla completa, cámara y
+contador de FPS.
+
+`sim/shared-rules.js` contiene decisiones puras que deben coincidir en modo solo,
+MMO y pipeline (destinos, riesgo del Vacío, posesión y planes de manos). No copies
+esas reglas en `game.js`, `sala.js` ni scripts del pipeline. `systems/game.js`
+conserva la fachada `Game`, pero delega perfiles en `profiles.js` y persistencia de
+partidas en `savegame.js`. `ui/ui.js` conserva `world.ui` y compone controladores;
+modales, códice y título viven en sus archivos propios.
+
+`sim/mundo.js` es dual navegador/Node y construye los mapas MMO desde la semilla.
+`server/sim/mundo.js` solo arranca las dependencias y reexporta esa implementación;
+no se debe replicar la transformación de niveles en el cliente ni en el servidor.
+
+`levels/level.js` es el registro de comportamiento por nivel. El código
+exclusivo se coloca bajo `levels/<id>/`; los recursos van en
+`assets/levels/<id>/` y quedan inventariados en `ASSETS_MANIFEST`, igual que sprites,
+iconos y sonidos. Level 0 es la primera implementación de este patrón.
 
 `audio-manifest.js` lo genera `pipeline/download-audio.js` (audios ambientales reales de la wiki
 → `game/assets/sounds/niveles/`). `sfx.js` sintetiza el resto con WebAudio (overrides en
@@ -203,8 +246,9 @@ los archivos generados (data.js byte a byte) y correr tests/auditoría tras el m
 **v21-v22 — BACKROOMS MMO**: el juego es un sandbox multijugador en tiempo real. Servidor en
 `server/` (única carpeta con `package.json`: dep `ws` + SQLite en `datos/mmo.db`):
 `server.js` (estáticos + WebSocket `/ws` + comandos `/admin /anuncio /kick /mute /ban /tp` +
-`cambiarDeSala`), `sala.js` (una sala = instancia de nivel, cap 60; tick 10 Hz vía
-`tickTodas`), `sim/mundo.js` (puente Node↔motor: requiere data/rng/mapgen/fov del juego —
+`cambiarDeSala`), `sala.js` (una sala = instancia de nivel, aforo `CAP_SALA`; simulación a
+20 Hz vía `tickTodas` y posiciones remotas agrupadas a 10 Hz), `sim/mundo.js` (puente
+Node↔motor: requiere data/rng/mapgen/fov del juego —
 por la red NUNCA viaja un mapa, solo la semilla `mmo::<nivel>::<inst>`), `sim/entidades.js`
 (IA continua), `protocolo.js` (validación + P.VERSION — súbela al cambiar mensajes; el
 cliente manda `v` en `hola` y bots.js también), `bots.js` (carga), `db.js`, `filtro.js`.
@@ -319,8 +363,8 @@ servidor real + cliente ws): reproducirlo si se toca sala/protocolo.
 riesgoVoid (salidas `arriesgada` con `riesgoVoid>0`, ej. `level-0→level-27`) ahora también
 se tira en `server/sala.js::cruzar()` (antes solo en el modo solo) — mismo `this.rng` de
 sala, mismo bonus de trébol, mensaje `dado` solo al afectado, `morir()` en fallo; test
-dedicado `server/test-riesgo-void.js` (level-909, riesgoVoid:0.1, hasta 60 intentos hasta
-observar ambos desenlaces). Nueva **Sala Manila** en Level 0 (fiel a la wiki real): salida
+dedicado `server/test-riesgo-void.js` (level-909, riesgoVoid:0.1, fuerza d20=1 y d20=20
+para cubrir ambos desenlaces sin depender del azar). Nueva **Sala Manila** en Level 0 (fiel a la wiki real): salida
 sin casilla con `mecanica:'manila'` y `destino:'*opciones:level-1,level-2'` — nuevo sentinel
 de destino (junto a `*aleatoria`/`*visitada`) resuelto en `crossExit`(game.js)/`cruzar`
 (sala.js) con `rng.pick` sobre la lista separada por comas. `genPasillos` (mapgen.js) ahora

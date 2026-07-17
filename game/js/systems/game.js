@@ -2,6 +2,9 @@
 // estadísticas, muerte permanente y victoria.
 (function () {
   const { T, walkable } = MapGen;
+  const Shared = window.SharedRules;
+  const Profiles = window.Profiles;
+  const Persistence = window.SaveGame;
 
   const world = {
     data: null,
@@ -33,170 +36,11 @@
     tutorial: {},
     ui: null, // inyectado por ui.js
   };
+  let persistence;
 
-  // ---------- perfiles de usuario (locales, sin servidor) ----------
-  const esObjetoPerfil = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
-  const enteroPerfil = (v) => Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0;
-
-  function normalizarPerfil(datos) {
-    const records = esObjetoPerfil(datos.records) ? datos.records : {};
-    const descubiertos = esObjetoPerfil(datos.descubiertos) ? datos.descubiertos : {};
-    const codice = {};
-    if (esObjetoPerfil(datos.codice)) {
-      for (const [id, c] of Object.entries(datos.codice)) {
-        if (!esObjetoPerfil(c)) continue;
-        codice[id] = {
-          ...c,
-          veces: enteroPerfil(c.veces),
-          mejorTurnos: Number.isFinite(c.mejorTurnos) && c.mejorTurnos >= 0
-            ? Math.floor(c.mejorTurnos) : null,
-          escapado: c.escapado === true,
-        };
-      }
-    }
-    return {
-      ...datos,
-      creado: typeof datos.creado === 'string' ? datos.creado : new Date().toISOString(),
-      codice,
-      records: {
-        runs: enteroPerfil(records.runs),
-        maxNiveles: enteroPerfil(records.maxNiveles),
-        maxTurnos: enteroPerfil(records.maxTurnos),
-        escapes: enteroPerfil(records.escapes),
-      },
-      historial: Array.isArray(datos.historial)
-        ? datos.historial.filter(esObjetoPerfil).slice(0, 20).map((h) => ({ ...h })) : [],
-      descubiertos: {
-        salidas: esObjetoPerfil(descubiertos.salidas) ? { ...descubiertos.salidas } : {},
-        entidades: esObjetoPerfil(descubiertos.entidades) ? { ...descubiertos.entidades } : {},
-        objetos: esObjetoPerfil(descubiertos.objetos) ? { ...descubiertos.objetos } : {},
-      },
-    };
-  }
-
-  const Profiles = {
-    _load() {
-      try { return JSON.parse(localStorage.getItem('backrooms-profiles')) || { activo: null, perfiles: {} }; }
-      catch (e) { return { activo: null, perfiles: {} }; }
-    },
-    _save(d) { try { localStorage.setItem('backrooms-profiles', JSON.stringify(d)); } catch (e) {} },
-    list() { return Object.keys(this._load().perfiles); },
-    activeName() { return this._load().activo; },
-    get() {
-      const d = this._load();
-      return d.activo ? d.perfiles[d.activo] : null;
-    },
-    create(nombre) {
-      nombre = (nombre || '').trim().slice(0, 24);
-      if (!nombre) return false;
-      const d = this._load();
-      if (!d.perfiles[nombre]) {
-        d.perfiles[nombre] = {
-          creado: new Date().toISOString(),
-          codice: {},
-          records: { runs: 0, maxNiveles: 0, maxTurnos: 0, escapes: 0 },
-          historial: [],
-        };
-      }
-      d.activo = nombre;
-      this._save(d);
-      this._descCache = null;
-      return true;
-    },
-    select(nombre) {
-      const d = this._load();
-      if (!d.perfiles[nombre]) return false;
-      d.activo = nombre;
-      this._save(d);
-      this._descCache = null;
-      return true;
-    },
-    remove(nombre) {
-      const d = this._load();
-      delete d.perfiles[nombre];
-      if (d.activo === nombre) d.activo = Object.keys(d.perfiles)[0] || null;
-      this._save(d);
-      localStorage.removeItem('backrooms-save::' + nombre);
-    },
-    _update(fn) {
-      const d = this._load();
-      if (!d.activo || !d.perfiles[d.activo]) return;
-      fn(d.perfiles[d.activo]);
-      this._save(d);
-    },
-    registrarEntrada(levelId) {
-      this._update((p) => {
-        p.codice[levelId] = p.codice[levelId] || { veces: 0, mejorTurnos: null, escapado: false };
-        p.codice[levelId].veces++;
-      });
-    },
-    // coleccionables (v15): salidas/entidades/objetos descubiertos — con caché en
-    // memoria para no reescribir localStorage cada turno
-    _descCache: null,
-    descubierto(tipo, clave) {
-      if (!this._descCache) {
-        const p = this.get();
-        this._descCache = p && p.descubiertos
-          ? { salidas: { ...p.descubiertos.salidas }, entidades: { ...p.descubiertos.entidades }, objetos: { ...p.descubiertos.objetos } }
-          : { salidas: {}, entidades: {}, objetos: {} };
-      }
-      return !!this._descCache[tipo][clave];
-    },
-    registrarDescubierto(tipo, clave) {
-      if (this.descubierto(tipo, clave)) return;
-      this._descCache[tipo][clave] = true;
-      this._update((p) => {
-        p.descubiertos = p.descubiertos || { salidas: {}, entidades: {}, objetos: {} };
-        p.descubiertos[tipo][clave] = true;
-      });
-    },
-    registrarSalida(levelId, turnos) {
-      this._update((p) => {
-        const c = p.codice[levelId];
-        if (c && (c.mejorTurnos === null || turnos < c.mejorTurnos)) c.mejorTurnos = turnos;
-      });
-    },
-    registrarFin(victoria, journal, turnTotal, seed, levelFinal) {
-      this._update((p) => {
-        p.records.runs++;
-        p.records.maxNiveles = Math.max(p.records.maxNiveles, journal.length);
-        p.records.maxTurnos = Math.max(p.records.maxTurnos, turnTotal);
-        if (victoria) {
-          p.records.escapes++;
-          if (p.codice[levelFinal]) p.codice[levelFinal].escapado = true;
-        }
-        p.historial.unshift({
-          fecha: new Date().toISOString().slice(0, 16).replace('T', ' '),
-          semilla: seed,
-          niveles: journal.length,
-          turnos: turnTotal,
-          resultado: victoria ? '⭐ Escape' : '☠ ' + (journal[journal.length - 1]?.nombre || '—'),
-        });
-        p.historial = p.historial.slice(0, 20);
-      });
-    },
-    exportar() {
-      const d = this._load();
-      if (!d.activo) return null;
-      return JSON.stringify({ nombre: d.activo, datos: d.perfiles[d.activo] }, null, 1);
-    },
-    importar(json) {
-      try {
-        const o = JSON.parse(json);
-        if (typeof o.nombre !== 'string' || !esObjetoPerfil(o.datos)) return false;
-        const nombre = o.nombre.trim().slice(0, 24);
-        if (!nombre) return false;
-        const d = this._load();
-        d.perfiles[nombre] = normalizarPerfil(o.datos);
-        d.activo = nombre;
-        this._save(d);
-        this._descCache = null;
-        return true;
-      } catch (e) { return false; }
-    },
-  };
-
-  const saveKey = () => 'backrooms-save::' + (Profiles.activeName() || 'anon');
+  function save() { persistence?.save(); }
+  function loadSave() { return persistence?.load() || null; }
+  function continueRun(saved) { return persistence.continueRun(saved); }
 
   // ---------- utilidades de estado ----------
   world.log = (msg, cls) => world.ui.log(msg, cls);
@@ -273,6 +117,7 @@
   };
   world.thirst = (n) => { world.player.sed = Math.max(0, Math.min(100, world.player.sed + n)); };
   world.hunger = (n) => { world.player.hambre = Math.max(0, Math.min(100, world.player.hambre + n)); };
+  world.fatiga = (n) => { world.player.agotamiento = Math.max(0, Math.min(100, world.player.agotamiento + n)); };
 
   // RUIDO (v18): las entidades latentes/en alerta investigan los sonidos
   world.hacerRuido = function (x, y, radio) {
@@ -281,9 +126,7 @@
 
   // posesión total (mochila + manos + puesto) — los pasivos de bolsillo
   // funcionan por llevarlos encima
-  world.hasItem = (id) => world.player.inv.includes(id) ||
-    (world.player.manos || []).includes(id) ||
-    Object.values(world.player.equipo || {}).includes(id);
+  world.hasItem = (id) => Shared.posee(world.player, id);
   // "en mano": linterna y armas solo funcionan empuñadas
   world.enMano = (id) => (world.player.manos || []).includes(id);
   world.enManoConEfecto = (k, v) => (world.player.manos || []).some((id) => {
@@ -292,11 +135,8 @@
   });
   // "puesto": la ropa (chaqueta, máscara, botas) solo protege VESTIDA (v20)
   world.equipado = (id) => Object.values(world.player?.equipo || {}).includes(id);
-  world.tienePasivo = (pasivo) => [
-    ...(world.player.inv || []),
-    ...(world.player.manos || []),
-    ...Object.values(world.player.equipo || {}),
-  ].some((id) => world.data.objects[id]?.efecto?.pasivo === pasivo);
+  world.tienePasivo = (pasivo) => Shared.idsPoseidos(world.player)
+    .some((id) => world.data.objects[id]?.efecto?.pasivo === pasivo);
 
   // Remodelación REAL de una zona del nivel (propiedad no euclidiana):
   // regenera los tiles de un chunk lejos del jugador, valida que todas las
@@ -388,7 +228,7 @@
     world.runSeed = seed || RNG.randomSeed();
     world.player = {
       x: 0, y: 0, rx: 0, ry: 0, dir: 'down', flip: false, rot: 2,
-      salud: 100, cordura: 100, sed: 100, hambre: 100,
+      salud: 100, cordura: 100, sed: 100, hambre: 100, agotamiento: 100,
       inv: [], manos: [null, null], equipo: { cara: null, cuerpo: null, pies: null },
       luz: false, viva: true,
     };
@@ -411,13 +251,6 @@
   }
 
   // ---------- transición de nivel ----------
-  // salidas de las que físicamente NO se puede volver (caídas, vacío, desplomes)
-  function esSinRetorno(def) {
-    if (def.sinRetorno) return true;
-    if (def.tipo === 'void') return true;
-    return /agujero|caes |caer |caída|desplom|abismo|pozo|trampilla|no.?clip|desmay|despiert/i.test(def.texto || '');
-  }
-
   // anillo creciente hasta la casilla pisable más cercana (paridad con
   // buscarSpawn del server): un punto guardado puede haber quedado tapiado o
   // sobre el vacío tras ventanas deslizantes o remodelaciones
@@ -436,7 +269,7 @@
     if (!def) { world.log('Ese camino no lleva a ninguna parte.', 'event'); return; }
 
     // el ambiente del nivel anterior muere AQUÍ (nada de sonidos acumulados)
-    if (window.Sfx) Sfx.stopAmbient();
+    if (window.Sfx) { Sfx.stopAmbient(); Sfx.cargarOverridesDeNivel(def); }
 
     // cierra el diario + SNAPSHOT del nivel que abandonas: el mundo es
     // persistente (v15) — si vuelves por donde viniste, está tal cual lo dejaste
@@ -817,6 +650,8 @@
       }
     }
 
+    window.Levels?.turno(world.level, world, { dentroManila });
+
     // aviso al pisar un contenedor sin registrar
     const contAqui = (world.map.props || []).find(
       (p) => p.contenedor && !p.registrado && p.x === world.player.x && p.y === world.player.y
@@ -835,6 +670,16 @@
     if (world.turn % 15 === 0) world.hunger(-1);
     if (world.player.sed <= 0 && world.turn % 3 === 0) world.hurt(2, 'la deshidratación', true);
     if (world.player.hambre <= 0 && world.turn % 5 === 0) world.hurt(1, 'la inanición', true);
+    // agotamiento: caminar cansa (1 aguante cada 10 pasos); descansar
+    // repone (esperar/escondido/Sala Manila). El tercer peligro del canon.
+    const movioAgota = world.pasosNivel > (world._agotPrevPasos || 0);
+    world._agotPrevPasos = world.pasosNivel;
+    if (movioAgota) {
+      if (world.pasosNivel % 10 === 0) world.fatiga(-1);
+    } else {
+      world.fatiga(dentroManila || world.escondido ? 3 : 2);
+    }
+    if (world.player.agotamiento <= 0 && world.turn % 4 === 0) world.hurt(1, 'el agotamiento', true);
     // el ruido reciente caduca
     if (world.ruido && world.turnTotal - world.ruido.turno > 8) world.ruido = null;
 
@@ -1152,16 +997,12 @@
     const id = world.player.inv[slot];
     if (!id) return;
     const def = world.data.objects[id];
-    if (!def.manos) { world.log(`${def.nombre} no se empuña: viaja en la mochila.`, 'event'); return; }
-    const manos = world.player.manos;
-    if (def.manos === 2) {
-      if (manos[0] || manos[1]) { world.log('Ese objeto necesita las DOS manos libres.', 'event'); return; }
-      manos[0] = id; manos[1] = '=';
-    } else {
-      const libre = manos[0] === null ? 0 : manos[1] === null ? 1 : -1;
-      if (libre === -1) { world.log('Tienes las manos ocupadas.', 'event'); return; }
-      manos[libre] = id;
+    const result = Shared.equiparManos(world.player.manos, id, def.manos);
+    if (result.reason === 'no_equipable') {
+      world.log(`${def.nombre} no se empuña: viaja en la mochila.`, 'event'); return;
     }
+    if (!result.ok) { world.log('Ese objeto necesita manos libres.', 'event'); return; }
+    world.player.manos = result.hands;
     world.player.inv.splice(slot, 1);
     world.log(`Empuñas: ${def.nombre}.`, 'good');
     if (window.Sfx) Sfx.play('ui');
@@ -1170,14 +1011,12 @@
 
   function desequipar(mano) {
     if (world.online) { Net.mochila('desequipar', { mano }); return; }
-    const manos = world.player.manos;
-    let id = manos[mano];
-    if (id === '=') { mano = 0; id = manos[0]; }
-    if (!id) return;
-    if (world.player.inv.length >= 6) { world.log('La mochila está llena: no puedes guardar nada más.', 'event'); return; }
-    if (manos[1] === '=') { manos[0] = null; manos[1] = null; }
-    else manos[mano] = null;
-    world.player.inv.push(id);
+    const result = Shared.guardarMano(world.player.manos, mano, world.player.inv.length);
+    if (result.reason === 'vacia') return;
+    if (!result.ok) { world.log('La mochila está llena: no puedes guardar nada más.', 'event'); return; }
+    const id = result.itemId;
+    world.player.manos = result.hands;
+    world.player.inv.push(result.itemId);
     // guardar la linterna la apaga (obvio, pero hay que decírselo al FOV)
     if (world.data.objects[id]?.efecto?.toggle === 'luz' && world.player.luz) {
       world.player.luz = false;
@@ -1678,28 +1517,24 @@
       const manila = def._mec === 'manila';
       const continua = (caminata || manila) && world.level.id === 'level-0';
       if (window.Sfx && !caminata && !manila) Sfx.play('puerta');
-      let destino = def.destino;
-      if (destino === '*aleatoria') {
-        const ids = Object.keys(world.data.levels).filter((i) => i !== world.level.id);
-        destino = world.rng.pick(ids);
-      } else if (destino === '*visitada') {
-        destino = world.rng.pick(world.visited);
-      } else if (destino.startsWith('*opciones:')) {
-        const opciones = destino.slice('*opciones:'.length).split(',');
-        destino = world.rng.pick(opciones);
-      }
+      const destino = Shared.resolverDestino(def, {
+        levelIds: Object.keys(world.data.levels),
+        visited: world.visited,
+        currentId: world.level.id,
+        pick: (values) => world.rng.pick(values),
+      });
       def._destinoResuelto = destino; // para reconocer esta salida al volver
       world.prevStack.push(world.level.id);
       enterLevel(destino, def.texto, {
-        sinRetorno: caminata || manila || esSinRetorno(def),
+        sinRetorno: caminata || manila || Shared.esSinRetorno(def),
         sinTarjeta: continua,
       });
     };
 
-    if (tipo === 'arriesgada' && def.riesgoVoid > 0) {
+    if (Shared.resolverRiesgoVoid(def, 20).applies) {
       world.rollDice('El camino es inestable. Tira el dado…', (d) => {
-        const umbral = Math.round(def.riesgoVoid * 20);
-        if (d <= umbral) {
+        const risk = Shared.resolverRiesgoVoid(def, d);
+        if (!risk.success) {
           world.log(`Dado: ${d}. El suelo cede.`, 'danger');
           die('Caíste al Vacío. El Vacío no devuelve nada.');
         } else {
@@ -1723,7 +1558,7 @@
       salida: '☠ ' + causa,
     });
     Profiles.registrarFin(false, world.journal, world.turnTotal, world.runSeed, world.level.id);
-    localStorage.removeItem(saveKey());
+    persistence.clear();
     if (window.Sfx) { Sfx.stopAmbient(); Sfx.play('muerte'); }
     world.ui.showEnd(false, causa);
   }
@@ -1738,80 +1573,16 @@
     });
     Profiles.registrarSalida(world.level.id, world.turn);
     Profiles.registrarFin(true, world.journal, world.turnTotal, world.runSeed, world.level.id);
-    localStorage.removeItem(saveKey());
+    persistence.clear();
     if (window.Sfx) { Sfx.stopAmbient(); Sfx.play('victoria'); }
     world.ui.showEnd(true, 'Atravesaste el edificio imposible y despertaste en una acera cualquiera, bajo un sol de verdad.');
   }
 
-  // ---------- guardado ----------
-  function save() {
-    try {
-      localStorage.setItem(saveKey(), JSON.stringify({
-        runSeed: world.runSeed,
-        levelId: world.level.id,
-        player: {
-          salud: world.player.salud, cordura: world.player.cordura,
-          sed: world.player.sed, hambre: world.player.hambre,
-          inv: world.player.inv, manos: world.player.manos,
-          equipo: world.player.equipo,
-        },
-        journal: world.journal,
-        visited: world.visited,
-        prevStack: world.prevStack,
-        entryCount: world.entryCount,
-        turnTotal: world.turnTotal,
-        dadosN: world.dadosN,
-        pasosNivel: world.pasosNivel,
-        caminataObjetivo: world._caminataObjetivo,
-        // la puerta personal de vuelta del nivel actual: null si la entrada
-        // fue sinRetorno (caída, caminata, teleport de depuración)
-        retorno: world.map.exits.find((e) => e.def.tipo === 'retorno')?.def.destino || null,
-        tutorial: world.tutorial,
-      }));
-    } catch (e) { /* almacenamiento no disponible */ }
-  }
-
-  function loadSave() {
-    try { return JSON.parse(localStorage.getItem(saveKey())); }
-    catch (e) { return null; }
-  }
-
-  function continueRun(s) {
-    world.runSeed = s.runSeed;
-    world.player = {
-      x: 0, y: 0, rx: 0, ry: 0, dir: 'down', flip: false, rot: 2,
-      salud: s.player.salud, cordura: s.player.cordura,
-      sed: s.player.sed, hambre: s.player.hambre,
-      inv: s.player.inv, manos: s.player.manos || [null, null],
-      equipo: s.player.equipo || { cara: null, cuerpo: null, pies: null },
-      luz: false, viva: true,
-    };
-    world.journal = s.journal;
-    world.visited = s.visited || [];
-    world.prevStack = s.prevStack;
-    world.entryCount = s.entryCount;
-    world.savedLevels = {};   // los snapshots no se serializan: viven en memoria
-    // repite la entrada al nivel guardado sin duplicar el diario
-    world.entryCount[s.levelId] = Math.max(0, (world.entryCount[s.levelId] || 1) - 1);
-    world.turnTotal = s.turnTotal;
-    world.dadosN = s.dadosN || 0;
-    world.tutorial = s.tutorial || (s.turnTotal > 0
-      ? { inicio: true, interaccion: true, mochila: true }
-      : {});
-    world.over = false;
-    world._muerteSmiler = false;
-    world._fuenteDano = null;
-    world.level = null;
-    enterLevel(s.levelId, 'Retomas la marcha donde lo dejaste.',
-      s.retorno ? { retornoA: s.retorno } : undefined);
-    world.pasosNivel = Math.max(0, s.pasosNivel || 0);
-    if (s.caminataObjetivo) world._caminataObjetivo = s.caminataObjetivo;
-    const f = world.pasosNivel / Math.max(1, world._caminataObjetivo);
-    world._caminataAvisos = {
-      lejos1: f >= 0.3, lejos2: f >= 0.65, lejos3: f >= 0.82, lejos4: f >= 0.94,
-    };
-    save();
-  }
+  persistence = Persistence.create({
+    world,
+    activeProfile: Profiles.activeName,
+    enterLevel,
+  });
 
   window.Game = {
     world, startRun, continueRun, loadSave, Profiles,

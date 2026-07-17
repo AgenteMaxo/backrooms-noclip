@@ -24,20 +24,46 @@
   // Overrides mp3/ogg/wav de game/assets/sounds/ — SOLO los que existen según
   // el manifiesto de assets (v30.6: antes se sondeaban 15 nombres × 3
   // extensiones × 2 rutas al cargar la página → lluvia de 404 en la portada).
-  // Se cargan al primer gesto (unlock) o al entrar en partida, no en el
-  // título; hasta entonces suena la síntesis WebAudio de siempre.
+  // Se cargan al ENTRAR EN PARTIDA, nunca en el título; hasta entonces suena
+  // la síntesis WebAudio de siempre.
   // Tras añadir/quitar sonidos: node pipeline/build-assets-manifest.js
-  let overridesCargados = false;
-  function cargarOverrides() {
-    if (overridesCargados) return;
-    overridesCargados = true;
+  const pedidos = new Set(); // cada archivo se pide UNA vez por sesión
+  function cargarClaves(claves) {
     const M = (window.ASSETS_MANIFEST || {}).sonidos || {};
-    for (const [n, ruta] of Object.entries(M)) {
+    for (const n of claves) {
+      const ruta = M[n];
+      if (!ruta || pedidos.has(n)) continue;
+      pedidos.add(n);
       const el = new window.Audio();
       el.addEventListener('canplaythrough', () => { if (!overrides[n]) overrides[n] = el; }, { once: true });
       el.src = ruta;
       el.preload = 'auto';
     }
+  }
+
+  // Los sonidos de ENTIDAD son los pesados (smiler.wav son 4,7 MB en WAV para
+  // no perder calidad) y solo hacen falta en los niveles donde vive el bicho:
+  // se cargan por nivel en cargarOverridesDeNivel(), no aquí.
+  function glyphsDeEntidades() {
+    const E = (window.GAME_DATA || {}).entities || {};
+    const s = new Set();
+    for (const e of Object.values(E)) if (e.glyph) s.add(e.glyph);
+    return s;
+  }
+
+  // genéricos: pasos, golpes, dado, muerte… se usan en cualquier nivel
+  function cargarOverrides() {
+    const M = (window.ASSETS_MANIFEST || {}).sonidos || {};
+    const deEntidad = glyphsDeEntidades();
+    cargarClaves(Object.keys(M).filter((n) => !deEntidad.has(n)));
+  }
+
+  // los de las entidades de ESTE nivel (ficha del nivel → glyph). Se llama al
+  // entrar, no al ver al bicho: así hay margen para bufferizar antes del cue.
+  function cargarOverridesDeNivel(def) {
+    if (!def || !def.entidades) return;
+    const E = (window.GAME_DATA || {}).entities || {};
+    cargarClaves(def.entidades.map((ent) => E[ent.id] && E[ent.id].glyph).filter(Boolean));
   }
 
   function ensure() {
@@ -59,7 +85,9 @@
 
   function unlock() {
     try {
-      cargarOverrides(); // primer gesto: momento perfecto para traer los mp3
+      // NADA de cargarOverrides() aquí: el primer gesto ocurre en la PORTADA y
+      // se descargaba todo el SFX del juego antes de empezar a jugar. Los trae
+      // cargarOverridesDeJuego() (main.js) al entrar en partida.
       if (!ensure()) return;
       if (ctx.state === 'suspended') ctx.resume();
     } catch (e) {}
@@ -209,6 +237,59 @@
       sfxBus.gain.value = old * (0.15 + k * 0.85);
       (CUES[glyph] ?? CUES.generico)();
       setTimeout(() => { if (sfxBus) sfxBus.gain.value = old; }, 120);
+    } catch (e) {}
+  }
+
+  // ---------- susurros de la Sala Manila ----------
+  // «a faint, disquieting whispering noise emanating from behind the walls»
+  // (wiki de Level 0). Ráfagas de ruido con formante de voz susurrada (bandpass
+  // estrecho que barre + corte de graves «aireado»), en 2-4 «sílabas» y paneo
+  // aleatorio para que suene detrás de las paredes, nunca centrado.
+  function susurros(intensidad = 1) {
+    try {
+      if (muted) return;
+      // si dejas mp3/ogg/wav en game/assets/sounds/ con nombre `susurros-lvl-0-1`,
+      // `susurros-lvl-0-2`… (y corres build-assets-manifest.js) suena uno al
+      // AZAR en lugar de la síntesis. Cualquier clave que empiece por «susurros».
+      const claves = Object.keys(overrides).filter((k) => k.startsWith('susurros'));
+      if (claves.length) {
+        const ov = overrides[claves[Math.floor(Math.random() * claves.length)]];
+        const el = ov.cloneNode();
+        el.volume = Math.min(1, vol * volFx * Math.min(1, 0.45 + intensidad * 0.35));
+        el.play().catch(() => {});
+        return;
+      }
+      if (!ensure()) return;
+      const t0 = ctx.currentTime;
+      let t = t0 + Math.random() * 0.15;
+      const silabas = 2 + Math.floor(Math.random() * 3);
+      for (let i = 0; i < silabas; i++) {
+        const dur = 0.10 + Math.random() * 0.14;
+        const src = ctx.createBufferSource();
+        src.buffer = noiseBuffer(dur + 0.05);
+        const hp = ctx.createBiquadFilter();
+        hp.type = 'highpass'; hp.frequency.value = 700;
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass'; bp.Q.value = 6 + Math.random() * 6;
+        const f0 = 900 + Math.random() * 1600;
+        bp.frequency.setValueAtTime(f0, t);
+        bp.frequency.linearRampToValueAtTime(f0 * (0.7 + Math.random() * 0.6), t + dur);
+        const g = ctx.createGain();
+        const pico = Math.max(0.008, 0.05 * intensidad * (0.6 + Math.random() * 0.5));
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(pico, t + dur * 0.35);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        src.connect(hp).connect(bp).connect(g);
+        if (ctx.createStereoPanner) {
+          const p = ctx.createStereoPanner();
+          p.pan.value = (Math.random() * 2 - 1) * 0.8;
+          g.connect(p).connect(sfxBus);
+        } else {
+          g.connect(sfxBus);
+        }
+        src.start(t); src.stop(t + dur + 0.05);
+        t += dur * (0.55 + Math.random() * 0.5);
+      }
     } catch (e) {}
   }
 
@@ -761,8 +842,8 @@
   }
 
   window.Sfx = {
-    unlock, cargarOverrides, play, cue, cueDist, entityLoop, updateEntityLoops, ambient, stopAmbient, toggleMute, setVolume, idle,
-    level0Flicker, level1Blackout, playMenu, stopMenu,
+    unlock, cargarOverrides, cargarOverridesDeNivel, play, cue, cueDist, entityLoop, updateEntityLoops, ambient, stopAmbient, toggleMute, setVolume, idle,
+    level0Flicker, level1Blackout, playMenu, stopMenu, susurros,
     get muted() { return muted; },
     get volumen() { return vol; },
     get volumenFx() { return volFx; },

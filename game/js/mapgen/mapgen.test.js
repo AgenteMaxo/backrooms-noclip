@@ -5,12 +5,14 @@ global.window = global;
 require('../data.js');
 require('../engine/rng.js');
 require('./mapgen.js');
+const MapGenApi = global.MapGen;
+const RngApi = global.RNG;
 
 function countTiles(g) {
   const counts = { walkable: 0, vacio: 0 };
   for (const tile of g.t) {
-    if (MapGen.walkable(tile)) counts.walkable++;
-    if (tile === MapGen.T.VACIO) counts.vacio++;
+    if (MapGenApi.walkable(tile)) counts.walkable++;
+    if (tile === MapGenApi.T.VACIO) counts.vacio++;
   }
   return counts;
 }
@@ -25,7 +27,7 @@ test('invernadero con altura no divisible por 3 no cae al fallback de pasillos',
     entidades: [],
   };
 
-  const map = MapGen.generate(def, RNG.create('pre-fix-4'));
+  const map = MapGenApi.generate(def, RngApi.create('pre-fix-4'));
   const counts = countTiles(map.grid);
 
   assert.ok(counts.walkable >= 60, 'el mapa debe tener suelo suficiente para jugar');
@@ -37,7 +39,7 @@ test('Level 6 conserva dos salidas físicas y la salida por caminata', () => {
 
   for (let i = 0; i < 100; i++) {
     const seed = `regresion-level-6::${i}`;
-    const map = MapGen.generate(def, RNG.create(seed));
+    const map = MapGenApi.generate(def, RngApi.create(seed));
     const destinosFisicos = map.exits.map((e) => e.def.destino).sort();
 
     assert.deepEqual(destinosFisicos, ['level-6-1', 'level-8'], `${seed}: salidas físicas`);
@@ -61,7 +63,7 @@ test('Level 0 genera sus botellas y taquillas adicionales en sitios validos', ()
   };
 
   for (let i = 0; i < 50; i++) {
-    const map = MapGen.generate(def, RNG.create(`level-0-recursos-${i}`));
+    const map = MapGenApi.generate(def, RngApi.create(`level-0-recursos-${i}`));
     const botellas = map.items.filter((item) => item.id === 'agua_almendras');
     const taquillas = map.props.filter((prop) => prop.id === 'taquilla');
     const posiciones = new Set();
@@ -70,12 +72,12 @@ test('Level 0 genera sus botellas y taquillas adicionales en sitios validos', ()
     assert.ok(taquillas.length >= 10 && taquillas.length <= 14);
 
     for (const recurso of [...botellas, ...taquillas]) {
-      assert.ok(MapGen.walkable(MapGen.at(map.grid, recurso.x, recurso.y)));
+      assert.ok(MapGenApi.walkable(MapGenApi.at(map.grid, recurso.x, recurso.y)));
       const clave = `${recurso.x},${recurso.y}`;
       assert.ok(!posiciones.has(clave), `recurso solapado en ${clave}`);
       posiciones.add(clave);
     }
     for (const taquilla of taquillas)
-      assert.equal(MapGen.at(map.grid, taquilla.x, taquilla.y - 1), MapGen.T.PARED);
+      assert.equal(MapGenApi.at(map.grid, taquilla.x, taquilla.y - 1), MapGenApi.T.PARED);
   }
 });

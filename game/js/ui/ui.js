@@ -117,6 +117,7 @@
     ['dbg-comida', (p) => p.hambre, '#c9962f'],
     ['dbg-bebida', (p) => p.sed, '#4a7fbf'],
     ['dbg-cordura', (p) => p.cordura, '#9a6fc9'],
+    ['dbg-aguante', (p) => p.agotamiento, '#4aa06a'],
   ];
   // clic en la barra: fija el valor directamente (streamer probando escenarios)
   function fijarDebugStat(id, pct) {
@@ -124,6 +125,7 @@
     else if (id === 'dbg-comida') world.player.hambre = pct;
     else if (id === 'dbg-bebida') world.player.sed = pct;
     else if (id === 'dbg-cordura') world.sanity(pct - world.player.cordura);
+    else if (id === 'dbg-aguante') world.player.agotamiento = pct;
     updateHUD();
   }
   function renderDebugStats() {
@@ -160,6 +162,8 @@
       'Bebe agua de almendras (o arriésgate con los charcos). A 0, la deshidratación te mata.'],
     ['pan', 'Hambre', (p) => p.hambre, [50, 30, 10], ['Hambriento', 'Famélico', 'Inanición'],
       'Registra contenedores en busca de comida. A 0, la inanición te consume.'],
+    ['energia', 'Aguante', (p) => p.agotamiento, [50, 30, 10], ['Cansado', 'Agotado', 'Exhausto'],
+      'Párate a descansar (mejor escondido o en la Sala Manila) para recuperarlo. A 0, el agotamiento te desgasta.'],
   ];
   function renderMoodles() {
     const cont = $('moodles');
@@ -364,6 +368,7 @@
     if (p.cordura < 50) chip('yin', 'Mente frágil', `Cordura ${p.cordura}/100. Descansa en niveles seguros o usa un recuerdo del hogar.`, true);
     if (p.sed < 50) chip('gota', 'Sed', `Sed ${p.sed}/100. Bebe agua de almendras.`, true);
     if (p.hambre < 50) chip('pan', 'Hambre', `Hambre ${p.hambre}/100. Encuentra comida.`, true);
+    if (p.agotamiento < 50) chip('energia', 'Cansado', `Aguante ${p.agotamiento}/100. Párate a descansar.`, true);
     for (const rid of world.level?.reglas || []) {
       const r = window.Rules?.get(rid);
       if (!r || !r.turno) continue; // solo las que actúan cada turno
@@ -549,157 +554,13 @@
   let flashT = -99999;
   function flashDamage() { flashT = performance.now(); }
 
-  // ---------- tarjeta de nivel ----------
-  function showLevelCard(def, cb) {
-    show('card');
-    if (window.Sfx) { Sfx.play('ui'); Sfx.idle(true); } // pad suave entre niveles
-    const colores = ['#3fae6a', '#8bb944', '#d9a531', '#e0742c', '#d94a35', '#a12744'];
-    $('card-danger').style.background = colores[def.peligro] || '#888';
-    $('card-name').textContent = def.nombre;
-    $('card-class').textContent = `${def.clase} · Peligro ${def.peligro}/5 · ${def.bioma}`;
-    $('card-desc').textContent = def.descripcion;
-    $('card-quote').textContent = '«' + def.cita + '»';
-    const rulesEl = $('card-rules');
-    rulesEl.innerHTML = '';
-    const chip = (icono, texto) => {
-      const span = document.createElement('span');
-      const id = window.Icons ? (Icons.has(icono) ? icono : Icons.deEmoji(icono)) : null;
-      if (id) span.appendChild(Icons.img(id, 13));
-      else if (icono) span.appendChild(document.createTextNode(icono));
-      span.appendChild(document.createTextNode(' ' + texto));
-      return span;
-    };
-    for (const rid of def.reglas || []) {
-      const r = Rules.get(rid);
-      if (!r) continue;
-      const span = chip(r.icono, r.nombre);
-      span.title = r.desc;
-      rulesEl.appendChild(span);
-    }
-    if (def.esEscape) {
-      const span = chip('estrella', 'POSIBLE RUTA DE ESCAPE');
-      span.style.borderColor = '#4ade80';
-      span.style.color = '#8ae8a0';
-      rulesEl.appendChild(span);
-    }
-    $('card-wiki').href = def.url;
-    $('btn-enter').onclick = () => {
-      if (window.Sfx) Sfx.idle(false);
-      show('game');
-      cb();
-    };
-  }
-
-  // ---------- dado ----------
-  function showDice(texto, cb, resultado) {
-    if (document.pointerLockElement) document.exitPointerLock();
-    // el resultado llega ya decidido por la lógica (determinista por semilla);
-    // si no llega (dado personal online), se tira aquí
-    const tirar = () => (Number.isInteger(resultado) ? resultado : 1 + Math.floor(Math.random() * 20));
-    // la animación puede apagarse en Ajustes (v16): la tirada se resuelve igual
-    if (window.OPTS && !window.OPTS.dado) {
-      setTimeout(() => cb(tirar()), 120);
-      return;
-    }
-    const ov = $('dice-overlay'), face = $('dice-face');
-    $('dice-text').textContent = texto;
-    ov.style.display = 'flex';
-    face.classList.add('rolling');
-    let ticks = 0;
-    const iv = setInterval(() => {
-      face.textContent = 1 + Math.floor(Math.random() * 20); // caras al vuelo: solo animación
-      if (++ticks > 14) {
-        clearInterval(iv);
-        const result = tirar();
-        face.textContent = result;
-        face.classList.remove('rolling');
-        setTimeout(() => { ov.style.display = 'none'; cb(result); }, 900);
-      }
-    }, 70);
-  }
-
-  // ---------- modal de salida ----------
-  let exitDefShown = null;
-  function showExitModal(def) {
-    if (document.pointerLockElement) document.exitPointerLock();
-    exitDefShown = def;
-    world.busy = true;
-    // colección: ver una salida la desbloquea en el códice (las de retorno no cuentan)
-    if (def.tipo !== 'retorno' && world.level)
-      Game.Profiles.registrarDescubierto('salidas', `${world.level.id}::${def.texto}`);
-    $('exit-modal').style.display = 'flex';
-    $('exit-text').textContent = def.texto;
-    const warn = $('exit-warn');
-    const destinoNombre = def.destino && world.data.levels[def.destino]
-      ? world.data.levels[def.destino].wikiTitle : null;
-    if (def.tipo === 'retorno')
-      warn.textContent = `↩ Volver por donde viniste → ${destinoNombre ?? '???'}`;
-    else if (def.tipo === 'escape') warn.textContent = '⭐ Parece un camino de vuelta a la realidad.';
-    else if (def.tipo === 'sellada') warn.textContent = '⌀ El camino se pierde en niveles sin cartografiar.';
-    else if (def.tipo === 'llave') warn.textContent = '🗝 Requiere una Llave de Nivel.';
-    else if (def.tipo === 'arriesgada' && def.riesgoVoid > 0)
-      warn.textContent = `⚠ Camino inestable (riesgo de caer al Vacío) → ${destinoNombre ?? '???'}`;
-    else warn.textContent = destinoNombre ? `→ ${destinoNombre}` : '→ ¿?';
-    // showLevelPicker oculta CRUZAR; si se eligió nivel (no «quedarse»), nadie lo restauraba
-    $('btn-cross').style.display = '';
-    $('btn-cross').onclick = () => { hideExitModal(); Game.crossExit(def); };
-    $('btn-stay').onclick = hideExitModal;
-  }
-  function hideExitModal() {
-    $('exit-modal').style.display = 'none';
-    world.busy = false;
-  }
-
-  // ---------- selector de nivel (llave del Hub) ----------
-  function showLevelPicker(ids, cb) {
-    if (document.pointerLockElement) document.exitPointerLock();
-    world.busy = true;
-    const modal = $('exit-modal');
-    modal.style.display = 'flex';
-    $('exit-text').innerHTML = 'La Llave gira. ¿Qué puerta abres?<br><br>';
-    const warn = $('exit-warn');
-    warn.innerHTML = '';
-    for (const id of ids) {
-      const b = document.createElement('button');
-      b.className = 'btn-small';
-      b.style.margin = '3px';
-      b.textContent = world.data.levels[id].wikiTitle;
-      b.onclick = () => { modal.style.display = 'none'; world.busy = false; cb(id); };
-      warn.appendChild(b);
-    }
-    $('btn-cross').onclick = null;
-    $('btn-cross').style.display = 'none';
-    $('btn-stay').onclick = () => {
-      modal.style.display = 'none';
-      $('btn-cross').style.display = '';
-      world.busy = false;
-    };
-  }
-
-  // ---------- elección libre (beber agua, rituales…) ----------
-  function showChoice(titulo, texto, opciones) {
-    if (document.pointerLockElement) document.exitPointerLock();
-    world.busy = true;
-    $('choice-title').textContent = titulo;
-    $('choice-text').textContent = texto;
-    const btns = $('choice-btns');
-    btns.innerHTML = '';
-    opciones.forEach((op, i) => {
-      const b = document.createElement('button');
-      b.className = i === 0 ? 'btn-big' : 'btn-small';
-      if (i === 0) { b.style.fontSize = '12px'; b.style.padding = '11px 20px'; }
-      b.textContent = op.label;
-      b.onclick = () => {
-        $('choice-modal').style.display = 'none';
-        if ($('exit-modal').style.display === 'none' && $('dice-overlay').style.display === 'none')
-          world.busy = false;
-        if (window.Sfx) Sfx.play('ui');
-        if (op.cb) op.cb();
-      };
-      btns.appendChild(b);
-    });
-    $('choice-modal').style.display = 'flex';
-  }
+  // ---------- modales de juego ----------
+  const modales = UiModals.create({ world, $, showScreen: show });
+  const showLevelCard = modales.mostrarTarjetaNivel;
+  const showDice = modales.mostrarDado;
+  const showExitModal = modales.mostrarSalida;
+  const showLevelPicker = modales.mostrarSelectorNivel;
+  const showChoice = modales.mostrarEleccion;
 
   // ---------- diario ----------
   function renderJournal(listEl) {
@@ -724,170 +585,9 @@
     if (!visible) renderJournal($('journal-list'));
   }
 
-  // ---------- códice del errante (v19: compacto, con desplegables) ----------
-  function renderCodex() {
-    const P = Game.Profiles;
-    const perfil = P.get();
-    $('codex-name').textContent = P.activeName() || 'sin perfil';
-    const recEl = $('codex-records'), lvEl = $('codex-levels'), hiEl = $('codex-history');
-    lvEl.innerHTML = ''; hiEl.innerHTML = '';
-    if (!perfil) { recEl.textContent = 'Crea un perfil para empezar tu expediente.'; return; }
-    const r = perfil.records;
-    recEl.textContent = `Expediciones: ${r.runs} · Récord de niveles en una expedición: ${r.maxNiveles} · Récord de turnos sobrevividos: ${r.maxTurnos} · Escapes logrados: ${r.escapes}`;
-    const colores = ['#3fae6a', '#8bb944', '#d9a531', '#e0742c', '#d94a35', '#a12744'];
-    const entries = Object.entries(perfil.codice).sort((a, b) => b[1].veces - a[1].veces);
-    $('cdx-n-niveles').textContent = `${entries.length}/${Object.keys(world.data.levels).length}`;
-    if (!entries.length) lvEl.innerHTML = '<p class="codex-records">Aún no has transitado ningún nivel.</p>';
-    for (const [id, c] of entries) {
-      const lv = world.data.levels[id];
-      if (!lv) continue;
-      const det = document.createElement('details');
-      det.className = 'cdx-nivel';
-      det.style.borderLeftColor = colores[lv.peligro] || '#888';
-      const mejor = c.mejorTurnos !== null
-        ? ` · mejor travesía: ${c.mejorTurnos} turnos` : ' · nunca lograste salir de él';
-      det.innerHTML = `<summary><b>${lv.nombre}</b>${c.escapado ? ' ⭐' : ''}
-          <span class="meta-min">peligro ${lv.peligro}/5 · ${c.veces}×</span></summary>
-        <div class="cuerpo">
-          <div class="meta">${lv.clase} · bioma: ${lv.bioma}</div>
-          <div class="desc">${lv.descripcion}</div>
-          <div class="stats">Transitado ${c.veces} ${c.veces === 1 ? 'vez' : 'veces'}${mejor}${c.escapado ? ' · ⭐ escapaste por aquí' : ''}</div>
-          <a href="${lv.url}" target="_blank" rel="noopener">ficha original en la wiki ↗</a>
-        </div>`;
-      lvEl.appendChild(det);
-    }
-    const hist = perfil.historial || [];
-    $('cdx-n-hist').textContent = hist.length || '—';
-    for (const h of hist) {
-      const li = document.createElement('li');
-      li.textContent = `${h.fecha} · semilla «${h.semilla}» · ${h.niveles} niveles, ${h.turnos} turnos · ${h.resultado}`;
-      hiEl.appendChild(li);
-    }
-    renderColeccion(perfil);
-  }
-
-  // ---------- Colección (v15): coleccionables con «???» hasta descubrirlos ----------
-  function silueta(glyph) {
-    const spr = Sprites.get(glyph, 0);
-    if (!spr) return null;
-    const c = document.createElement('canvas');
-    c.width = spr.width; c.height = spr.height;
-    const x = c.getContext('2d');
-    x.drawImage(spr, 0, 0);
-    x.globalCompositeOperation = 'source-in';   // solo tiñe los píxeles del sprite
-    x.fillStyle = '#15130e';
-    x.fillRect(0, 0, c.width, c.height);
-    return c.toDataURL();
-  }
-
-  function renderColeccion(perfil) {
-    const desc = perfil.descubiertos || { salidas: {}, entidades: {}, objetos: {} };
-
-    // entidades: sprite real si la has visto; silueta negra y ??? si no
-    const entEl = $('codex-entidades');
-    entEl.innerHTML = '';
-    let vistas = 0;
-    const ents = Object.values(world.data.entities);
-    for (const def of ents) {
-      const visto = !!desc.entidades[def.id];
-      if (visto) vistas++;
-      const card = document.createElement('div');
-      card.className = 'col-card' + (visto ? '' : ' col-locked');
-      const spr = visto ? Sprites.get(def.glyph, 0) : null;
-      const img = document.createElement('img');
-      img.className = 'icono';
-      img.style.width = img.style.height = '34px';
-      img.src = spr ? spr.toDataURL() : (silueta(def.glyph) || (window.Icons ? Icons.url('interrogante') : ''));
-      card.appendChild(img);
-      const nom = document.createElement('div');
-      nom.textContent = visto ? def.nombre : '???';
-      card.appendChild(nom);
-      if (visto) card.title = def.descripcion || def.nombre;
-      if (visto && def.url && window.Icons) {
-        const a = document.createElement('a');
-        a.className = 'col-wiki';
-        a.href = def.url; a.target = '_blank'; a.rel = 'noopener';
-        a.title = 'Ficha real en la wiki ↗';
-        a.appendChild(Icons.img('interrogante', 12));
-        card.appendChild(a);
-      }
-      entEl.appendChild(card);
-    }
-    $('cdx-n-ent').textContent = `${vistas}/${ents.length}`;
-
-    // objetos
-    const objEl = $('codex-objetos');
-    objEl.innerHTML = '';
-    let habidos = 0;
-    const objs = Object.values(world.data.objects);
-    for (const def of objs) {
-      const visto = !!desc.objetos[def.id];
-      if (visto) habidos++;
-      const card = document.createElement('div');
-      card.className = 'col-card' + (visto ? '' : ' col-locked');
-      if (window.Icons)
-        card.appendChild(Icons.img(visto ? (ICONOS_INV[def.id] || 'interrogante') : 'interrogante', 32));
-      const nom = document.createElement('div');
-      nom.textContent = visto ? def.nombre : '???';
-      card.appendChild(nom);
-      if (visto) card.title = def.descripcion || def.nombre;
-      if (visto && def.url && window.Icons) {
-        const a = document.createElement('a');
-        a.className = 'col-wiki';
-        a.href = def.url; a.target = '_blank'; a.rel = 'noopener';
-        a.title = 'Ficha real en la wiki ↗';
-        a.appendChild(Icons.img('interrogante', 12));
-        card.appendChild(a);
-      }
-      objEl.appendChild(card);
-    }
-    $('cdx-n-obj').textContent = `${habidos}/${objs.length}`;
-
-    // salidas por nivel (solo niveles que ya pisaste: sin spoilers del resto)
-    const salEl = $('codex-salidas');
-    salEl.innerHTML = '';
-    let salTot = 0, salDesc = 0;
-    for (const id of Object.keys(perfil.codice)) {
-      const lv = world.data.levels[id];
-      if (!lv || !(lv.salidas || []).length) continue;
-      const halladas = lv.salidas.filter((s) => desc.salidas[`${id}::${s.texto}`]);
-      salTot += lv.salidas.length;
-      salDesc += halladas.length;
-      const det = document.createElement('details');
-      det.className = 'cdx-nivel';
-      det.style.borderLeftColor = '#8a7a3d';
-      const ul = lv.salidas.map((s) =>
-        desc.salidas[`${id}::${s.texto}`]
-          ? `<li>${s.texto}</li>`
-          : '<li class="col-locked">??? — sin descubrir</li>').join('');
-      det.innerHTML = `<summary><b>${lv.wikiTitle}</b>
-          <span class="meta-min">${halladas.length}/${lv.salidas.length}</span></summary>
-        <div class="cuerpo"><ul>${ul}</ul></div>`;
-      salEl.appendChild(det);
-    }
-    $('cdx-n-sal').textContent = salTot ? `${salDesc}/${salTot}` : '—';
-    if (!salEl.children.length)
-      salEl.innerHTML = '<p class="codex-records">Explora niveles para catalogar sus salidas.</p>';
-  }
-
-  let codexVisible = false;
-  function toggleCodex(force) {
-    codexVisible = force !== undefined ? force : !codexVisible;
-    if (codexVisible && document.pointerLockElement) document.exitPointerLock();
-    $('codex-panel').style.display = codexVisible ? 'flex' : 'none';
-    if (codexVisible) renderCodex();
-    // pausa el juego mientras el códice está abierto (sin pisar modales/dado)
-    if (world.level && !world.over) {
-      if (codexVisible) world.busy = true;
-      else if ($('exit-modal').style.display === 'none' && $('dice-overlay').style.display === 'none')
-        world.busy = false;
-    }
-  }
-  if ($('btn-codex-close')) $('btn-codex-close').onclick = () => toggleCodex(false);
-  if ($('btn-codex-close-top')) $('btn-codex-close-top').onclick = () => toggleCodex(false);
-  $('codex-panel').onclick = (ev) => {
-    if (ev.target === $('codex-panel') || ev.target.classList.contains('codex-box-wrapper')) toggleCodex(false);
-  };
+  // ---------- códice del errante ----------
+  const codex = UiCodex.create({ world, $, objectIcons: ICONOS_INV });
+  const toggleCodex = codex.alternar;
 
   // ---------- changelog ----------
   let changelogVisible = false;

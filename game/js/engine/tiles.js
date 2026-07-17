@@ -24,6 +24,83 @@
     return c;
   }
 
+  function bitmapTile(image) {
+    const c = canvas(TILE, TILE), ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight, 0, 0, TILE, TILE);
+    return c;
+  }
+
+  // Las tres caras conservan el formato esperado por el render 2D, aunque la
+  // pared bitmap sea una única textura seamless en el render 3D.
+  function bitmapWallTiles(image, pal) {
+    return [0, 1, 2].map(() => {
+      const c = canvas(TILE, TILE), ctx = c.getContext('2d');
+      ctx.fillStyle = shade(pal.pared, 1.08);
+      ctx.fillRect(0, 0, TILE, RF);
+      ctx.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight, 0, RF, TILE, FH);
+      const grad = ctx.createLinearGradient(0, RF, 0, TILE);
+      grad.addColorStop(0, 'rgba(255,255,255,0.06)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.24)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, RF, TILE, FH);
+      return c;
+    });
+  }
+
+  // Overrides bitmap por nivel. Las rutas vienen del mismo manifiesto que ya
+  // usan sprites, iconos y sonidos: una sola fuente de verdad y ningún sondeo.
+  const texturasNivel = Object.create(null);
+
+  function cargarImagen(ruta) {
+    return new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve(image.naturalWidth ? image : null);
+      image.onerror = () => resolve(null);
+      image.src = ruta;
+    });
+  }
+
+  function cargarTexturasNivel(levelId) {
+    const declaradas = window.ASSETS_MANIFEST?.texturasNiveles?.[levelId];
+    if (!declaradas) return Promise.resolve(null);
+    if (texturasNivel[levelId]) return texturasNivel[levelId].promise;
+
+    const fuentes = [
+      ...(declaradas.pared ? [{ tipo: 'pared', ruta: declaradas.pared }] : []),
+      ...(declaradas.suelos || []).map((ruta) => ({ tipo: 'suelo', ruta })),
+    ];
+    const entrada = { valor: null, promise: null };
+    const cargas = fuentes.map((fuente) =>
+      cargarImagen(fuente.ruta).then((imagen) => ({ ...fuente, imagen }))
+    );
+    entrada.promise = Promise.all(cargas).then((cargadas) => {
+      entrada.valor = {
+        pared: cargadas.find(({ tipo }) => tipo === 'pared')?.imagen || null,
+        suelos: cargadas
+          .filter(({ tipo, imagen }) => tipo === 'suelo' && imagen)
+          .map(({ imagen }) => imagen),
+      };
+      return entrada.valor;
+    });
+    texturasNivel[levelId] = entrada;
+    return entrada.promise;
+  }
+
+  function aplicarTexturasNivel(out, bitmaps, pal) {
+    if (bitmaps.pared) {
+      out.wallSeam = bitmapTile(bitmaps.pared);
+      out.caraFull = bitmapWallTiles(bitmaps.pared, pal);
+    }
+    if (bitmaps.suelos.length) {
+      out.sueloVars = bitmaps.suelos.map(bitmapTile);
+      out.suelo = out.sueloVars;
+      out.sueloSeam = out.sueloVars[0];
+      out.sueloEsc = 1;
+      out.manchas = false;
+    }
+  }
+
   function speckle(ctx, rng, color, n, x0, y0, w, h, size = 1) {
     ctx.fillStyle = color;
     for (let i = 0; i < n; i++) {
@@ -877,8 +954,21 @@
         arbol: wallStyle === 'arbol' ? arbolTile(pal, rng) : null,
         roca: wallStyle === 'roca' ? rocaTile(pal, rng) : null,
       };
+      cargarTexturasNivel(levelDef.id);
+      const carga = texturasNivel[levelDef.id];
+      if (carga?.valor) {
+        aplicarTexturasNivel(out, carga.valor, pal);
+      } else if (carga) {
+        carga.promise.then((bitmaps) => {
+          aplicarTexturasNivel(out, bitmaps, pal);
+          window.dispatchEvent(new CustomEvent('levelassetsready', {
+            detail: { levelId: levelDef.id },
+          }));
+        });
+      }
       return out;
     },
+    cargarTexturasNivel,
     darken,
   };
 })();
