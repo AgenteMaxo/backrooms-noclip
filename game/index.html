@@ -4,17 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BACKROOMS MMO</title>
-<link rel="stylesheet" href="css/style.css?v=3100">
-<link rel="stylesheet" href="css/title-interface.css?v=3100">
+<link rel="stylesheet" href="css/style.css?v=296">
+<link rel="stylesheet" href="css/title-interface.css?v=296">
 </head>
 <body>
-  <!-- Splash screen de presentación (cinematográfico) -->
+<!-- Splash de presentación (idea de Jaime Gaming, #81): se cierra solo o con
+     cualquier gesto; el logo va VENDORIZADO en assets/ui (nada externo) -->
   <div id="splash" class="splash">
     <div class="splash-bar splash-bar-top"></div>
     <div class="splash-bar splash-bar-bottom"></div>
     <div class="splash-vignette"></div>
     <div class="splash-inner">
-      <img class="splash-logo" src="https://static-cdn.jtvnw.net/jtv_user_pictures/4e1c48fc-010a-47e9-8097-6b474d846064-profile_image-150x150.png" alt="Logo" width="150" height="150">
+    <img class="splash-logo" src="assets/ui/logo-maxo.png" alt="AgenteMaxo" width="150" height="150">
       <p class="splash-text">AgenteMaxo</p>
       <p class="splash-comunidad">(y su comunidad)</p>
       <p class="splash-presenta">Presenta</p>
@@ -90,7 +91,6 @@
           <input id="room-input" type="password" spellcheck="false" autocomplete="new-password" placeholder="vacío = pública" maxlength="32">
         </label>
       </div>
-      <p class="mode-bug-note" id="mode-bug-note" style="display:none">Aviso: la versión Un Jugador está bugueada. Juega bajo tu propia responsabilidad.</p>
       <button id="btn-mode-play" class="btn-big btn-mode-go">JUGAR</button>
       <button id="btn-continue" class="btn-small" style="display:none">Continuar partida guardada</button>
       <p id="title-net" class="warn" style="display:none"></p>
@@ -428,44 +428,44 @@
 
 <!-- ?v= rompe la caché del edge (Cloudflare cachea .js/.css por defecto aunque
      el origen no lo pida): SUBIR el número en cada versión, junto con VERSION_JUEGO -->
-<script src="js/data.js?v=3100"></script>
-<script src="js/engine/rng.js?v=3100"></script>
-<script src="js/mapgen/mapgen.js?v=3100"></script>
-<script src="js/engine/tiles.js?v=3100"></script>
-<script src="js/engine/sprites.js?v=3100"></script>
-<script src="js/engine/effects.js?v=3100"></script>
-<script src="js/audio-manifest.js?v=3100"></script>
-<script src="js/assets-manifest.js?v=3100"></script>
-<script src="js/engine/sfx.js?v=3100"></script>
-<script src="js/engine/fov.js?v=3100"></script>
-<script src="js/systems/entities.js?v=3100"></script>
-<script src="js/systems/rules.js?v=3100"></script>
-<script src="js/engine/render.js?v=3100"></script>
-<script src="js/lib/three.min.js?v=3100"></script>
-<script src="js/lib/shaders/CopyShader.js?v=3100"></script>
-<script src="js/lib/shaders/LuminosityHighPassShader.js?v=3100"></script>
-<script src="js/lib/shaders/GammaCorrectionShader.js?v=3100"></script>
-<script src="js/lib/postprocessing/EffectComposer.js?v=3100"></script>
-<script src="js/lib/postprocessing/RenderPass.js?v=3100"></script>
-<script src="js/lib/postprocessing/ShaderPass.js?v=3100"></script>
-<script src="js/lib/postprocessing/UnrealBloomPass.js?v=3100"></script>
-<script src="js/engine/atmos3d.js?v=3100"></script>
-<script src="js/engine/render3d.js?v=3100"></script>
-<script src="js/systems/game.js?v=3100"></script>
-<script src="js/ui/icons.js?v=3100"></script>
-<script src="js/ui/controllers.js?v=3100"></script>
-<script src="js/ui/ui.js?v=3100"></script>
-<script src="js/ui/title-interface.js?v=3100"></script>
-<script src="js/ui/changelog.js?v=3100"></script>
-<script src="js/ui/minimap.js?v=3100"></script>
-<script src="js/sim/fisica.js?v=3100"></script>
+<script src="js/data.js?v=296"></script>
+<script src="js/engine/rng.js?v=296"></script>
+<script src="js/mapgen/mapgen.js?v=296"></script>
+<script src="js/engine/tiles.js?v=296"></script>
+<script src="js/engine/sprites.js?v=296"></script>
+<script src="js/engine/effects.js?v=296"></script>
+<script src="js/audio-manifest.js?v=296"></script>
+<script src="js/assets-manifest.js?v=296"></script>
+<script src="js/engine/sfx.js?v=296"></script>
+<script src="js/engine/fov.js?v=296"></script>
+<script src="js/systems/entities.js?v=296"></script>
+<script src="js/systems/rules.js?v=296"></script>
+<script src="js/engine/render.js?v=296"></script>
+<script src="js/lib/three.min.js?v=296"></script>
+<script src="js/lib/shaders/CopyShader.js?v=296"></script>
+<script src="js/lib/shaders/LuminosityHighPassShader.js?v=296"></script>
+<script src="js/lib/shaders/GammaCorrectionShader.js?v=296"></script>
+<script src="js/lib/postprocessing/EffectComposer.js?v=296"></script>
+<script src="js/lib/postprocessing/RenderPass.js?v=296"></script>
+<script src="js/lib/postprocessing/ShaderPass.js?v=296"></script>
+<script src="js/lib/postprocessing/UnrealBloomPass.js?v=296"></script>
+<script src="js/engine/atmos3d.js?v=296"></script>
+<script src="js/engine/render3d.js?v=296"></script>
+<script src="js/systems/game.js?v=296"></script>
+<script src="js/ui/icons.js?v=296"></script>
+<script src="js/ui/controllers.js?v=296"></script>
+<script src="js/ui/ui.js?v=296"></script>
+<script src="js/ui/title-interface.js?v=296"></script>
+<script src="js/ui/changelog.js?v=296"></script>
+<script src="js/ui/minimap.js?v=296"></script>
+<script src="js/sim/fisica.js?v=296"></script>
 <!-- reglas del mundo COMPARTIDAS con el servidor (duales): IA + Sala; el modo
      offline las ejecuta en la pestaña vía el servidor local de net/local.js -->
-<script src="js/sim/entidades.js?v=3100"></script>
-<script src="js/sim/sala.js?v=3100"></script>
-<script src="js/net/local.js?v=3100"></script>
-<script src="js/net/otros.js?v=3100"></script>
-<script src="js/net/cliente.js?v=3100"></script>
-<script src="js/main.js?v=3100"></script>
+<script src="js/sim/entidades.js?v=296"></script>
+<script src="js/sim/sala.js?v=296"></script>
+<script src="js/net/local.js?v=296"></script>
+<script src="js/net/otros.js?v=296"></script>
+<script src="js/net/cliente.js?v=296"></script>
+<script src="js/main.js?v=296"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v31';
+  window.VERSION_JUEGO = 'v30.14';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -1224,7 +1224,7 @@
       if (Math.abs(gp.axes[0]) > 0.1) dx = gp.axes[0];
       if (Math.abs(gp.axes[1]) > 0.1) dy = gp.axes[1];
     } else {
-      // In game mode, use analog precision for movement vector (if supported)
+      // En modo juego, usar precisión analógica para el vector de movimiento (si hay soporte)
       if (Math.abs(gp.axes[0]) > 0.1) dx = gp.axes[0];
       if (Math.abs(gp.axes[1]) > 0.1) dy = gp.axes[1];
       window.gamepadDx = dx;
@@ -2005,18 +2005,18 @@
 // vuelve al menú de título (usado al MORIR: la partida se reinicia limpia
    // desde cero). Para a la conexión online si la hubiera y deja la música del
    // menú sonando. Game.die() lo invoca vía window.__volverMenu.
-   function volverAlMenu() {
-     // Properly disconnect from server and clean up network state
-     if (world.online && window.Net) {
-       try {
-         // Stop the connection and prevent reconnection attempts
-         window.Net.desconectar();
-       } catch (e) {}
-     }
-     world.online = false;
-     if (world.level) { world.level = null; world.over = false; }
-     if (window.Sfx) { try { Sfx.stopAmbient(); } catch (e) {} }
-     // Reset mode styling when returning to title (fix for multiplayer mode style persistence)
+    function volverAlMenu() {
+      // Desconecta del servidor y limpia el estado de red de forma adecuada
+      if (world.online && window.Net) {
+        try {
+          // Cortar la conexión e impedir intentos de reconexión
+          window.Net.desconectar();
+        } catch (e) {}
+      }
+      world.online = false;
+      if (world.level) { world.level = null; world.over = false; }
+      if (window.Sfx) { try { Sfx.stopAmbient(); } catch (e) {} }
+      // Quita el estilo de modo al volver al título (evita que persista el de multijugador)
      const screenMode = document.getElementById('screen-mode');
      if (screenMode) screenMode.classList.remove('modo-solo', 'modo-online');
      // Al volver desde el juego, recargamos la página para dejarla limpia:
@@ -2056,8 +2056,6 @@
     $id('mode-seed-row').style.display = solo ? 'block' : 'none';
     $id('mode-room-row').style.display = solo ? 'none' : 'block';
     $id('btn-mode-play').textContent = solo ? 'JUGAR' : 'ENTRAR AL MUNDO';
-    // nota de aviso SOLO en el menú de Un Jugador
-    $id('mode-bug-note').style.display = solo ? 'block' : 'none';
     refreshTitle();
     world.ui.showMode(btn);
   }
@@ -2121,7 +2119,7 @@
     // asegura el contexto de audio (primer gesto real de la sesión) y suena
     if (window.Sfx) {
       try { Sfx.unlock(); } catch (e) {}
-      // recarga por si el override de caida.mp3 no se había precargado
+      // recarga por si la sobrescritura de caida.mp3 no se había precargado
       try { Sfx.cargarOverrides(); } catch (e) {}
       try { Sfx.play('caida', null, () => { clearTimeout(boost1); clearTimeout(boost2); clearTimeout(boost3); entrar(); }); }
       catch (e) { clearTimeout(boost1); clearTimeout(boost2); clearTimeout(boost3); entrar(); }

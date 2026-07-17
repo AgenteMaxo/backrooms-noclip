@@ -4,12 +4,16 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
-    { v: 'v31', cambios: [
-      'Ahora el menú principal tiene dos botones para jugar los dos diferentes modos (inspirado en la idea de Roykyu).',
-      'Botón de volver al menú desde el menú de pausa dentro del juego.',
-      'Ahora hay una animación al entrar a cualquiera de los dos modos.',
-      'Muchos arreglos de errores con las muertes, interfaz, generación de terreno y controles.',
-      'Añadí un Splash screen al inicio. (Jaime Gaming)',
+    { v: 'v30.14', cambios: [
+      'El menú principal estrena dos botones grandes: MULTIJUGADOR (azul) y UN JUGADOR (verde). (idea de Roykyu y Jaime Gaming)',
+      'Al entrar en partida ahora CAES hacia las Backrooms: líneas de velocidad, retumbo y golpe al aterrizar. (idea de Jaime Gaming)',
+      'Splash de presentación al cargar la página — se salta con cualquier tecla o clic. (idea de Jaime Gaming)',
+      'Nuevo botón en el menú de pausa: «Noclipearse a la realidad» te saca de la partida y te devuelve al menú.',
+    ] },
+    { v: 'v30.13', cambios: [
+      'Level 1 ahora sufre apagones globales: los fluorescentes fallan, el zumbido se corta y todas sus instancias quedan a oscuras a la vez durante unos segundos. La linterna sigue siendo útil. (josealmon)',
+      'La sed baja más despacio y usar un objeto con la sed a cero ya no provoca una muerte instantánea: la deshidratación vuelve a causar daño gradual. (josealmon)',
+      'Level 13, Level 14 y Level 45 estrenan ambiente sonoro propio, inspirado en la wiki. (Jake-7776)',
     ] },
     { v: 'v30.12', cambios: [
       'Level 0 ya no es un secarral: hay más botellas de agua de almendras por el suelo, más taquillas que registrar, y un resultado medio del dado (12-13) en sus taquillas ahora encuentra agua. El resto de niveles no cambia. (josealmon)',
