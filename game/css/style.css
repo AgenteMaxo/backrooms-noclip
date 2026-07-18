@@ -652,17 +652,21 @@ details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
 .ap-arrow:hover { border-color: var(--amarillo-osc); box-shadow: 0 0 8px rgba(217,198,110,.3); }
 .ap-arrow:active { transform: translateY(1px); }
 .ap-valor { min-width: 74px; text-align: center; color: var(--hueso); font-size: 12px; line-height: 1.25; }
-/* v30.17: <input type=color> estilizado como cuadrado relleno del color actual,
+/* v30.17: <input type=color> estilizado como círculo relleno del color actual,
    clic abre el selector NATIVO del navegador/SO (matiz+saturación+brillo+
    hex, gratis, sin reinventar drag-and-drop). Los pseudo-elementos
    ::-webkit-color-swatch(-wrapper) y ::-moz-color-swatch son la forma
-   estándar de quitarle el padding/borde por defecto al swatch nativo. */
+   estándar de quitarle el padding/borde por defecto al swatch nativo;
+   border-radius:50% en los 3 (input + ambos pseudo-elementos) porque el
+   swatch interno rellena la caja completa y no hereda el redondeo del
+   padre solo — overflow:hidden en el input es el respaldo para navegadores
+   que ignoren los pseudo-elementos. */
 .ap-swatch { -webkit-appearance: none; appearance: none; width: 34px; height: 34px;
-  border: 2px solid var(--borde); padding: 0; margin: 4px auto 5px;
-  display: block; cursor: pointer; background: none; }
-.ap-swatch::-webkit-color-swatch-wrapper { padding: 0; }
-.ap-swatch::-webkit-color-swatch { border: none; }
-.ap-swatch::-moz-color-swatch { border: none; }
+  border: 2px solid var(--borde); border-radius: 50%; padding: 0; margin: 4px auto 5px;
+  display: block; cursor: pointer; background: none; overflow: hidden; }
+.ap-swatch::-webkit-color-swatch-wrapper { padding: 0; border-radius: 50%; }
+.ap-swatch::-webkit-color-swatch { border: none; border-radius: 50%; }
+.ap-swatch::-moz-color-swatch { border: none; border-radius: 50%; }
 .col-nivel .col-locked, li.col-locked { color: #5a5546; font-style: italic; }
 
 /* ---------- fin ---------- */

@@ -816,7 +816,7 @@
   }
 
   // un <input type=color>
-  // estilizado como cuadrado relleno del color actual — clic abre el selector
+  // estilizado como círculo relleno del color actual — clic abre el selector
   // NATIVO del navegador/SO (matiz+saturación+brillo y hex, todo gratis,
   // sin reinventar drag-and-drop ni canvas/getImageData). El hex resultante
   // se sigue aplicando como MULTIPLICADOR sobre el sprite gris de la capa
