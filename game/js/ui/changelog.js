@@ -4,6 +4,10 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
+    { v: 'v30.15', cambios: [
+      'El modo UN JUGADOR estrena un Taller de Mods local para importar y previsualizar modelos de Blockbench. El contenido nunca se aplica al multijugador.',
+      'El exportador de Blockbench crea archivos .brmod declarativos; el Alpha puede mostrar props, decoraciones y luminarias visuales sin ejecutar scripts de terceros.',
+    ] },
     { v: 'v30.14', cambios: [
       'El menú principal estrena dos botones grandes: MULTIJUGADOR (azul) y UN JUGADOR (verde). (idea de Roykyu y Jaime Gaming)',
       'Al entrar en partida ahora CAES hacia las Backrooms: líneas de velocidad, retumbo y golpe al aterrizar. (idea de Jaime Gaming)',

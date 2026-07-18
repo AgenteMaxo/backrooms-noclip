@@ -1,0 +1,52 @@
+/* Taller de Mods: panel aislado para UN JUGADOR. */
+.btn-mode-mods {
+  border-color: #6d6547;
+  background: linear-gradient(180deg, rgba(53,49,34,.92), rgba(22,20,14,.96));
+  color: #d9c66e;
+}
+.btn-mode-mods:hover, .btn-mode-mods:focus-visible { border-color:#d9c66e; box-shadow:0 0 18px rgba(217,198,110,.14); }
+.mod-workshop[hidden] { display:none !important; }
+.mod-workshop {
+  position:fixed; inset:0; z-index:120;
+  display:flex; align-items:center; justify-content:center;
+  padding:24px; background:rgba(3,3,2,.82); backdrop-filter:blur(5px);
+  color:#d8cfad;
+}
+.mod-workshop-box {
+  position:relative; width:min(1120px, 96vw); max-height:92vh; overflow:auto;
+  border:1px solid #6d6547; background:linear-gradient(145deg, rgba(17,16,12,.99), rgba(7,7,5,.99));
+  box-shadow:0 20px 70px #000, inset 0 0 45px rgba(217,198,110,.025); padding:24px;
+}
+.mod-workshop header { border-bottom:1px solid #3b3729; margin-bottom:14px; padding-right:42px; }
+.mod-workshop h2 { margin:.15rem 0 .35rem; color:#e4d680; letter-spacing:.12em; }
+.mod-workshop h3 { color:#c9b96d; letter-spacing:.08em; }
+.mod-kicker { margin:0; font-size:.78rem; letter-spacing:.24em; color:#8f8664; }
+.mod-close { position:absolute; top:10px; right:12px; width:38px; height:38px; border:1px solid #625b42; background:#0d0c09; color:#d9c66e; font-size:26px; cursor:pointer; }
+.mod-toolbar { display:flex; gap:9px; flex-wrap:wrap; margin:12px 0 5px; }
+.mod-toolbar a { text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+.mod-status { min-height:1.35em; color:#a9b98a; margin:6px 0 12px; }
+.mod-status.is-error { color:#d27767; }
+.mod-grid { display:grid; grid-template-columns:minmax(240px, .8fr) minmax(360px, 1.6fr); gap:16px; }
+.mod-library, .mod-inspector { min-width:0; border:1px solid #373326; background:rgba(8,8,6,.76); padding:12px; }
+#mod-list { display:grid; gap:8px; max-height:54vh; overflow:auto; }
+.mod-card { width:100%; text-align:left; display:grid; grid-template-columns:1fr auto; gap:3px 10px; padding:11px; border:1px solid #373326; background:#0d0c09; color:#c5bfa6; cursor:pointer; }
+.mod-card:hover, .mod-card.is-selected { border-color:#b7a75e; background:#17150e; }
+.mod-card-name { color:#e1d17d; font-weight:bold; }
+.mod-card-meta { grid-column:1; font-size:.85rem; color:#8e876d; }
+.mod-card-state { grid-column:2; grid-row:1 / span 2; align-self:center; font-size:.72rem; color:#aaba8a; }
+.mod-empty { color:#77705b; }
+#mod-preview { display:block; width:100%; max-height:390px; aspect-ratio:3/2; background:radial-gradient(circle at 50% 45%, #282414, #070706 70%); border:1px solid #403b2c; touch-action:none; }
+.mod-detail { padding-top:10px; }
+.mod-facts { display:grid; grid-template-columns:max-content 1fr; gap:5px 12px; font-size:.9rem; }
+.mod-facts dt { color:#8d8568; }
+.mod-facts dd { margin:0; word-break:break-word; }
+.mod-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.mod-danger { color:#c97a6b !important; border-color:#69413b !important; }
+.mod-import { cursor:pointer; }
+@media (max-width:760px), (max-height:560px) {
+  .mod-workshop { padding:8px; align-items:stretch; }
+  .mod-workshop-box { width:100%; max-height:none; padding:14px; }
+  .mod-grid { grid-template-columns:1fr; }
+  #mod-list { max-height:190px; }
+  #mod-preview { max-height:250px; }
+}
