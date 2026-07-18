@@ -739,11 +739,13 @@
   // "Cabello 2"...), sin cuadrados de color ni grillas de miniaturas; el
   // único preview visual es el muñeco grande de arriba (ap-preview-canvas),
   // así que ninguna fila necesita ya dibujar su propio recorte de cabeza.
-  // v28.9: el COLOR de cabello/vello/ojos pasó a ser continuo (3 sliders
-  // R/G/B, ver refrescarColorRGB — y Sprites.tintarCapa→tintarMultiply en
-  // sprites.js, que aplica ese RGB como multiplicador sobre el sprite gris
-  // de la capa) — "piel" es la ÚNICA que conserva flechas sobre una paleta
-  // fija (tintarCuerpo sigue con el remapeo de 3 tonos, no el multiplicador).
+  // v28.9/v30.17: el COLOR de cabello/vello/ojos es continuo — un botón
+  // circular que abre el selector de color NATIVO del navegador (ver
+  // refrescarColorSwatch) en vez de una paleta cerrada; el hex resultante se
+  // aplica como multiplicador sobre el sprite gris de la capa
+  // (Sprites.tintarCapa→tintarMultiply en sprites.js) — "piel" es la ÚNICA
+  // que conserva flechas sobre una paleta fija (tintarCuerpo sigue con el
+  // remapeo de 3 tonos, no el multiplicador).
   const NOMBRE_SIN = { cabello: 'Sin pelo', vello: 'Sin vello facial', superior: 'Sin ropa' };
   const NOMBRE_CAT = { piel: 'Piel', cabello: 'Cabello', ojos: 'Ojos', vello: 'Vello', superior: 'Superior', inferior: 'Inferior' };
   const CATS_ESTILO = ['cabello', 'ojos', 'vello', 'superior', 'inferior'];
@@ -790,7 +792,8 @@
 
   // "piel" es la ÚNICA categoría que sigue eligiendo color de una paleta
   // fija con flechas (tiñe el cuerpo entero vía remapTonos, no un
-  // multiplicador) — cabello/vello/ojos usan refrescarColorRGB, más abajo.
+  // multiplicador) — cabello/vello/ojos usan refrescarColorSwatch, más
+  // abajo. 
   function refrescarColorFila(cat, sel) {
     const el = $('ap-color-' + cat);
     if (!el) return;
@@ -808,53 +811,31 @@
     pintarFlecha(el, texto, mover(-1), mover(1));
   }
 
-  function hexARgb(hex) {
-    const n = parseInt((hex || '#808080').slice(1), 16);
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  }
   function rgbAHex(r, g, b) {
     return '#' + [r, g, b].map((v) => Math.max(0, Math.min(255, v | 0)).toString(16).padStart(2, '0')).join('');
   }
-  // degradé negro→canal puro por fila: indica qué controla cada slider sin
-  // depender de letras/leyenda, mismo espíritu minimalista de la referencia
-  const CANALES_RGB = [
-    { k: 'r', ex: '#ff3b3b' },
-    { k: 'g', ex: '#3bff5c' },
-    { k: 'b', ex: '#3b9bff' },
-  ];
 
-  // color continuo (cabello/vello/ojos, v28.9): 3 sliders R/G/B de 0 a 255
-  // — el color final se aplica como MULTIPLICADOR sobre el sprite gris de
-  // la capa al dibujarla (Sprites.tintarCapa→tintarMultiply en sprites.js),
-  // preservando la silueta/alpha original de la capa. oninput NO reconstruye
-  // las filas (solo repinta el preview grande) para no destruir el <input>
-  // que el usuario está arrastrando en ese momento.
-  function refrescarColorRGB(cat, sel) {
+  // un <input type=color>
+  // estilizado como cuadrado relleno del color actual — clic abre el selector
+  // NATIVO del navegador/SO (matiz+saturación+brillo y hex, todo gratis,
+  // sin reinventar drag-and-drop ni canvas/getImageData). El hex resultante
+  // se sigue aplicando como MULTIPLICADOR sobre el sprite gris de la capa
+  // (Sprites.tintarCapa→tintarMultiply en sprites.js) — solo cambió CÓMO se
+  // elige el hex, no cómo se usa.
+  function refrescarColorSwatch(cat, sel) {
     const el = $('ap-color-' + cat);
     if (!el) return;
     el.innerHTML = '';
-    const valores = {};
-    [valores.r, valores.g, valores.b] = hexARgb(sel[cat].color);
-    for (const { k, ex } of CANALES_RGB) {
-      const fila = document.createElement('div');
-      fila.className = 'ap-rgb-fila';
-      const input = document.createElement('input');
-      input.type = 'range'; input.min = 0; input.max = 255; input.step = 1;
-      input.value = valores[k];
-      input.style.background = `linear-gradient(to right, #000, ${ex})`;
-      const span = document.createElement('span');
-      span.className = 'ap-valor-rgb';
-      span.textContent = valores[k];
-      input.oninput = () => {
-        valores[k] = +input.value;
-        span.textContent = input.value;
-        sel[cat] = { estilo: sel[cat].estilo, color: rgbAHex(valores.r, valores.g, valores.b) };
-        pintarApariencia(sel);
-      };
-      input.onchange = () => { if (window.Sfx) Sfx.play('ui'); };
-      fila.appendChild(input); fila.appendChild(span);
-      el.appendChild(fila);
-    }
+    const input = document.createElement('input');
+    input.type = 'color';
+    input.className = 'ap-swatch';
+    input.value = sel[cat].color;
+    input.oninput = () => {
+      sel[cat] = { estilo: sel[cat].estilo, color: input.value };
+      pintarApariencia(sel);
+    };
+    input.onchange = () => { if (window.Sfx) Sfx.play('ui'); };
+    el.appendChild(input);
   }
 
   // v28.14: modo "Traje Hazmat" (skin fija, DEFECTO) vs "Personalizar" (las
@@ -863,11 +844,6 @@
   // directo a hazmat_down/up/side, ver sprites.js). elegir piel/cabello/etc
   // mientras está en hazmat sigue guardándose (por si vuelve a
   // Personalizar), solo que no se ve hasta cambiar el modo.
-  // v28.16: el dado tampoco tiene sentido en "hazmat" (no hay nada que
-  // sortear), así que se oculta junto con las filas de personalización.
-  // v28.17: sin columna de opciones que mostrar, .ap-layout centra el
-  // recuadro del muñeco en el ancho del panel (ver .ap-layout.centrado en
-  // el CSS) en vez de dejarlo pegado a la derecha con la izquierda vacía.
   function refrescarModo(sel) {
     const esHazmat = sel.modo === 'hazmat';
     $('btn-modo-hazmat').classList.toggle('sel', esHazmat);
@@ -884,7 +860,7 @@
     refrescarModo(sel);
     for (const cat of CATS_ESTILO) refrescarEstiloFila(cat, sel);
     refrescarColorFila('piel', sel);
-    for (const cat of CATS_COLOR_RGB) refrescarColorRGB(cat, sel);
+    for (const cat of CATS_COLOR_RGB) refrescarColorSwatch(cat, sel);
   }
 
   // v28.12: botón de dado — sortea las 6 categorías de una (estilo y/o
@@ -970,7 +946,7 @@
     };
     $('btn-apariencia-close').onclick = () => {
       clearInterval(watcher);
-      Sprites.limpiarTintado(); // el arrastre de sliders RGB deja muchos composites intermedios cacheados que ya no sirven — se reconstruyen solos en gameplay
+      Sprites.limpiarTintado(); // mover el selector de color nativo deja muchos composites intermedios cacheados que ya no sirven — se reconstruyen solos en gameplay
       Game.Profiles.setApariencia(sel);
       $('apariencia-panel').style.display = 'none';
       if (window.Sfx) Sfx.play('ui');

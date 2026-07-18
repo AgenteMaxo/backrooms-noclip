@@ -5,8 +5,8 @@
 (function () {
   const CHANGELOG = [
 { v: 'v30.15', cambios: [
-      'Arreglado: el traje Hazmat y la personalización de pelo, ojos y ropa a veces no se veían al jugar, y el panel de "Personalizar" podía abrirse vacío la primera vez — ahora tu aspecto se ve siempre bien (para vos y para el resto de jugadores) y el panel muestra todas las opciones desde el primer vistazo.',
-      'Arreglado: si te herían justo al entrar a un nivel, tu personaje podía quedar a medio vestir (sin el pelo, la ropa o el traje bien puestos) en la vista 3D. Ya no pasa.',
+      'Se agregó una pantalla de personalización de personaje (pelo, ojos, vello facial, piel y ropa superior/inferior) que se guarda en el perfil y se refleja en el online.',
+      'Por defecto viene un traje Hazmat, con interruptor para pasar a personalización libre y un botón de dado para aspecto aleatorio. (Milegros) - (Con ayuda de Aimar667 y Fonix)',
     ] },
     { v: 'v30.14', cambios: [
       'El menú principal estrena dos botones grandes: MULTIJUGADOR (azul) y UN JUGADOR (verde). (idea de Roykyu y Jaime Gaming)',

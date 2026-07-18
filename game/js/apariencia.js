@@ -21,14 +21,8 @@
   };
   const CATEGORIAS = ['cabello', 'ojos', 'vello', 'superior', 'inferior', 'piel'];
 
-  // paleta de colores ofrecida por categoría (hex en minúscula). Solo "piel"
-  // sigue siendo una lista fija de swatches (flechas «Piel 1/2/3...» en la
-  // UI) — cabello/vello/ojos pasaron a color CONTINUO (v28.9, ver
-  // CATEGORIAS_COLOR_RGB más abajo): el usuario elige R/G/B con 3 sliders y
-  // ese color se aplica como MULTIPLICADOR sobre el sprite gris de la capa
-  // (Sprites.tintarCapa→tintarMultiply en sprites.js), así que ya no hace
-  // falta una lista cerrada de tonos para ellas. "superior"/"inferior" no
-  // tienen paleta: no se recolorean (ver CATEGORIAS_SIN_COLOR).
+  // paleta de colores ofrecida por categoría (hex en minúscula). "piel"
+  // sigue siendo una lista fija de swatches (flechas «Piel 1/2/3...)
   const PALETA = {
     piel: ['#c69c6d', '#a97c50', '#8d5524', '#5c3a21'],
   };
@@ -37,12 +31,8 @@
   // marrón castaño de siempre para pelo/vello, y un marrón oscuro para ojos
   const DEFECTO_COLOR_RGB = { cabello: '#523c28', ojos: '#2a2018', vello: '#523c28' };
 
-  // v28.14: modo de apariencia — "hazmat" (skin fija predeterminada, ver
-  // DEFS.hazmat_down/up/side en sprites.js: nadie eligió nada todavía) o
-  // "personalizado" (las 6 categorías de abajo, compuestas y teñidas por
-  // Sprites.getTintado). Un perfil nuevo (o cualquier apariencia guardada
-  // sin este campo — no había modo antes de v28.14) cae en "hazmat" por
-  // pedido explícito del usuario: "si no personaliza, se queda con la skin
+  // Un perfil nuevo (o cualquier apariencia guardada
+  // sin este campo) cae en "hazmat" por pedido explícito del usuario: "si no personaliza, se queda con la skin
   // de Hazmat". Elegir estilos/colores en piel/cabello/etc. NO borra nada:
   // quedan guardados aunque modo sea "hazmat", por si vuelve a
   // "Personalizar" más tarde.
@@ -59,16 +49,16 @@
     piel: { estilo: null, color: PALETA.piel[0] },    // el cuerpo base es gris puro: SIEMPRE necesita un color
   };
 
-  // categorías con color CONTINUO (3 sliders R/G/B en vez de una paleta
-  // fija de swatches/flechas) — ver comentario de PALETA arriba
+  // categorías con color CONTINUO — botón que abre el selector de color
+  // nativo del navegador (refrescarColorSwatch en ui.js), en vez de una
+  // paleta fija de swatches/flechas. "piel" NO está acá (ver comentario de
+  // PALETA arriba) 
   const CATEGORIAS_COLOR_RGB = ['cabello', 'vello', 'ojos'];
   const HEX_RE = /^#[0-9a-f]{6}$/;
 
   // categorías donde `estilo: null` es una opción VÁLIDA (no un dato corrupto)
   // — "sin pelo" (calvo), "sin vello facial" (sin barba/bigote), "sin parte
-  // superior" (torso desnudo); "inferior" NO está acá a propósito (pedido
-  // explícito: la opción "sin ropa" es solo para la parte superior). El
-  // color se ignora sin capa que teñir.
+  // superior" (torso desnudo). El color se ignora sin capa que teñir.
   const CATEGORIAS_OPCIONALES = ['cabello', 'vello', 'superior'];
 
   // categorías donde `color: null` sería una opción válida ("no teñir, dejar
@@ -88,8 +78,7 @@
   // categorías donde CADA DIRECCIÓN es un archivo SUELTO —
   // <Estilo>_down.png/_up.png/_side.png (48x48, un solo frame) — en vez de
   // un único PNG de 192x48 con las 3 direcciones en fila (el resto de las
-  // capas). Pedido explícito del usuario para "superior"/"inferior"; ver
-  // game/assets/apariencia/LEEME.txt para el formato exacto.
+  // capas). 
   const CATEGORIAS_MULTIARCHIVO = ['superior', 'inferior'];
 
   // valida la FORMA de un id de estilo (prefijo de la categoría + número de
