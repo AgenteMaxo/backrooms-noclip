@@ -34,6 +34,7 @@ function chatReciente(nivel, desdeSeq) {
   return chatLog.filter((c) => (!nivel || c.nivel === nivel) && c.seq > (desdeSeq | 0));
 }
 
+
 function tickTodas(ahora) {
   const t0 = process.hrtime.bigint();
   tickEventosGlobales(ahora);

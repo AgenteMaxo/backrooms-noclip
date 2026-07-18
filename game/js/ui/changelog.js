@@ -4,6 +4,10 @@
 // tanda de cambios (junto con VERSION_JUEGO en main.js).
 (function () {
   const CHANGELOG = [
+{ v: 'v30.15', cambios: [
+      'Se agregó una pantalla de personalización de personaje (pelo, ojos, vello facial, piel y ropa superior/inferior) que se guarda en el perfil y se refleja en el online.',
+      'Por defecto viene un traje Hazmat, con interruptor para pasar a personalización libre y un botón de dado para aspecto aleatorio. (Milegros) - (Con ayuda de Aimar667 y Fonix)',
+    ] },
     { v: 'v30.14', cambios: [
       'El menú principal estrena dos botones grandes: MULTIJUGADOR (azul) y UN JUGADOR (verde). (idea de Roykyu y Jaime Gaming)',
       'Al entrar en partida ahora CAES hacia las Backrooms: líneas de velocidad, retumbo y golpe al aterrizar. (idea de Jaime Gaming)',
@@ -29,6 +33,9 @@
     { v: 'v30.9', cambios: [
       'Las salas concurridas van mucho más fluidas: los demás errantes se mueven suaves aunque haya decenas en pantalla, y ya no dan un salto brusco al reanudar la marcha tras estar quietos.',
       'En una multitud, los nombres y bocadillos de chat priorizan a los más cercanos en vez de apilarse ilegibles.',
+    ] },
+    { v: 'v30.8', cambios: [
+      'Las salas llenas van mucho más finas: las posiciones de los demás viajan a la mitad de ritmo (tu interpolación las suaviza igual), los errantes muy lejanos ni se dibujan, y cada instancia reparte antes a la gente (aforo 60 → 50). La simulación del servidor sigue exacta. (josealmon)',
     ] },
     { v: 'v30.7', cambios: [
       'El giro de cámara con el ratón (Pointer Lock) responde 1:1, sin el retardo de goma de antes; y el suavizado del resto de movimientos de cámara ya no depende de tus FPS.',
@@ -63,6 +70,11 @@
     { v: 'v30', cambios: [
       'El guardián estrena Sala de Control: un mapa en vivo de todos los niveles para los directos, con retos y anuncios. Si notas que alguien te observa… probablemente sea él.',
     ] },
+    { v: 'v28.20', cambios: [
+      'Nuevas flechas debajo del muñeco del personalizador para verlo de frente, de lado y de espaldas.',
+      'El vello facial ahora se dibuja por encima de la ropa (antes el cuello de algunas prendas lo tapaba).',
+      'Arreglado: a veces el personaje se veía distinto mirando hacia abajo que en las otras direcciones, apenas después de entrar a un nivel.',
+    ] },
     { v: 'v28.10', cambios: [
       'La portada ahora muestra cuántos errantes están conectados en este momento. (josealmon)',
       'Arreglado (multijugador): cerrar el códice o el changelog con ESC o su tecla podía dejar la cámara sin responder al clic. (Gartixr)',
@@ -80,25 +92,38 @@
       'Retirado el sistema de Sintonía/Instintos (el ojo amarillo y las cartas de habilidad al cruzar ciertos umbrales) en modo solo. (AgenteMaxo)',
     ] },
     { v: 'v28.7', cambios: [
-      'Las manchas de humedad del suelo ya no se repiten en un patrón visible, ahora se reparten al azar. (carlosdiezm)',
-      'Arreglado: el menú de configuración del mando no se cerraba bien con ESC. (carlosdiezm)',
+      'El cabello ahora se dibuja por delante de toda la ropa, no por detrás.',
     ] },
     { v: 'v28.6', cambios: [
+      'Arreglado: la miniatura de "Parte superior" se veía estirada en el personalizador.',
+      'Nueva opción "Sin ropa" en la parte superior del personalizador.',
       'Arreglado (multijugador): algunas entidades podían golpear casi al instante, sin dar tiempo a esquivar el aviso. (josealmon)',
       'Nueva protección de 3 segundos al entrar por primera vez a cada nivel, para no morir nada más cruzar. (josealmon)',
     ] },
     { v: 'v28.5', cambios: [
+      'La ropa (parte superior e inferior) ya puede animarse al caminar, igual que el resto del personaje.',
       'Arreglado: la música del menú a veces seguía sonando después de empezar la partida.',
       'Los campos de contraseña ya no se rellenan solos con datos guardados del navegador.',
     ] },
     { v: 'v28.4', cambios: [
+      'Ajuste técnico interno en cómo se cargan las prendas de "Parte superior"/"Parte inferior" — sin cambios para el jugador.',
       'Más retoques en el sprite del jugador.',
     ] },
+    { v: 'v28.3', cambios: [
+      'La ropa se divide ahora en "Parte superior" y "Parte inferior", cada una con sus propias opciones.',
+    ] },
     { v: 'v28.2', cambios: [
+      'Más colores fantasía para el cabello y el vello facial (rosa, azul, violeta, verde, rojo), además de los naturales.',
+      'El personalizador ya no tiene tope fijo de estilos por categoría — se irán sumando más opciones de pelo, ojos, vello y ropa con el tiempo.',
       'Nuevo HUD vertical de equipamiento (cara/cuerpo/pies) en la esquina inferior izquierda.',
       'Retoques en el sprite del jugador.',
     ] },
+    { v: 'v28.1', cambios: [
+      'Personalización ampliada: ahora también podés elegir vello facial (o dejarlo sin barba) y el tono de piel de tu personaje.',
+    ] },
     { v: 'v28.0', cambios: [
+      'Nuevo botón "Personalizar" en el título: elegí estilo y color de pelo, ojos y ropa antes de despertar en Level 0.',
+      'Tu apariencia ahora se ve también para los demás jugadores en la partida online.',
       'Arreglado (multijugador): las salidas de destino aleatorio a veces daban "nivel fuera del piloto" en vez de cruzar de verdad.',
       'Arreglado (multijugador): las entidades y el propio jugador podían no verse en el render 2D clásico.',
       'Arreglado: los sonidos MP3 propios ahora respetan el volumen de Efectos.',
@@ -137,6 +162,7 @@
     ] },
     { v: 'v27.4', cambios: [
       'Nuevo panel "Observatorio del Guardián": el streamer puede ver en vivo quién juega, moderar (expulsar/banear) y consultar estadísticas del servidor.',
+      
     ] },
     { v: 'v27.2', cambios: [
       'Nueva pestaña Changelog en la pantalla de título: qué ha cambiado en cada versión, resumido.',

@@ -1332,17 +1332,44 @@
     }
   }
 
+  // sufijo de versión en TODAS las claves de textura de sprite: los overrides
+  // PNG (cuerpo, capas de apariencia, glyphs de entidad) cargan async
+  // (Image.onload) y el jugador/las entidades se piden desde el primer frame
+  // tras entrar al nivel — si esa primera textura se genera ANTES de que
+  // termine de cargar el override real, quedaba cacheada con el placeholder
+  // procedural PARA SIEMPRE (texCache no se limpia hasta el próximo cambio
+  // de nivel), aunque Sprites.get/getTintado ya devolvieran el sprite
+  // correcto después. Mismo patrón que ya usaba rebuildItems con 'item-'+sv.
+  function svTex() { return window.Sprites?.version ? Sprites.version() : 0; }
+
   function spriteTex(glyph, frame) {
-    const key = 'ent-' + glyph + '-' + frame;
+    const key = 'ent-' + glyph + '-' + frame + '-v' + svTex();
     if (texCache.has(key)) return texCache.get(key);
     const c = Sprites.get(glyph, frame);
     return c ? tex(c, key) : null;
   }
 
   function spriteTexFlip(glyph, frame, flip) {
-    const key = 'ent-' + glyph + '-' + frame + (flip ? '-f' : '');
+    const key = 'ent-' + glyph + '-' + frame + (flip ? '-f' : '') + '-v' + svTex();
     if (texCache.has(key)) return texCache.get(key);
     const c = Sprites.get(glyph, frame, flip);
+    return c ? tex(c, key) : null;
+  }
+
+// variante con capas de personalización (pelo/ojos/ropa) compuestas y
+  // teñidas — la clave de textura suma la apariencia para no compartir caché
+  // entre jugadores con distinto estilo/color (v28)
+  function apKey(apariencia) {
+    if (!apariencia) return '';
+    return apariencia.modo + '-' + ['cabello', 'ojos', 'vello', 'superior', 'inferior', 'piel']
+      .map((c) => (apariencia[c] ? apariencia[c].estilo + apariencia[c].color : ''))
+      .join('-');
+  }
+  function spriteTexTintado(glyph, apariencia, frame, flip) {
+    if (!apariencia) return spriteTexFlip(glyph, frame, flip);
+    const key = 'ent-' + glyph + '-' + frame + (flip ? '-f' : '') + '-ap' + apKey(apariencia) + '-v' + svTex();
+    if (texCache.has(key)) return texCache.get(key);
+    const c = Sprites.getTintado(glyph, apariencia, frame, flip);
     return c ? tex(c, key) : null;
   }
 
@@ -1557,7 +1584,7 @@
     // malherido: el propio sprite lo cuenta (sangre y palidez)
     if (p.salud < 35 && Sprites.tiene(sid + '_herido')) sid += '_herido';
     const pframe = world.moving ? Math.floor(t / 150) % Sprites.frameCount(sid) : 0;
-    setSpriteTexture(playerSprite, spriteTexFlip(sid, pframe, sflip));
+    setSpriteTexture(playerSprite, spriteTexTintado(sid, p.apariencia, pframe, sflip));
     playerSprite.position.set(px, SPRITE_H / 2 + 0.02, pz);
     // dentro de un mueble no se te ve; el espectador (v30) es un fantasma
     playerSprite.visible = !world.escondido && !world.espectador;
@@ -1650,7 +1677,7 @@
         const f2 = (Math.abs(o.rx - o.x) + Math.abs(o.ry - o.y) > 0.03)
           ? Math.floor(t / 150) % Sprites.frameCount(sid2) : 0;
         s.visible = true;
-        setSpriteTexture(s, spriteTexFlip(sid2, f2, flip2));
+        setSpriteTexture(s, spriteTexTintado(sid2, o.apariencia, f2, flip2));
         s.position.set(o.rx + 0.5, SPRITE_H / 2 + 0.02, o.ry + 0.5);
       }
       for (const [id, s] of otrosSprites)

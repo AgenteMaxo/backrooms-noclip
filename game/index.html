@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BACKROOMS MMO</title>
-<link rel="stylesheet" href="css/style.css?v=296">
-<link rel="stylesheet" href="css/title-interface.css?v=296">
+<link rel="stylesheet" href="css/style.css?v=306">
+<link rel="stylesheet" href="css/title-interface.css?v=306">
 </head>
 <body>
 <!-- Splash de presentación (idea de Jaime Gaming, #81): se cierra solo o con
@@ -37,6 +37,7 @@
       <div id="profile-box">
         <p class="profile-title">— EXPEDIENTE DE ERRANTE —</p>
         <div class="profile-row">
+          <button id="btn-apariencia" class="btn-small">Personalizar</button>
           <select id="profile-select"></select>
           <input id="profile-name" type="text" spellcheck="false" placeholder="nuevo errante…" maxlength="24">
           <button id="btn-profile-create" class="btn-small">Crear</button>
@@ -402,6 +403,58 @@
     </div>
   </div>
 
+  <!-- Personalización de personaje (accesible desde el título) -->
+  <div id="apariencia-panel" style="display:none">
+    <div class="codex-box">
+      <div class="ap-cab">
+        <h2>Personalizar personaje</h2>
+        <button id="btn-ap-random" class="ap-dado" title="Aleatorio"><img src="assets/icons/dado.png" width="24" height="24" alt="" class="icono"></button>
+      </div>
+      <div class="ap-modo">
+        <button id="btn-modo-hazmat" class="ap-modo-btn">Traje Hazmat</button>
+        <button id="btn-modo-personalizar" class="ap-modo-btn">Personalizar</button>
+      </div>
+      <div class="ap-layout" id="ap-layout">
+        <div class="ap-preview">
+          <div class="ap-preview-sticky">
+            <canvas id="ap-preview-canvas" width="48" height="48"></canvas>
+            <div class="ap-flecha ap-flecha-angulo" id="ap-angulo"></div>
+          </div>
+        </div>
+        <div class="ap-opciones" id="ap-cats-personalizables">
+          <div class="ap-cat" data-cat="piel">
+            <span class="ap-titulo">Piel</span>
+            <div class="ap-flecha" id="ap-color-piel"></div>
+          </div>
+          <div class="ap-cat" data-cat="cabello">
+            <span class="ap-titulo">Cabello</span>
+            <div class="ap-flecha" id="ap-estilo-cabello"></div>
+            <div id="ap-color-cabello"></div>
+          </div>
+          <div class="ap-cat" data-cat="ojos">
+            <span class="ap-titulo">Ojos</span>
+            <div class="ap-flecha" id="ap-estilo-ojos"></div>
+            <div id="ap-color-ojos"></div>
+          </div>
+          <div class="ap-cat" data-cat="vello">
+            <span class="ap-titulo">Vello facial</span>
+            <div class="ap-flecha" id="ap-estilo-vello"></div>
+            <div id="ap-color-vello"></div>
+          </div>
+          <div class="ap-cat" data-cat="superior">
+            <span class="ap-titulo">Parte superior</span>
+            <div class="ap-flecha" id="ap-estilo-superior"></div>
+          </div>
+          <div class="ap-cat" data-cat="inferior">
+            <span class="ap-titulo">Parte inferior</span>
+            <div class="ap-flecha" id="ap-estilo-inferior"></div>
+          </div>
+        </div>
+      </div>
+      <button id="btn-apariencia-close" class="btn-small">Confirmar</button>
+    </div>
+  </div>
+
   <!-- Muerte / victoria -->
   <div id="screen-end" class="screen" style="display:none">
     <div class="end-box">
@@ -422,44 +475,45 @@
 
 <!-- ?v= rompe la caché del edge (Cloudflare cachea .js/.css por defecto aunque
      el origen no lo pida): SUBIR el número en cada versión, junto con VERSION_JUEGO -->
-<script src="js/data.js?v=296"></script>
-<script src="js/engine/rng.js?v=296"></script>
-<script src="js/mapgen/mapgen.js?v=296"></script>
-<script src="js/engine/tiles.js?v=296"></script>
-<script src="js/engine/sprites.js?v=296"></script>
-<script src="js/engine/effects.js?v=296"></script>
-<script src="js/audio-manifest.js?v=296"></script>
-<script src="js/assets-manifest.js?v=296"></script>
-<script src="js/engine/sfx.js?v=296"></script>
-<script src="js/engine/fov.js?v=296"></script>
-<script src="js/systems/entities.js?v=296"></script>
-<script src="js/systems/rules.js?v=296"></script>
-<script src="js/engine/render.js?v=296"></script>
-<script src="js/lib/three.min.js?v=296"></script>
-<script src="js/lib/shaders/CopyShader.js?v=296"></script>
-<script src="js/lib/shaders/LuminosityHighPassShader.js?v=296"></script>
-<script src="js/lib/shaders/GammaCorrectionShader.js?v=296"></script>
-<script src="js/lib/postprocessing/EffectComposer.js?v=296"></script>
-<script src="js/lib/postprocessing/RenderPass.js?v=296"></script>
-<script src="js/lib/postprocessing/ShaderPass.js?v=296"></script>
-<script src="js/lib/postprocessing/UnrealBloomPass.js?v=296"></script>
-<script src="js/engine/atmos3d.js?v=296"></script>
-<script src="js/engine/render3d.js?v=296"></script>
-<script src="js/systems/game.js?v=296"></script>
-<script src="js/ui/icons.js?v=296"></script>
-<script src="js/ui/controllers.js?v=296"></script>
-<script src="js/ui/ui.js?v=296"></script>
-<script src="js/ui/title-interface.js?v=296"></script>
-<script src="js/ui/changelog.js?v=296"></script>
-<script src="js/ui/minimap.js?v=296"></script>
-<script src="js/sim/fisica.js?v=296"></script>
+<script src="js/data.js?v=306"></script>
+<script src="js/apariencia.js?v=306"></script>
+<script src="js/engine/rng.js?v=306"></script>
+<script src="js/mapgen/mapgen.js?v=306"></script>
+<script src="js/engine/tiles.js?v=306"></script>
+<script src="js/engine/sprites.js?v=306"></script>
+<script src="js/engine/effects.js?v=306"></script>
+<script src="js/audio-manifest.js?v=306"></script>
+<script src="js/assets-manifest.js?v=306"></script>
+<script src="js/engine/sfx.js?v=306"></script>
+<script src="js/engine/fov.js?v=306"></script>
+<script src="js/systems/entities.js?v=306"></script>
+<script src="js/systems/rules.js?v=306"></script>
+<script src="js/engine/render.js?v=306"></script>
+<script src="js/lib/three.min.js?v=306"></script>
+<script src="js/lib/shaders/CopyShader.js?v=306"></script>
+<script src="js/lib/shaders/LuminosityHighPassShader.js?v=306"></script>
+<script src="js/lib/shaders/GammaCorrectionShader.js?v=306"></script>
+<script src="js/lib/postprocessing/EffectComposer.js?v=306"></script>
+<script src="js/lib/postprocessing/RenderPass.js?v=306"></script>
+<script src="js/lib/postprocessing/ShaderPass.js?v=306"></script>
+<script src="js/lib/postprocessing/UnrealBloomPass.js?v=306"></script>
+<script src="js/engine/atmos3d.js?v=306"></script>
+<script src="js/engine/render3d.js?v=306"></script>
+<script src="js/systems/game.js?v=306"></script>
+<script src="js/ui/icons.js?v=306"></script>
+<script src="js/ui/controllers.js?v=306"></script>
+<script src="js/ui/ui.js?v=306"></script>
+<script src="js/ui/title-interface.js?v=306"></script>
+<script src="js/ui/changelog.js?v=306"></script>
+<script src="js/ui/minimap.js?v=306"></script>
+<script src="js/sim/fisica.js?v=306"></script>
 <!-- reglas del mundo COMPARTIDAS con el servidor (duales): IA + Sala; el modo
      offline las ejecuta en la pestaña vía el servidor local de net/local.js -->
-<script src="js/sim/entidades.js?v=296"></script>
-<script src="js/sim/sala.js?v=296"></script>
-<script src="js/net/local.js?v=296"></script>
-<script src="js/net/otros.js?v=296"></script>
-<script src="js/net/cliente.js?v=296"></script>
-<script src="js/main.js?v=296"></script>
+<script src="js/sim/entidades.js?v=306"></script>
+<script src="js/sim/sala.js?v=306"></script>
+<script src="js/net/local.js?v=306"></script>
+<script src="js/net/otros.js?v=306"></script>
+<script src="js/net/cliente.js?v=306"></script>
+<script src="js/main.js?v=306"></script>
 </body>
 </html>

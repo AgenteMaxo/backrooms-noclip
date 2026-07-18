@@ -4,6 +4,13 @@
 (function () {
   const OUT = 'rgba(12,10,8,0.9)';
 
+  // cache-bust por sesión para CUALQUIER override de imagen (sprites base,
+  // objetos, capas de apariencia...): sin esto el navegador puede seguir
+  // sirviendo desde caché la versión vieja de un PNG editado (player_down.png,
+  // Hair1.png...) tras un simple F5 — recién se nota con Ctrl+F5. Un solo
+  // valor por carga de página alcanza (no hace falta uno nuevo por archivo).
+  const CACHE_BUST = Date.now();
+
   // ---------- rasterizador de matrices ----------
   function shadeHex(hex, f) {
     const n = parseInt(hex.slice(1), 16);
@@ -196,6 +203,71 @@
     ],
   };
   DEFS.player_side = { pal: palPlayer, frames: ciclo(torsoSide, piernasSide) };
+
+  // ===== TRAJE HAZMAT: skin PREDETERMINADA (v28.14) — mismo esqueleto y
+  // ciclo de caminata que el jugador base (ciclo()+piernasFrontal/Side
+  // reusadas TAL CUAL): capucha+visor en vez de pelo/cara, mono amarillo en
+  // vez de piel/ropa elegibles. Filas de capucha = las de pelo/cara del
+  // jugador con un remapeo de letra 1 a 1 (h→m capucha, H→M sombra,
+  // f→v visor, F→z acento oscuro/filtro, e→z remache) — conserva la
+  // silueta/proporciones exactas sin tener que volver a medir nada; las
+  // filas de torso/piernas (9 en adelante) se REUSAN sin cambios, solo con
+  // paleta nueva (mismo mecanismo: las letras j/J/c/s/k/K/Q/p/P/b/B ya
+  // existían, acá apuntan a tonos del mono/guantes/botas en vez de
+  // ropa/piel). Es la skin que se usa cuando apariencia.modo==='hazmat'
+  // (getTintado, más abajo) — override PNG opcional en
+  // assets/sprites/hazmat_down/up/side.png, mismo mecanismo que el cuerpo
+  // base (Sprites.list() ya incluye estos ids para tryOverrides). El
+  // usuario proveyó un hazmat_down.png real (arte propio, sombreado real de
+  // ~120 tonos) — up/side siguen siendo ESTE placeholder procedural hasta
+  // que suba esos dos archivos también, pero la paleta de acá está
+  // muestreada directo de su PNG (con un decoder pngjs ad-hoc) para que al
+  // menos los COLORES combinen con el override real de abajo mientras tanto.
+  const palHazmat = {
+    m: '#c49b0e', M: '#ab6f0f', v: '#180b04', z: '#724b45',
+    c: '#d6af29', j: '#c49b0e', J: '#ab6f0f',
+    s: '#211e1f', k: '#121111', K: '#0d0c0c', Q: '#2e282a',
+    p: '#c49b0e', P: '#ab6f0f', b: '#121111', B: '#0d0c0c',
+  };
+  const hazmatHoodDown = [
+    '........................',
+    '.........mmmmmm.........',
+    '........mmmmmmmm........',
+    '.......mmmmmmmmmm.......',
+    '.......Mmmmmmmmmm.......',
+    '.......mvvvvvvvvm.......',
+    '.......mvzvvvvzvm.......',
+    '........vvvzzvvv........',
+    '.........vvvvvv.........',
+  ];
+  const hazmatHoodUp = [
+    '........................',
+    '.........mmmmmm.........',
+    '........mmmmmmmm........',
+    '.......mmmmmmmmmm.......',
+    '.......mMMMMMMMMm.......',
+    '.......mMMMMMMMMm.......',
+    '.......mmMMMMMMmm.......',
+    '........mmmmmmmm........',
+    '.........mmmmmm.........',
+  ];
+  const hazmatHoodSide = [
+    '........................',
+    '..........mmmmmm........',
+    '.........mmmmmmmm.......',
+    '.........Mmmmmmmm.......',
+    '.........Mmmmmmmm.......',
+    '.........mmvvvvvv.......',
+    '..........mvvzvv........',
+    '..........mvvvv.........',
+    '...........vvvv.........',
+  ];
+  const torsoHazmatDown = [...hazmatHoodDown, ...torsoDown.slice(9)];
+  const torsoHazmatUp = [...hazmatHoodUp, ...torsoUp.slice(9)];
+  const torsoHazmatSide = [...hazmatHoodSide, ...torsoSide.slice(9)];
+  DEFS.hazmat_down = { pal: palHazmat, frames: ciclo(torsoHazmatDown, piernasFrontal) };
+  DEFS.hazmat_up = { pal: palHazmat, frames: ciclo(torsoHazmatUp, piernasFrontal) };
+  DEFS.hazmat_side = { pal: palHazmat, frames: ciclo(torsoHazmatSide, piernasSide) };
 
   // ===== FACELING: humanoide gris pálido SIN rostro =====
   const palFace = { f: '#d8ccb8', F: '#c0b4a0', t: '#8a8074', T: '#736a60', p: '#5a544c' };
@@ -711,7 +783,9 @@
       cache[id] = def.frames.map((rows) => rasterize(def.pal, rows));
     // variantes HERIDO del jugador (v15): sangre y palidez sobre el sprite base
     // — el HUD sin barras comunica la salud con el propio personaje
-    for (const id of ['player_down', 'player_up', 'player_side'])
+    // (hazmat_* sumado en v28.14: es la skin predeterminada, también
+    // necesita su variante herida para el mismo aviso visual de salud)
+    for (const id of ['player_down', 'player_up', 'player_side', 'hazmat_down', 'hazmat_up', 'hazmat_side'])
       if (cache[id]) cache[id + '_herido'] = cache[id].map(herir);
   }
 
@@ -721,12 +795,16 @@
     const x = c.getContext('2d');
     x.drawImage(base, 0, 0);
     x.globalCompositeOperation = 'source-atop'; // solo pinta SOBRE el cuerpo
-    x.fillStyle = 'rgba(122,26,18,0.95)';       // manchas de sangre
+    x.fillStyle = 'rgba(122,26,18,0.85)';       // manchas de sangre
     const w = c.width;
+    // manchas chicas (reportado: en un sprite de 48px, el tamaño viejo
+    // cubría ~1/3 del torso y terminaba leyéndose como "otro traje" en vez
+    // de heridas sobre la skin elegida — reducidas a la mitad por lado
+    // (1/4 del área) para que Personalizado/Hazmat sigan reconociéndose)
     for (const [mx, my, mw, mh] of [
-      [w * 0.40, w * 0.42, 5, 7], [w * 0.56, w * 0.50, 6, 5],
-      [w * 0.34, w * 0.62, 5, 5], [w * 0.52, w * 0.74, 7, 4],
-      [w * 0.47, w * 0.30, 4, 4],
+      [w * 0.40, w * 0.42, 3, 4], [w * 0.56, w * 0.50, 3, 3],
+      [w * 0.34, w * 0.62, 3, 3], [w * 0.52, w * 0.74, 4, 3],
+      [w * 0.47, w * 0.30, 3, 3],
     ]) x.fillRect(mx, my, mw, mh);
     x.fillStyle = 'rgba(200,200,215,0.14)';     // palidez general
     x.fillRect(0, 0, w, c.height);
@@ -795,13 +873,20 @@
     return img;
   }
 
-  // Carga imágenes externas (hoja horizontal de frames de 48x48) para los ids
-  // pedidos, SOLO si aparecen en el manifiesto de assets reales
-  // (game/js/assets-manifest.js). Sin archivo, queda el sprite procedural.
-  // v30.5: SIN sondeos de red — antes se probaban 12 URLs por id (3 carpetas ×
-  // 4 extensiones) y la consola/red se llenaban de cientos de 404 al abrir la
-  // web. Tras añadir/quitar imágenes en game/assets/:
-  //   node pipeline/build-assets-manifest.js
+function rutasOverride(id) {
+    // "apariencia" sumada acá (v28.15): el usuario coloca ahí TODO el arte de
+    // personaje por costumbre (Hair1.png, Superior1_down.png...), así que un
+    // override de cuerpo completo como hazmat_down.png también se busca ahí
+    // aunque conceptualmente viva en el mismo mecanismo que player_down.png
+    const dirs = ['assets/sprites', 'assets/objetos', 'assets/apariencia', 'assets'];
+    const exts = ['webp', 'png', 'jpg', 'jpeg'];
+    const out = [];
+    for (const dir of dirs) for (const ext of exts) out.push(`${dir}/${id}.${ext}?t=${CACHE_BUST}`);
+    return out;
+  }
+
+  // intenta cargar imagenes externas (hoja horizontal de frames de 48x48).
+  // Si no existe archivo, queda activo el sprite procedural generado.
   function tryOverrides(ids) {
     const M = (window.ASSETS_MANIFEST || {}).sprites || {};
     for (const id of ids) {
@@ -809,6 +894,366 @@
       cargarOverride(id, M[id]);
     }
   }
+
+  // ---------- personalización: capas de pelo/ojos/ropa recoloreables (v28) ----------
+  // Cada "estilo" (Hair1, Eyes1, Clothes1...) es UN solo PNG de 144x48 (3
+  // frames de 48x48 en fila): frame 0 = down, frame 1 = up, frame 2 = side —
+  // ver game/assets/apariencia/LEEME.txt. Un frame puede quedar vacío/
+  // transparente (p. ej. ojos que no se ven de espaldas): esa dirección
+  // simplemente no dibuja nada ahí. Cada píxel ya viene en gris puro de 3
+  // tonos (#4d4d4d/#808080/#b3b3b3). Se dibuja SIN escalar ni centrar (a
+  // diferencia de cargarOverride): la alineación píxel a píxel con el cuerpo
+  // base es responsabilidad del archivo, no del motor. El motor las tiñe al
+  // color elegido y las compone sobre el cuerpo base
+  // (game/assets/sprites/player_down/up/side.png, que para este sistema debe
+  // ser un cuerpo neutro sin pelo/ropa propios).
+  const PREFIJOS_APARIENCIA = window.Apariencia.PREFIJOS; // fuente única, ver js/apariencia.js
+  const SIN_COLOR_APARIENCIA = window.Apariencia.CATEGORIAS_SIN_COLOR; // ["superior","inferior"]: se dibujan tal cual
+  const DIRS_CAPA = ['down', 'up', 'side'];
+  const capasEstilo = {};        // estiloId -> {down, up, side} (canvas SIN teñir — gris para las capas
+                                  // tintables, ya en color final para "superior"/"inferior")
+  const estilosPorCategoria = {}; // categoria -> [ids encontrados, en orden]
+  const tintCache = {};     // 'estilo::dir::color' -> canvas ya teñido
+  const tintadoCache = {};  // clave compuesta -> {canvas, flipped}
+
+  // Corrección de posición POR ESTILO/DIRECCIÓN (px), aplicada al dibujar —
+  // el PNG del usuario nunca se toca/reacomoda, solo se desplaza dónde cae
+  // dentro del frame de 48x48. Calibrado a mano comparando el centro del
+  // dibujo contra el centro de la cabeza del cuerpo base (ver
+  // game/assets/apariencia/LEEME.txt); agregar una entrada acá si un estilo
+  // nuevo aparece corrido.
+  const AJUSTE_CAPA = {
+  };
+
+  function rutasCapaEstilo(id) {
+    return ['webp', 'png', 'jpg', 'jpeg']
+      .map((ext) => `assets/apariencia/${id}.${ext}?t=${CACHE_BUST}`);
+  }
+  function rutasCapaDireccion(id, dir) {
+    return ['webp', 'png', 'jpg', 'jpeg']
+      .map((ext) => `assets/apariencia/${id}_${dir}.${ext}?t=${CACHE_BUST}`);
+  }
+
+  // intenta cargar UN estilo (probando extensiones en orden); cb(true/false)
+  // al terminar. Si carga, guarda las 3 direcciones ya recortadas (con el
+  // ajuste de AJUSTE_CAPA si corresponde) en capasEstilo[id]. Formato de
+  // hoja única (192x48, 4 frames) — usado por cabello/ojos/vello.
+  function probarEstilo(id, cb) {
+    const urls = rutasCapaEstilo(id);
+    let i = 0;
+    const siguiente = () => {
+      if (i >= urls.length) { cb(false); return; }
+      const img = new Image();
+      img.onload = () => {
+        const out = {};
+        const ajuste = AJUSTE_CAPA[id] || {};
+        for (let k = 0; k < DIRS_CAPA.length; k++) {
+          const dir = DIRS_CAPA[k];
+          const { dx = 0, dy = 0 } = ajuste[dir] || {};
+          const c = document.createElement('canvas');
+          c.width = 48; c.height = 48;
+          const ctx = c.getContext('2d');
+          ctx.imageSmoothingEnabled = false;
+          // recorte 1:1 del frame k-ésimo (48px de ancho), desplazado dx/dy
+          ctx.drawImage(img, k * 48, 0, 48, 48, dx, dy, 48, 48);
+          out[dir] = c;
+        }
+        capasEstilo[id] = out;
+        overrideVersion++;
+        cb(true);
+      };
+      img.onerror = siguiente;
+      img.src = urls[i++];
+    };
+    siguiente();
+  }
+
+  // variante de probarEstilo para categorías "multiarchivo" (hoy:
+  // superior/inferior): <Estilo>_down.png, _up.png, _side.png sueltos, CADA
+  // UNO puede traer hasta 4 frames de ciclo de caminata (hoja horizontal de
+  // 48x48, igual que player_down/up/side.png: 96x48=2 frames, 192x48=4
+  // frames...) — a diferencia del resto de las capas (pelo/ojos/vello, una
+  // sola pose estática), la ropa SÍ anima con las piernas. Guarda un ARRAY
+  // de canvases por dirección (out[dir] = [frame0, frame1, ...]), leído con
+  // `frame % out[dir].length` al dibujar (ver capaAnimada en getTintado).
+  // "encontrado" = existe al menos "_down"; las otras direcciones que
+  // falten quedan vacías, mismo espíritu que un frame en blanco en el
+  // formato de hoja única.
+  function probarEstiloMultiarchivo(id, cb) {
+    const out = {};
+    let idx = 0;
+    const siguienteDir = () => {
+      if (idx >= DIRS_CAPA.length) {
+        if (out.down) { capasEstilo[id] = out; overrideVersion++; cb(true); }
+        else cb(false);
+        return;
+      }
+      const dir = DIRS_CAPA[idx++];
+      const urls = rutasCapaDireccion(id, dir);
+      let i = 0;
+      const siguienteExt = () => {
+        if (i >= urls.length) { siguienteDir(); return; } // esta dirección no tiene archivo: seguir
+        const img = new Image();
+        img.onload = () => {
+          const { dx = 0, dy = 0 } = (AJUSTE_CAPA[id] && AJUSTE_CAPA[id][dir]) || {};
+          const n = Math.max(1, Math.floor(img.width / 48)); // hasta 4 frames, como el cuerpo base
+          const frames = [];
+          for (let k = 0; k < n; k++) {
+            const c = document.createElement('canvas');
+            c.width = 48; c.height = 48;
+            const ctx = c.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(img, k * 48, 0, 48, 48, dx, dy, 48, 48);
+            frames.push(c);
+          }
+          out[dir] = frames;
+          siguienteDir();
+        };
+        img.onerror = siguienteExt;
+        img.src = urls[i++];
+      };
+      siguienteExt();
+    };
+    siguienteDir();
+  }
+
+  // capa "sin color" (superior/inferior) para el frame de caminata actual —
+  // out[dir] es un array de 1 a 4 canvases, ver probarEstiloMultiarchivo
+  function capaAnimada(estilo, dir, frame) {
+    const frames = capasEstilo[estilo] && capasEstilo[estilo][dir];
+    return frames ? frames[frame % frames.length] : null;
+  }
+
+  // SIN límite fijo de estilos por categoría: prueba <Prefijo>1, <Prefijo>2...
+  // y corta tras MAX_HUECOS_ESTILO números seguidos sin archivo (ver
+  // game/assets/apariencia/LEEME.txt) — agregar un estilo nuevo es solo subir
+  // el PNG con el número que sigue, sin tocar código. TOPE_ESTILO es una
+  // salvaguarda dura (nunca debería alcanzarse con la lógica de huecos).
+  const MAX_HUECOS_ESTILO = 3;
+  const TOPE_ESTILO = 300;
+  const MULTIARCHIVO_APARIENCIA = window.Apariencia.CATEGORIAS_MULTIARCHIVO; // ["superior","inferior"]
+  function probarCategoria(categoria, prefijo) {
+    estilosPorCategoria[categoria] = estilosPorCategoria[categoria] || [];
+    const cargador = MULTIARCHIVO_APARIENCIA.includes(categoria) ? probarEstiloMultiarchivo : probarEstilo;
+    let n = 1, huecos = 0;
+    const paso = () => {
+      if (n > TOPE_ESTILO) return;
+      cargador(prefijo + n, (ok) => {
+        if (ok) { estilosPorCategoria[categoria].push(prefijo + n); huecos = 0; }
+        else huecos++;
+        n++;
+        if (huecos < MAX_HUECOS_ESTILO) paso();
+      });
+    };
+    paso();
+  }
+  const tryCapasApariencia = () => {
+    for (const [categoria, prefijo] of Object.entries(PREFIJOS_APARIENCIA)) probarCategoria(categoria, prefijo);
+  };
+  const estilosDisponibles = (categoria) => estilosPorCategoria[categoria] || [];
+
+  function hexToArr(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function rgbStrToArr(s) {
+    const m = /rgb\((\d+),(\d+),(\d+)\)/.exec(s);
+    return m ? [+m[1], +m[2], +m[3]] : [0, 0, 0];
+  }
+
+  // Remapea los 3 tonos grises exactos de una capa al color elegido con un
+  // filtro SVG (feComponentTransfer discreto de 3 pasos por canal) en vez de
+  // getImageData/putImageData: las capas se cargan por file:// (juego sin
+  // servidor) y Chrome marca esos canvases como "tainted" — getImageData
+  // tira SecurityError ahí. drawImage (con o sin filtro) SÍ funciona sobre
+  // contenido file://, así que el remapeo se hace enteramente por filtro,
+  // nunca leyendo píxeles de vuelta a JS.
+  let filtroTinte = null, ffR = null, ffG = null, ffB = null;
+  function asegurarFiltroTinte() {
+    if (filtroTinte) return;
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('width', '0'); svg.setAttribute('height', '0');
+    svg.style.position = 'absolute'; svg.style.pointerEvents = 'none';
+    const filter = document.createElementNS(NS, 'filter');
+    filter.setAttribute('id', 'ap-tinte-filtro');
+    filter.setAttribute('color-interpolation-filters', 'sRGB');
+    const transfer = document.createElementNS(NS, 'feComponentTransfer');
+    ffR = document.createElementNS(NS, 'feFuncR');
+    ffG = document.createElementNS(NS, 'feFuncG');
+    ffB = document.createElementNS(NS, 'feFuncB');
+    for (const f of [ffR, ffG, ffB]) f.setAttribute('type', 'discrete');
+    transfer.append(ffR, ffG, ffB);
+    filter.appendChild(transfer);
+    svg.appendChild(filter);
+    document.body.appendChild(svg);
+    filtroTinte = filter;
+  }
+
+  // remapea un canvas CUALQUIERA ya en gris puro de 3 tonos al color elegido
+  // (reutilizando shadeHex, misma fórmula de sombreado que el resto del
+  // motor) — usada SOLO por el tono de piel (tintarCuerpo, más abajo), que
+  // sigue eligiéndose de una paleta fija de swatches. Las capas de cabello/
+  // ojos/vello usan tintarMultiply (ver debajo): color continuo, no paleta.
+  function remapTonos(fuente, colorHex) {
+    asegurarFiltroTinte();
+    const sombra = rgbStrToArr(shadeHex(colorHex, 0.62));  // gris #4d4d4d (77)
+    const medio = hexToArr(colorHex);                      // gris #808080 (128)
+    const brillo = rgbStrToArr(shadeHex(colorHex, 1.32));  // gris #b3b3b3 (179)
+    const tabla = (i) => [sombra[i], medio[i], brillo[i]].map((v) => (v / 255).toFixed(4)).join(' ');
+    ffR.setAttribute('tableValues', tabla(0));
+    ffG.setAttribute('tableValues', tabla(1));
+    ffB.setAttribute('tableValues', tabla(2));
+    const c = document.createElement('canvas');
+    c.width = fuente.width; c.height = fuente.height;
+    const ctx = c.getContext('2d');
+    ctx.filter = 'url(#ap-tinte-filtro)';
+    ctx.drawImage(fuente, 0, 0);
+    ctx.filter = 'none';
+    return c;
+  }
+
+  // Tinte por MULTIPLICACIÓN (v28.9): cabello/ojos/vello pasaron a color
+  // CONTINUO (3 sliders R/G/B en la UI, ver ui.js), así que ya no alcanza
+  // con el remapeo discreto de 3 tonos de remapTonos (pensado para una
+  // paleta cerrada). El sprite gris de la capa actúa de "máscara de
+  // sombreado": se compone una vez con globalCompositeOperation='multiply'
+  // contra un relleno sólido del color elegido (cada canal del gris queda
+  // escalado — multiplicado — por el canal correspondiente del color, así
+  // que las zonas más claras del gris se acercan más al color pleno y las
+  // oscuras quedan más oscurecidas) y LUEGO se recorta con
+  // 'destination-in' contra el MISMO sprite gris para restaurar su alpha
+  // original — el 'multiply' de por sí vuelve opaco todo el lienzo
+  // (incluidas las zonas transparentes del sprite), así que sin este paso
+  // el tinte "rellenaría" la silueta entera en vez de respetarla. Ambos
+  // pasos son composición pura de canvas (drawImage/fillRect +
+  // globalCompositeOperation) — CERO getImageData, así que sigue
+  // funcionando sobre canvases "tainted" por file:// (ver nota grande de
+  // v28 más arriba sobre esa trampa).
+  function tintarMultiply(fuente, colorHex) {
+    const c = document.createElement('canvas');
+    c.width = fuente.width; c.height = fuente.height;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(fuente, 0, 0);
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.fillStyle = colorHex;
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.drawImage(fuente, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+    return c;
+  }
+
+  function tintarCapa(estiloId, dir, colorHex) {
+    const gris = capasEstilo[estiloId] && capasEstilo[estiloId][dir];
+    if (!gris || !colorHex) return null;
+    const key = estiloId + '::' + dir + '::' + colorHex;
+    if (tintCache[key]) return tintCache[key];
+    const c = tintarMultiply(gris, colorHex);
+    tintCache[key] = c;
+    return c;
+  }
+
+  // tono de piel: el cuerpo base (game/assets/sprites/player_down/up/side.png)
+  // debe venir en gris puro de 3 tonos como cualquier capa — se tiñe frame a
+  // frame (el ciclo de caminata) con la MISMA remapTonos, cacheado por
+  // id+frame+color para no repetir el filtro en cada dibujado
+  const tintCuerpoCache = {};
+  function tintarCuerpo(baseCanvas, limpioId, frame, colorHex) {
+    if (!colorHex) return baseCanvas;
+    // overrideVersion en la key: mismo motivo que en getTintado — si el
+    // primer teñido de un id+frame+color se pide antes de que
+    // player_down/up/side.png termine de cargar, baseCanvas es el sprite
+    // PROCEDURAL de respaldo (con colores propios, no gris puro) y
+    // remapTonos sobre eso da cualquier cosa; sin esto quedaba cacheado mal
+    // para siempre aunque después llegara el override correcto.
+    const key = limpioId + '::' + frame + '::' + colorHex + '::' + overrideVersion;
+    if (tintCuerpoCache[key]) return tintCuerpoCache[key];
+    const c = remapTonos(baseCanvas, colorHex);
+    tintCuerpoCache[key] = c;
+    return c;
+  }
+
+  // sprite del jugador (o de un jugador remoto) con su apariencia elegida
+  // compuesta encima: apariencia = {cabello:{estilo,color}, ojos:{...},
+  // vello:{...}, superior:{estilo,color:null}, inferior:{...},
+  // piel:{estilo:null,color}}. "piel" no es una capa — tiñe el cuerpo base
+  // entero con la MISMA remapTonos que el resto (el cuerpo base debe venir
+  // en gris de 3 tonos, ver game/assets/sprites/LEEME.txt). "superior"/
+  // "inferior" (ropa) tampoco se tiñen — cada estilo ya viene en su color
+  // final, se dibujan tal cual (ver CATEGORIAS_SIN_COLOR en apariencia.js).
+  function getTintado(baseId, apariencia, frame, flip) {
+    if (!apariencia) return get(baseId, frame, flip);
+    const herido = baseId.endsWith('_herido');
+    const limpioId = herido ? baseId.slice(0, -'_herido'.length) : baseId;
+    const dir = limpioId.replace('player_', '');
+    // v28.14: skin predeterminada — nada de capas/tinte, es un sprite fijo
+    // (hazmat_down/up/side, arriba) que sustituye al cuerpo+capas entero.
+    // La variante "_herido" NO se pide directa por get() (bug real: build()
+    // arma cache['hazmat_down_herido'] una sola vez, en frío, a partir del
+    // sprite PROCEDURAL — nadie sube nunca un archivo "hazmat_down_herido.png",
+    // así que get() jamás encuentra un override para ese id y siempre cae al
+    // placeholder viejo con sangre encima, ignorando el hazmat_down.png real
+    // que haya subido el usuario). Se arma en caliente sobre el sprite sano
+    // YA resuelto (que sí respeta overrides[]), cacheado con overrideVersion
+    // para no repetir herir() en cada frame ni quedar pegado a un override
+    // que todavía no había cargado.
+    if (apariencia.modo === 'hazmat') {
+      if (!herido) return get('hazmat_' + dir, frame, flip);
+      const sano = get('hazmat_' + dir, frame, false);
+      if (!sano) return null;
+      const key = 'hazmat_' + dir + '|herido|' + frame + '|' + overrideVersion;
+      let entry = tintadoCache[key];
+      if (!entry) {
+        entry = { canvas: herir(sano), flipped: null };
+        tintadoCache[key] = entry;
+      }
+      if (!flip) return entry.canvas;
+      if (!entry.flipped) entry.flipped = mirror(entry.canvas);
+      return entry.flipped;
+    }
+    const cats = ['ojos', 'inferior', 'superior', 'vello', 'cabello']; // orden de dibujo, de atrás a adelante — vello y cabello AL FRENTE de la ropa (si no, el cuello de "superior" tapaba la barba, feo sobre todo mirando "down")
+    const piel = apariencia.piel;
+    // overrideVersion en la key: el cuerpo base (player_down/up/side.png) y
+    // las capas cargan async (Image.onload) — si el primer composite de una
+    // combinación se pide ANTES de que terminen de cargar, se arma con el
+    // sprite procedural de respaldo (get() cae a cache[] mientras
+    // overrides[] todavía no existe) y sin esto quedaba cacheado mal PARA
+    // SIEMPRE, sin refrescarse cuando el override real llegaba (bug real:
+    // "down" se veía distinto a "up"/"side" porque es la primera dirección
+    // que se pide, más propensa a la carrera).
+    const key = [limpioId, herido ? 1 : 0, frame, piel ? piel.color : '', overrideVersion]
+      .concat(cats.map((cat) => {
+        const sel = apariencia[cat];
+        return sel ? sel.estilo + ':' + sel.color : '';
+      }))
+      .join('|');
+    let entry = tintadoCache[key];
+    if (!entry) {
+      const baseCanvas = get(limpioId, frame, false);
+      if (!baseCanvas) return get(baseId, frame, flip);
+      const cuerpo = piel && piel.color ? tintarCuerpo(baseCanvas, limpioId, frame, piel.color) : baseCanvas;
+      let c = document.createElement('canvas');
+      c.width = 48; c.height = 48;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(cuerpo, 0, 0);
+      for (const cat of cats) {
+        const sel = apariencia[cat];
+        if (!sel || !sel.estilo) continue;
+        const capa = SIN_COLOR_APARIENCIA.includes(cat)
+          ? capaAnimada(sel.estilo, dir, frame)
+          : tintarCapa(sel.estilo, dir, sel.color);
+        if (capa) ctx.drawImage(capa, 0, 0);
+      }
+      if (herido) c = herir(c);
+      entry = { canvas: c, flipped: null };
+      tintadoCache[key] = entry;
+    }
+    if (!flip) return entry.canvas;
+    if (!entry.flipped) entry.flipped = mirror(entry.canvas);
+    return entry.flipped;
+  }
+
   // ---------- props del entorno ----------
   // mueble con volumen: frente + techo iluminado + lateral derecho en sombra
   function mueble(ctx, cx, baseY, w, h, color) {
@@ -975,11 +1420,26 @@
   // existen no se dibuja nada). Se compone SOBRE el sprite del jugador.
   const CAPA_MASCARA_GAS = ['mascara_down', 'mascara_up', 'mascara_side'];
 
+  // los 3 cachés de teñido (tintCache/tintadoCache/tintCuerpoCache) crecen
+  // sin límite mientras dura la sesión — sobre todo arrastrando un slider
+  // RGB del personalizador, que genera un canvas nuevo por cada valor
+  // intermedio. Se limpian solas en gameplay (no hace falta llamarlo ahí:
+  // la combinación real que se usa se recachea al toque), pero conviene
+  // vaciarlas al cerrar el panel de Personalizar, donde se genera la
+  // mayoría de esa basura y no vuelve a hacer falta.
+  function limpiarTintado() {
+    for (const k in tintCache) delete tintCache[k];
+    for (const k in tintadoCache) delete tintadoCache[k];
+    for (const k in tintCuerpoCache) delete tintCuerpoCache[k];
+  }
+
   build();
   window.Sprites = {
     get, tryOverrides, drawProp, frameCount, tiene,
     list: () => Object.keys(DEFS),
     CAPA_MASCARA_GAS,
     version: () => overrideVersion,
+// personalización de personaje (v28)
+    tryCapasApariencia, estilosDisponibles, getTintado, limpiarTintado,
   };
 })();

@@ -15,10 +15,15 @@ const path = require('path');
 const RAIZ = path.join(__dirname, '..', 'game');
 
 function archivosDe(dir) {
+  // orden de readdirSync depende del filesystem (Windows/NTFS vs Linux/ext4
+  // devuelven órdenes distintos) — sort() explícito para que el manifiesto
+  // generado sea BYTE A BYTE igual sin importar la plataforma que lo genere
+  // (si no, el chequeo de CI en ubuntu-latest difiere del regenerado en Windows)
   try {
     return fs.readdirSync(path.join(RAIZ, dir), { withFileTypes: true })
       .filter((e) => e.isFile())
-      .map((e) => e.name);
+      .map((e) => e.name)
+      .sort();
   } catch (e) { return []; }
 }
 
@@ -50,9 +55,15 @@ function elegir(candidatos, comparador) {
 }
 
 // ---- sprites: misma prioridad que el viejo rutasOverride() de sprites.js ----
-// (dir-mayor: assets/sprites > assets/objetos > assets; ext: webp>png>jpg>jpeg)
+// (dir-mayor: assets/sprites > assets/objetos > assets/apariencia > assets;
+// ext: webp>png>jpg>jpeg). "assets/apariencia" sirve overrides de cuerpo
+// completo tipo hazmat_down.png (v28.14) — las capas de personalización
+// (Hair1.png, Superior1_down.png...) también viven ahí pero las carga
+// Sprites.tryCapasApariencia() por sondeo directo, no este manifiesto; que
+// también aparezcan acá como ids sueltos (Hair1, Superior1_down...) es
+// inofensivo, nadie los pide por esos ids.
 const sprites = elegir(
-  porPrioridad(['assets/sprites', 'assets/objetos', 'assets'], ['webp', 'png', 'jpg', 'jpeg']),
+  porPrioridad(['assets/sprites', 'assets/objetos', 'assets/apariencia', 'assets'], ['webp', 'png', 'jpg', 'jpeg']),
   (a, b) => a.dirI - b.dirI || a.extI - b.extI
 );
 

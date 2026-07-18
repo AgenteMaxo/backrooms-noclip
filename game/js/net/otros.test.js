@@ -7,6 +7,7 @@ global.performance = { now: () => ahora };
 global.window = {};
 global.Game = { world: { otros: [], player: { rx: 0, ry: 0 } } };
 window.Game = global.Game;
+global.Apariencia = require('../apariencia.js');
 
 require('./otros.js');
 const Otros = window.Otros;

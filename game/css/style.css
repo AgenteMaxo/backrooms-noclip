@@ -570,6 +570,103 @@ details.cdx > div, details.cdx > ol { padding: 6px 14px 12px; }
 .col-nivel { border: 1px solid var(--borde); background: #0f0e0a; padding: 10px 14px;
   margin-bottom: 8px; font-size: 15px; }
 .col-nivel ul { padding-left: 20px; color: #cfc8b0; line-height: 1.55; }
+
+/* ---------- personalización de personaje (v28) ---------- */
+#apariencia-panel { position: fixed; inset: 0; background: rgba(3,3,2,.88);
+  display: flex; align-items: center; justify-content: center; z-index: 30; }
+/* v28.12: cabecera con el botón de aleatorio arriba a la derecha */
+.ap-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.ap-cab h2 { margin-bottom: 0; }
+.ap-dado { width: 34px; height: 34px; padding: 0; background: #0f0e0a; border: 1px solid var(--borde);
+  cursor: pointer; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.ap-dado:hover { border-color: var(--amarillo-osc); box-shadow: 0 0 8px rgba(217,198,110,.3); }
+.ap-dado:active { transform: translateY(1px); }
+/* v30.20: .ap-preview pasó de 1fr (mitad pareja) a "auto" — ahora que el
+   editor tiene 3 columnas (ver .ap-opciones) necesita más ancho absoluto
+   del que le tocaba en un 50/50; encoger la preview (ver .ap-preview canvas
+   más abajo, 192→144px) y dejarla en "auto" le da al editor todo el resto.
+   align-items:center sigue centrando ambas celdas verticalmente si difieren
+   en alto (ver nota grande en .ap-preview-sticky sobre el truco de sticky
+   que se abandonó). */
+.ap-layout { display: grid; grid-template-columns: auto 1fr; column-gap: 22px; align-items: center; }
+/* v28.17: con "Traje Hazmat" .ap-opciones (=#ap-cats-personalizables, ver
+   HTML) se oculta ENTERA — .centrado colapsa a UNA sola columna para que
+   .ap-preview (el único hijo que queda) ocupe todo el ancho y su contenido
+   quede centrado por .ap-preview-sticky, en vez de vivir encajonado en la
+   mitad izquierda con la derecha vacía. */
+.ap-layout.centrado { grid-template-columns: 1fr; }
+/* v30.20: 3 columnas (antes, v30.19, una sola columna apilada; v30.18, 2
+   sub-columnas) — pedido explícito del usuario, con la ÚLTIMA columna
+   reservada para ropa. grid-auto-flow:column (en vez del "row" por
+   defecto) + grid-template-rows fijo de 2 filas es lo que logra ese
+   agrupamiento: llena la PRIMERA columna entera (Piel, Cabello) antes de
+   pasar a la segunda (Ojos, Vello facial) y de ahí a la tercera (Superior,
+   Inferior = ropa) — con el "row" por defecto habría intercalado
+   Piel/Cabello/Ojos en la fila 1 y no se podría agrupar ropa en una sola
+   columna. gap reemplaza el margin-bottom de .ap-cat de más abajo. */
+.ap-opciones { min-width: 0; display: grid; grid-auto-flow: column;
+  grid-template-rows: repeat(2, auto); grid-template-columns: repeat(3, 1fr);
+  column-gap: 14px; row-gap: 20px; align-items: start; }
+/* v28.14: elegir entre la skin fija de Hazmat o personalizar — control
+   segmentado (dos botones pegados, uno "activo" resaltado), full-width
+   arriba de .ap-layout; el resto de las filas se oculta entera con "Traje
+   Hazmat" (nada de eso aplica sin capas que teñir) */
+.ap-modo { display: flex; gap: 0; margin-bottom: 14px; border: 1px solid var(--borde); }
+.ap-modo-btn { flex: 1; padding: 8px 4px; background: #0f0e0a; border: none;
+  color: var(--gris); font-family: inherit; font-size: 13px; cursor: pointer; }
+.ap-modo-btn:not(:last-child) { border-right: 1px solid var(--borde); }
+.ap-modo-btn:hover { color: var(--hueso); }
+.ap-modo-btn.sel { background: #1c1810; color: var(--amarillo); }
+.ap-preview-sticky { text-align: center; }
+/* 48px nativos × 3 = 144px: múltiplo entero para que el escalado pixelado
+   quede nítido — encogida desde 192px (×4, v30.16) a pedido del usuario,
+   para dejarle más ancho absoluto a las 3 columnas del editor (ver
+   .ap-layout arriba: .ap-preview ya no reparte 50/50, así que esto es lo
+   que la mantiene del tamaño justo en vez de ocupar demasiado).
+   Fondo de habitación provisto por el usuario (v28.13): un solo valor en
+   background-size escala el ancho a ese % del recuadro y calcula el alto
+   "auto" preservando la proporción 4:3 de la imagen 640×480 — >100% hace
+   zoom (recorta más de los bordes) sin deformarla; center la mantiene
+   encuadrada en el pilar. #0a0906 queda de respaldo por si el archivo no
+   carga. border explícito: SIEMPRE tiene que quedar el marco del recuadro. */
+.ap-preview canvas { width: 144px; height: 144px; image-rendering: pixelated;
+  background: #0a0906 url('../assets/ui/personalizar-fondo.png') center/160% no-repeat;
+  border: 1px solid var(--borde); }
+/* flechas para rotar el muñeco entre los 3 ángulos del sprite (down/side/up)
+   — más angostas que las filas de estilo para no desbordar el recuadro del
+   preview */
+.ap-flecha-angulo { margin-top: 8px; margin-bottom: 0; }
+.ap-flecha-angulo .ap-valor { min-width: 76px; font-size: 12px; }
+/* v28.11: ajustes más compactos (pedido del usuario). v30.20: el margen
+   entre secciones ahora lo da el row-gap de la grilla de .ap-opciones, no
+   margin-bottom acá (evita que se sumen los dos). */
+.ap-cat { margin-bottom: 0; }
+/* v30.16: centrado (antes flush-left) — pedido del usuario: el título
+   quedaba "apartado a la izquierda" del todo, sin relación visual con la
+   fila de flechas/rueda centrada justo debajo */
+.ap-cat > .ap-titulo { display: block; text-align: center; color: var(--amarillo); font-size: 13px;
+  letter-spacing: .5px; margin-bottom: 3px; }
+.ap-flecha { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 5px; }
+.ap-arrow { width: 23px; height: 23px; padding: 0; background: #0f0e0a; border: 1px solid var(--borde);
+  color: var(--amarillo); font-size: 12px; line-height: 1; cursor: pointer; flex: 0 0 auto; }
+.ap-arrow:hover { border-color: var(--amarillo-osc); box-shadow: 0 0 8px rgba(217,198,110,.3); }
+.ap-arrow:active { transform: translateY(1px); }
+.ap-valor { min-width: 74px; text-align: center; color: var(--hueso); font-size: 12px; line-height: 1.25; }
+/* v30.17: <input type=color> estilizado como círculo relleno del color actual,
+   clic abre el selector NATIVO del navegador/SO (matiz+saturación+brillo+
+   hex, gratis, sin reinventar drag-and-drop). Los pseudo-elementos
+   ::-webkit-color-swatch(-wrapper) y ::-moz-color-swatch son la forma
+   estándar de quitarle el padding/borde por defecto al swatch nativo;
+   border-radius:50% en los 3 (input + ambos pseudo-elementos) porque el
+   swatch interno rellena la caja completa y no hereda el redondeo del
+   padre solo — overflow:hidden en el input es el respaldo para navegadores
+   que ignoren los pseudo-elementos. */
+.ap-swatch { -webkit-appearance: none; appearance: none; width: 34px; height: 34px;
+  border: 2px solid var(--borde); border-radius: 50%; padding: 0; margin: 4px auto 5px;
+  display: block; cursor: pointer; background: none; overflow: hidden; }
+.ap-swatch::-webkit-color-swatch-wrapper { padding: 0; border-radius: 50%; }
+.ap-swatch::-webkit-color-swatch { border: none; border-radius: 50%; }
+.ap-swatch::-moz-color-swatch { border: none; border-radius: 50%; }
 .col-nivel .col-locked, li.col-locked { color: #5a5546; font-style: italic; }
 
 /* ---------- fin ---------- */

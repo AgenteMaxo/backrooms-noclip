@@ -1,0 +1,117 @@
+CAPAS DE APARIENCIA (pelo / ojos / ropa)
+=========================================
+
+Estas capas se tiñen en tiempo de ejecución al color que elige cada jugador en
+"Personalizar" (pantalla de título) y se dibujan encima del cuerpo base
+(game/assets/sprites/player_down.png, player_up.png, player_side.png).
+
+Formato de archivo:
+ - Nombre del archivo: <Estilo>.png  (ej.: Hair1.png, Eyes1.png, Clothes1.png)
+   — UN solo archivo por estilo, con 4 frames en fila.
+ - Tamaño: 192x48 px EXACTOS (4 frames de 48x48 uno al lado del otro):
+     frame 0 (0-48px)    = personaje mirando hacia ABAJO   ("down")
+     frame 1 (48-96px)   = personaje mirando hacia ARRIBA  ("up")
+     frame 2 (96-144px)  = personaje de PERFIL, mirando a la DERECHA ("side";
+                           el juego lo espeja solo para la izquierda)
+     frame 3 (144-192px) = SIN USAR — el motor nunca lo lee, puede quedar vacío
+   Un frame (0, 1 o 2) puede quedar vacío/transparente si no aplica (p. ej.
+   los ojos no se ven de espaldas: dejar el frame 1 en blanco) — esa
+   dirección simplemente no dibuja nada ahí, no rompe nada.
+ - El motor NO escala ni centra estas capas (a diferencia de los overrides de
+   sprites normales) — cada frame se recorta 1:1 tal cual, así que el tamaño
+   y la posición del dibujo DENTRO de cada frame de 48x48 son responsabilidad
+   tuya: tienen que caer exactamente donde está esa parte del cuerpo en
+   player_<dir>.png. Si un frame queda corrido, NO hace falta reexportar el
+   PNG: hay un ajuste fino de posición por estilo/dirección en
+   `AJUSTE_CAPA` (game/js/engine/sprites.js) que desplaza el dibujo sin
+   tocar el archivo — avisá y se calibra ahí.
+ - Una sola pose estática por dirección: el pelo/ojos/ropa NO tienen su propio
+   ciclo de caminata, se dibujan tal cual encima de cualquier frame de la
+   caminata del cuerpo base (el pelo no se mueve al andar).
+ - Fondo transparente.
+ - Cada píxel debe quedar en UNO de estos 3 grises exactos (nada de dithering
+   ni grises intermedios; el motor los reemplaza por el color elegido):
+     sombra:   #4d4d4d
+     medio:    #808080
+     brillo:   #b3b3b3
+ - Si el archivo del estilo no existe todavía, ese estilo simplemente no
+   aparece en el selector (no rompe nada).
+
+Referencia de alineación (medida sobre el cuerpo base actual — recalcular si
+el cuerpo base cambia): centro X de la cabeza ≈ 24px en "down"/"up", ≈ 24.5px
+en "side"; el pelo/cabeza empieza en y≈5 y el cuerpo NO tiene hueco de cuello
+(la silueta sigue opaca sin corte hasta los hombros), así que no hay un
+"final" natural de la cabeza — cualquier recorte para miniatura queda
+cortado abajo por diseño.
+
+SIN LÍMITE de cuántos estilos poner por categoría — prefijo + número:
+ Cabello:        Hair1, Hair2, Hair3, Hair4, Hair5...
+ Ojos:           Eyes1, Eyes2, Eyes3...
+ Vello facial:   Vello1, Vello2, Vello3... (bigote/barba — mismo formato que
+                 el pelo; región nariz-mentón, más abajo que los ojos. Por
+                 defecto "sin vello facial" — es opcional, como el pelo calvo)
+ Parte superior: Superior1, Superior2, Superior3... (torso — remera, campera)
+ Parte inferior: Inferior1, Inferior2, Inferior3... (piernas y pies — pantalón,
+                 calzado)
+
+Para agregar uno nuevo: subí el PNG con el número que sigue — NO hace falta
+tocar ningún código. El juego prueba Hair1, Hair2, Hair3... en orden al
+arrancar y va sumando los que encuentra; corta de probar después de 3
+números seguidos sin archivo. Por eso es importante NO DEJAR HUECOS grandes
+en la numeración: si tenés Hair1 y Hair2 y subís directamente Hair6 (dejando
+Hair3/4/5 sin poner), el juego corta en el hueco y nunca llega a ver Hair6.
+Si borrás un estilo del medio, renumerá los que quedan para no dejar un
+hueco de 3+ (o dejá un PNG de relleno con ese número). Si un número
+individual no tiene archivo todavía, el juego simplemente no lo ofrece en
+el selector (no rompe nada) — el corte es SOLO tras 3 huecos SEGUIDOS.
+
+PARTE SUPERIOR / PARTE INFERIOR (ropa) — 2 diferencias con el resto
+=====================================================================
+1) Van en COLOR FINAL, no se tiñen. A diferencia de cabello/ojos/vello (que
+   van en gris de 3 tonos y el jugador elige el color en el juego),
+   Superior*.png e Inferior*.png se dibujan TAL CUAL están — el motor NO los
+   toca. Cada estilo tiene que venir YA con su color puesto en el propio PNG
+   (colores reales, no gris) — si querés varias opciones de color para una
+   misma prenda, hacé un Superior/Inferior por cada combinación (p. ej.
+   Superior1 = campera verde, Superior2 = campera roja). Por eso en el panel
+   de personalización estas dos categorías NO tienen fila de colores, solo
+   de miniaturas.
+
+2) Formato de archivo DISTINTO: 3 archivos SUELTOS por estilo, uno por
+   dirección — mismo patrón que player_down/up/side.png — en vez de una
+   sola hoja de 192x48 con las 3 direcciones:
+     <Estilo>_down.png  (ej.: Superior1_down.png)
+     <Estilo>_up.png    (ej.: Superior1_up.png)
+     <Estilo>_side.png  (ej.: Superior1_side.png; el juego lo espeja solo
+                          para la izquierda)
+   Cada archivo puede traer hasta 4 FRAMES de ciclo de caminata (a
+   diferencia del resto de las capas, que son una sola pose fija): una hoja
+   horizontal de 48px de alto, tantos frames de 48px de ancho como quieras
+   — 48x48 = 1 frame (estático), 96x48 = 2, 192x48 = 4 — EXACTAMENTE igual
+   que player_down/up/side.png. La ropa anima con las piernas si le das los
+   4 frames; con 1 solo frame queda estática (no rompe nada, es válido).
+   Si falta algún archivo de dirección, esa dirección simplemente no dibuja
+   nada ahí (como un frame en blanco); si falta "_down", el estilo entero no
+   se cuenta como encontrado y no aparece en el selector.
+   El motor NO escala ni centra: cada frame se dibuja tal cual (recorte 1:1
+   de 48x48), así que la posición del dibujo es responsabilidad del
+   archivo — mismo `AJUSTE_CAPA` disponible si queda corrido (el offset se
+   aplica igual a los 4 frames de esa dirección), sin tocar el PNG.
+
+Zona a dibujar en cada una:
+ - Parte superior: dibujar SOLO el torso (hombros para abajo) — NO la cabeza,
+   así la miniatura del selector no repite lo que ya se ve en Cabello/Ojos.
+ - Parte inferior: dibujar piernas y pies.
+Fondo transparente en los dos casos.
+
+PIEL (tono de piel) — NO es una capa aparte, no hace falta ningún PNG nuevo
+============================================================================
+El tono de piel no tiene archivo propio: tiñe el CUERPO BASE entero
+(game/assets/sprites/player_down/up/side.png) con la MISMA mecánica de
+remapeo de 3 tonos que el pelo/ojos/ropa. Por eso esos 3 archivos tienen que
+estar dibujados en gris puro de 3 tonos exactos (sombra #4d4d4d, medio
+#808080, brillo #b3b3b3) — ver la nota completa en
+game/assets/sprites/LEEME.txt. Como el cuerpo base es gris, SIEMPRE hace
+falta un color (no hay opción "sin teñir": un cuerpo gris sin color se vería
+mal). La paleta de tonos de piel se edita en PALETA.piel dentro de
+game/js/apariencia.js.

@@ -88,6 +88,7 @@
       t: 'hola', nombre, token: token(), v: 9, // debe coincidir con protocolo.js
       nivel: params.get('nivel') || undefined, // puerta de desarrollo (solo MMO_DEV=1)
       sala: salaActual || undefined,
+      apariencia: Game.Profiles.apariencia(), // v28: visible para otros jugadores
     });
     ws.onmessage = (ev) => {
       let m;
@@ -475,6 +476,7 @@
     w.player.inv = m.inv || [];
     w.player.manos = m.manos || [null, null];
     w.player.equipo = m.equipo || { cara: null, cuerpo: null, pies: null };
+    w.player.apariencia = Apariencia.normalizar(m.apariencia || w.player.apariencia);
     w.apagon = null;
     if (m.apagon) aplicarApagon(m.apagon, w, true);
     w.pasosNivel = m.caminata ? m.caminata.pasos : 0;

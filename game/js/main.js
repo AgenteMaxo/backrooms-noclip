@@ -1,7 +1,7 @@
 // Arranque: input, bucle de animación y pantalla de título.
 (function () {
   // versión visible del juego (Ajustes); súbela con cada tanda de cambios
-  window.VERSION_JUEGO = 'v30.14';
+  window.VERSION_JUEGO = 'v30.15';
   const world = Game.world;
   world.data = window.GAME_DATA;
 
@@ -52,8 +52,14 @@
   Render.init(canvas);
 
   // ---------- selección de renderizador: 3D (Three.js) por defecto, ?render=2d de respaldo ----------
+  // El modo offline por turnos (?autostart=1 sin ?online/?local — ver CLAUDE.md)
+  // arranca en 2D por defecto: es el respaldo secundario de un jugador, y el
+  // Canvas 2D clásico es más liviano y no depende de WebGL. ?render=3d/2d
+  // explícito siempre gana sobre este valor por defecto.
   const paramsPre = new URLSearchParams(location.search);
-  let use3D = paramsPre.get('render') !== '2d' && window.Render3D;
+  const offlineTurnosPre = !!paramsPre.get('autostart') && !paramsPre.get('online') && !paramsPre.get('local');
+  const renderParamPre = paramsPre.get('render');
+  let use3D = (renderParamPre ? renderParamPre !== '2d' : !offlineTurnosPre) && window.Render3D;
   const glCanvas = document.getElementById('gl-canvas');
   if (use3D) {
     try {
@@ -67,7 +73,7 @@
     }
   }
 
-  // assets personalizados (game/assets/): los del JUEGO se cargan al entrar
+// assets personalizados (game/assets/): los del JUEGO se cargan al entrar
   // en partida, NO en la portada — y solo las rutas del manifiesto de assets
   // reales (v30.6: antes la portada disparaba cientos de peticiones 404
   // sondeando cada sprite/sonido posible en 4 extensiones)
@@ -81,6 +87,8 @@
       ...Sprites.CAPA_MASCARA_GAS,
       ...Object.keys(world.data.objects),
     ]);
+    // capas de personalización de personaje (game/assets/apariencia/) si existen
+    Sprites.tryCapasApariencia();
     if (window.Sfx) Sfx.cargarOverrides();
   }
   // iconos PNG personalizados: sí al arrancar (la propia portada los usa)
@@ -1500,6 +1508,12 @@
   if (params.get('netdebug')) window.NETDEBUG = true; // consola: derivas de red y rtt
   if ((params.get('autostart') || params.get('selftest') || params.get('online') || params.get('local')) && !Game.Profiles.activeName())
     Game.Profiles.create(params.get('nombre') || 'Errante');
+  // depuración visual: ?abrir=apariencia abre el panel de personalización desde el título
+  if (params.get('abrir') === 'apariencia') {
+    if (!Game.Profiles.activeName()) Game.Profiles.create('Errante');
+    cargarOverridesDeJuego();
+    setTimeout(() => world.ui.showApariencia(), 300);
+  }
   // ---------- BACKROOMS MMO: ?online=1 conecta al mundo compartido ----------
   // ?local=1 = MISMO juego con el servidor local de la pestaña (modo offline)
   if (params.get('online') || params.get('local')) {
@@ -2000,10 +2014,18 @@
     if (n && confirm(`¿Borrar el perfil «${n}» y todo su códice?`)) { P.remove(n); refreshTitle(); }
   };
   $id('btn-codex').onclick = () => world.ui.toggleCodex(true);
+ 
   $id('btn-changelog').onclick = () => {
     if (window.Changelog) Changelog.marcarVisto();
     world.ui.toggleChangelog(true);
   };
+  // el panel de Personalizar se abre ANTES de "DESPERTAR" (sin partida
+  // todavía) — sin esto, los overrides reales (Hair*.png, hazmat_down.png,
+  // Superior*/Inferior*) nunca se pedían (cargarOverridesDeJuego solo
+  // corría al entrar en partida) y el panel se quedaba mostrando el
+  // placeholder procedural para siempre, con "Parte inferior" directamente
+  // vacía (sin estilos que listar)
+  $id('btn-apariencia').onclick = () => { cargarOverridesDeJuego(); world.ui.showApariencia(); };
 
   // ---------- Selector de Música de Menú ----------
   const btnMusicMenu = $id('btn-music-menu');

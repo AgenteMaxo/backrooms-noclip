@@ -355,6 +355,45 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     ok(pong.ts === 12345, 'pong devuelve el sello de tiempo (medición de RTT)');
 
     c.ws.close();
+
+    // --- v28/v28.9: apariencia (pelo/ojos/ropa) — el servidor NORMALIZA
+    // cualquier estilo con forma inválida al valor por defecto en vez de
+    // aceptarlo tal cual (no rechaza la conexión por un campo cosmético,
+    // pero nunca deja pasar basura). Desde v28.9 cabello/vello/ojos usan
+    // color CONTINUO (3 sliders R/G/B, ya no una paleta cerrada de
+    // swatches): cualquier hex de 6 dígitos sintácticamente válido se
+    // respeta tal cual, y solo un color con forma inválida cae al default
+    // ("superior"/"inferior" — antes "ropa" — nunca se tiñen: su color
+    // siempre queda forzado a null sin importar lo que se mande) ---
+    {
+      const bienvApar = await new Promise((res, rej) => {
+        const ws2 = new WebSocket(`ws://127.0.0.1:${PUERTO}/ws`);
+        ws2.on('open', () => ws2.send(JSON.stringify({
+          t: 'hola', nombre: 'ArnesApariencia', token: 'arnes-apariencia', v: 8, nivel: nivelId,
+          apariencia: {
+            cabello: { estilo: 'HAX; DROP TABLE', color: '#ff00ff' },
+            ojos: null,
+            vello: { estilo: 'Vello1', color: 'not-a-color' },
+            superior: { estilo: 'Superior1', color: '#5f7454' },
+          },
+        })));
+        ws2.on('message', (raw) => {
+          const m = JSON.parse(raw.toString());
+          if (m.t === 'bienvenida') { ws2.close(); res(m); }
+        });
+        ws2.on('error', rej);
+        setTimeout(() => rej(new Error('timeout esperando bienvenida')), 4000);
+      });
+      ok(bienvApar.apariencia.cabello.estilo === 'Hair1',
+        'estilo de cabello con forma inválida → normalizado al valor por defecto');
+      ok(bienvApar.apariencia.cabello.color === '#ff00ff',
+        'v28.9: color de cabello es continuo — un hex sintácticamente válido se respeta tal cual');
+      ok(bienvApar.apariencia.ojos.estilo === 'Eyes1', 'apariencia ausente (null) → normalizado al valor por defecto');
+      ok(bienvApar.apariencia.vello.color === '#523c28',
+        'color de vello con forma inválida ("not-a-color") → normalizado al valor por defecto');
+      ok(bienvApar.apariencia.superior.estilo === 'Superior1' && bienvApar.apariencia.superior.color === null,
+        'estilo de superior válido se respeta tal cual; su color siempre queda forzado a null (no se tiñe)');
+    }
   } catch (e) {
     fallos.push('excepción: ' + e.message);
     console.error('EXCEPCIÓN', e);

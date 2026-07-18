@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 
 global.window = global;
 global.MapGen = { T: {}, walkable: () => true };
+global.Apariencia = require('../apariencia.js');
 
 const almacen = new Map();
 global.localStorage = {

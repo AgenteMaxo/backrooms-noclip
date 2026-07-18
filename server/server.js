@@ -311,7 +311,7 @@ wss.on('connection', (ws, req) => {
       const nivel = devOk && m.nivel && DATA.levels[m.nivel] ? m.nivel : NIVEL_INICIAL;
       sala = asignar(nivel, salaPrivada || undefined);
       prepararSala(sala);
-      jug = sala.entrar(ws, nombre, m.token, expediente);
+      jug = sala.entrar(ws, nombre, m.token, expediente, m.apariencia);
       jug._reSala = (s) => { sala = s; };  // el cruce actualiza la sala del socket
       db.registrarVisita(m.token, nivel);
       console.log(`[+] ${jug.nombre}#${jug.id} → ${sala.clave} (${sala.jugadores.size})`);
@@ -397,7 +397,7 @@ function espectar(jug, sala, objetivoId) {
     sala.dejarDeEspectar(jug, 'Vuelves a pisar la moqueta.');
     return { ok: true, msg: `${jug.nombre} vuelve al mundo.` };
   }
-  if (jug.muerto) return { error: 'El guardián está muriendo: espera a despertar en Level 0.' };
+if (jug.muerto) return { error: 'El guardián está muriendo: espera a despertar en Level 0.' };
   const r = buscarPorId(objetivoId | 0);
   if (!r) return { error: 'Ese errante ya no está conectado.' };
   if (r.jug.id === jug.id) return { error: 'No puedes observarte a ti mismo.' };

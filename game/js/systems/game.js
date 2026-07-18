@@ -96,6 +96,13 @@
           codice: {},
           records: { runs: 0, maxNiveles: 0, maxTurnos: 0, escapes: 0 },
           historial: [],
+          // normalizar() arma objetos nuevos por categoría en vez de reusar
+          // Apariencia.DEFECTO por referencia — si no, TODOS los perfiles
+          // nuevos comparten el mismo objeto anidado (hoy inofensivo porque
+          // todo lo demás reemplaza la referencia entera vía normalizar/
+          // localStorage, pero una mutación in-place futura corrompería el
+          // default global para toda la sesión)
+          apariencia: Apariencia.normalizar(Apariencia.DEFECTO),
         };
       }
       d.activo = nombre;
@@ -174,6 +181,17 @@
         });
         p.historial = p.historial.slice(0, 20);
       });
+    },
+    // personalización de personaje (v28): estilo+color de pelo/ojos/ropa,
+    // se recuerda por perfil de una partida a otra
+    apariencia() {
+      const p = this.get();
+      return Apariencia.normalizar(p && p.apariencia);
+    },
+    setApariencia(apariencia) {
+      const limpia = Apariencia.normalizar(apariencia);
+      this._update((p) => { p.apariencia = limpia; });
+      return limpia;
     },
     exportar() {
       const d = this._load();
@@ -390,6 +408,7 @@
       x: 0, y: 0, rx: 0, ry: 0, dir: 'down', flip: false, rot: 2,
       salud: 100, cordura: 100, sed: 100, hambre: 100,
       inv: [], manos: [null, null], equipo: { cara: null, cuerpo: null, pies: null },
+      apariencia: Profiles.apariencia(),
       luz: false, viva: true,
     };
     world.journal = [];
@@ -1754,6 +1773,7 @@
           sed: world.player.sed, hambre: world.player.hambre,
           inv: world.player.inv, manos: world.player.manos,
           equipo: world.player.equipo,
+apariencia: world.player.apariencia,
         },
         journal: world.journal,
         visited: world.visited,
@@ -1784,6 +1804,7 @@
       sed: s.player.sed, hambre: s.player.hambre,
       inv: s.player.inv, manos: s.player.manos || [null, null],
       equipo: s.player.equipo || { cara: null, cuerpo: null, pies: null },
+      apariencia: Apariencia.normalizar(s.player.apariencia || Profiles.apariencia()),
       luz: false, viva: true,
     };
     world.journal = s.journal;
