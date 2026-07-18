@@ -15,10 +15,15 @@ const path = require('path');
 const RAIZ = path.join(__dirname, '..', 'game');
 
 function archivosDe(dir) {
+  // orden de readdirSync depende del filesystem (Windows/NTFS vs Linux/ext4
+  // devuelven órdenes distintos) — sort() explícito para que el manifiesto
+  // generado sea BYTE A BYTE igual sin importar la plataforma que lo genere
+  // (si no, el chequeo de CI en ubuntu-latest difiere del regenerado en Windows)
   try {
     return fs.readdirSync(path.join(RAIZ, dir), { withFileTypes: true })
       .filter((e) => e.isFile())
-      .map((e) => e.name);
+      .map((e) => e.name)
+      .sort();
   } catch (e) { return []; }
 }
 

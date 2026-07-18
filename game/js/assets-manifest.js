@@ -30,9 +30,6 @@ window.ASSETS_MANIFEST = {
     "Hair2": "assets/apariencia/Hair2.png",
     "Hair3": "assets/apariencia/Hair3.png",
     "Hair4": "assets/apariencia/Hair4.png",
-    "hazmat_down": "assets/apariencia/hazmat_down.png",
-    "hazmat_side": "assets/apariencia/hazmat_side.png",
-    "hazmat_up": "assets/apariencia/hazmat_up.png",
     "Inferior1_down": "assets/apariencia/Inferior1_down.png",
     "Inferior1_side": "assets/apariencia/Inferior1_side.png",
     "Inferior1_up": "assets/apariencia/Inferior1_up.png",
@@ -55,7 +52,10 @@ window.ASSETS_MANIFEST = {
     "Vello2": "assets/apariencia/Vello2.png",
     "Vello3": "assets/apariencia/Vello3.png",
     "Vello4": "assets/apariencia/Vello4.png",
-    "Vello5": "assets/apariencia/Vello5.png"
+    "Vello5": "assets/apariencia/Vello5.png",
+    "hazmat_down": "assets/apariencia/hazmat_down.png",
+    "hazmat_side": "assets/apariencia/hazmat_side.png",
+    "hazmat_up": "assets/apariencia/hazmat_up.png"
   },
   "iconos": {
     "dado": "assets/icons/dado.png",
