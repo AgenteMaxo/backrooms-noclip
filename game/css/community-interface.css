@@ -1,0 +1,350 @@
+/* Propuesta de interfaz comunitaria: cartografía, estados y Ajustes.
+   Aditiva: conserva IDs y comportamiento del motor online/offline. */
+
+/* ---------- Minimapa ---------- */
+#minimap-shell {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 150px;
+  z-index: 12;
+  color: var(--hueso);
+  background: rgba(7, 6, 3, .86);
+  border: 1px solid rgba(217, 198, 110, .62);
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, .36), 0 8px 24px rgba(0, 0, 0, .38);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  user-select: none;
+}
+.minimap-head {
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--amarillo);
+  font-family: var(--font-title);
+  font-size: 10px;
+  letter-spacing: 2px;
+  border-bottom: 1px solid rgba(217, 198, 110, .24);
+}
+#minimap {
+  position: static;
+  display: block;
+  width: 136px;
+  height: 136px;
+  margin: 6px auto 4px;
+  padding: 0;
+  border: 1px solid rgba(217, 198, 110, .28);
+  background: #090804;
+  cursor: zoom-in;
+  image-rendering: pixelated;
+  touch-action: manipulation;
+}
+#minimap:hover { border-color: var(--amarillo); }
+.minimap-hint {
+  min-height: 15px;
+  padding: 0 6px 4px;
+  color: #817a68;
+  font-size: 9px;
+  text-align: center;
+  letter-spacing: .35px;
+}
+.minimap-zoom {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  display: flex;
+  gap: 4px;
+}
+.minimap-zoom button {
+  width: 31px;
+  height: 25px;
+  padding: 0;
+  color: var(--hueso);
+  background: rgba(8, 7, 4, .92);
+  border: 1px solid var(--borde);
+  font-family: var(--font-title);
+  font-size: 15px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.minimap-zoom button:hover,
+.minimap-zoom button:focus-visible {
+  color: #0b0904;
+  background: var(--amarillo);
+  border-color: var(--amarillo);
+  outline: none;
+}
+
+/* Los avisos vitales quedan a la izquierda del minimapa, sin taparlo. */
+#moodles {
+  top: 12px;
+  right: 174px;
+  max-width: min(420px, calc(100% - 250px));
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 5px;
+  z-index: 12;
+}
+.moodle {
+  width: 31px;
+  height: 31px;
+  background: rgba(8, 7, 4, .86);
+  border-width: 1px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.32), 0 3px 10px rgba(0,0,0,.42);
+}
+.moodle-3 { animation: moodle-pulse-soft 1.2s ease-in-out infinite; }
+@keyframes moodle-pulse-soft {
+  50% { transform: translateY(-1px); box-shadow: inset 0 0 0 2px rgba(0,0,0,.32), 0 0 10px rgba(217,74,53,.48); }
+}
+
+/* ---------- Mapa completo ---------- */
+#minimap-big {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, .79);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.mapa-panel {
+  width: min(1080px, 94vw);
+  height: min(820px, 92vh);
+  min-height: 360px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: rgba(10, 9, 5, .98);
+  border: 1px solid var(--amarillo-osc);
+  box-shadow: inset 0 0 0 5px rgba(0,0,0,.48), 0 22px 70px rgba(0,0,0,.72);
+}
+.mapa-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 60px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--borde);
+  background: linear-gradient(90deg, rgba(217,198,110,.08), transparent 55%);
+}
+.mapa-title { min-width: 0; flex: 1; }
+.mapa-kicker {
+  color: var(--amarillo-osc);
+  font-family: var(--font-title);
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+#minimap-level {
+  display: block;
+  overflow: hidden;
+  color: var(--hueso);
+  font-family: var(--font-title);
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#minimap-progress { color: var(--gris); font-size: 12px; }
+.mapa-actions { display: flex; align-items: center; gap: 7px; }
+.mapa-actions button { margin: 0; }
+#minimap-mark.activo {
+  color: #0b0904;
+  background: var(--amarillo);
+  border-color: var(--amarillo);
+}
+#minimap-close {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 20px;
+}
+#minimap-big-viewport {
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  margin: 12px;
+  border: 1px solid rgba(217,198,110,.26);
+  background:
+    linear-gradient(rgba(217,198,110,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(217,198,110,.025) 1px, transparent 1px),
+    #050402;
+  background-size: 28px 28px;
+}
+#minimap-big-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  background: transparent;
+  image-rendering: pixelated;
+  cursor: grab;
+  touch-action: none;
+}
+#minimap-big-canvas:active { cursor: grabbing; }
+#minimap-big-viewport.modo-marca #minimap-big-canvas { cursor: crosshair; }
+.mapa-footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 48px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--borde);
+}
+.mapa-legend {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 15px;
+  color: var(--gris);
+  font-size: 11px;
+}
+.mapa-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend-player { color: #fff4c4; }
+.legend-route { color: #bdb18a; }
+.legend-mark { color: #d75d52; }
+.mapa-help { color: #706a5a; font-size: 10px; text-align: right; }
+body.mapa-abierto #touch-controls,
+body.mapa-abierto #hud-manos,
+body.mapa-abierto #hud-equipo { pointer-events: none; opacity: .14; }
+
+/* ---------- Ajustes ---------- */
+#sound-menu .modal-box.settings-polished {
+  width: min(760px, 94vw);
+  max-width: 760px;
+  max-height: min(780px, 90vh);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  padding: 18px;
+  overflow: hidden;
+  text-align: left;
+}
+.settings-polished > h3 {
+  margin: 0 0 3px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--borde);
+  color: var(--amarillo);
+}
+.settings-subtitle {
+  margin: -3px 0 10px;
+  color: #77705f;
+  font-size: 12px;
+}
+.settings-layout {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px 5px 12px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--amarillo-osc) #100e09;
+}
+.settings-group {
+  margin: 9px 0;
+  border: 1px solid #302b20;
+  background: rgba(8, 7, 4, .52);
+}
+.settings-group[open] { border-color: #4a422d; }
+.settings-group > summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 0 12px;
+  color: #cfc49d;
+  font-family: var(--font-title);
+  font-size: 11px;
+  letter-spacing: 1.1px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.settings-group > summary::-webkit-details-marker { display: none; }
+.settings-group > summary::before {
+  content: '›';
+  color: var(--amarillo-osc);
+  font-size: 18px;
+  transform-origin: 50% 50%;
+  transition: transform .15s ease;
+}
+.settings-group[open] > summary::before { transform: rotate(90deg); }
+.settings-group-body {
+  padding: 5px 12px 10px;
+  border-top: 1px solid #282318;
+}
+.settings-polished .sound-row {
+  display: grid;
+  grid-template-columns: minmax(125px, .75fr) minmax(180px, 1.6fr) 44px;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  margin: 0;
+  border-bottom: 1px solid rgba(58,53,42,.45);
+}
+.settings-polished .sound-row:last-child { border-bottom: 0; }
+.settings-polished .sound-row > label:first-child {
+  width: auto;
+  color: #c5bfa9;
+}
+.settings-polished .sound-row input[type=range],
+.settings-polished .sound-row select,
+.settings-polished .sound-row input[type=password] { width: 100%; min-width: 0; }
+.settings-polished .sound-row .chk-row { width: auto; grid-column: 2 / 4; }
+.settings-polished #admin-msg { margin: 7px 0; color: var(--gris); }
+.settings-polished #ctrl-list {
+  margin: 4px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px dashed #3a352a;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.settings-polished > .modal-btns {
+  position: sticky;
+  bottom: 0;
+  justify-content: flex-end;
+  margin: 0 -18px -18px;
+  padding: 10px 18px;
+  border-top: 1px solid var(--borde);
+  background: rgba(10,9,5,.98);
+}
+.settings-polished #ajustes-version {
+  margin: 8px 0 -3px;
+  color: #5f5a4d;
+  font-size: 10px;
+  text-align: right;
+}
+
+/* Elimina el flash azul de toque sin retirar el foco accesible de teclado. */
+button, input, select, summary, canvas { -webkit-tap-highlight-color: transparent; }
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+summary:focus:not(:focus-visible) { outline: none; }
+
+@media (max-width: 760px) {
+  #minimap-shell { width: 126px; }
+  #minimap { width: 114px; height: 114px; }
+  #moodles { right: 148px; max-width: calc(100% - 205px); }
+  .mapa-panel { width: 97vw; height: 94vh; }
+  .mapa-header { gap: 7px; padding: 8px; }
+  .mapa-actions .btn-small { padding: 7px 8px; font-size: 10px; }
+  .mapa-help { display: none; }
+  #sound-menu .modal-box.settings-polished { width: 96vw; max-height: 94vh; padding: 12px; }
+  .settings-polished .sound-row { grid-template-columns: 1fr 1.5fr 38px; }
+}
+
+@media (max-height: 590px) and (orientation: landscape) {
+  #minimap-shell { top: 8px; right: 8px; width: 116px; }
+  #minimap { width: 104px; height: 104px; margin-top: 4px; }
+  .minimap-hint { display: none; }
+  #moodles { top: 8px; right: 132px; }
+  .moodle { width: 27px; height: 27px; }
+  .mapa-panel { height: 96vh; }
+  .mapa-header { min-height: 46px; }
+  .mapa-footer { min-height: 40px; }
+  #sound-menu .modal-box.settings-polished { max-height: 96vh; }
+}

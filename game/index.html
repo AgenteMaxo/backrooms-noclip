@@ -6,6 +6,7 @@
 <title>BACKROOMS MMO</title>
 <link rel="stylesheet" href="css/style.css?v=296">
 <link rel="stylesheet" href="css/title-interface.css?v=296">
+<link rel="stylesheet" href="css/community-interface.css?v=297">
 </head>
 <body>
 <!-- Splash de presentación (idea de Jaime Gaming, #81): se cierra solo o con
@@ -115,6 +116,15 @@
         <button id="btn-log-close" class="btn-small">Cerrar (L)</button>
       </div>
       <div id="moodles"></div>
+       <section id="minimap-shell" aria-label="Minimapa; doble toque o doble clic para ampliar">
+         <div class="minimap-head">N</div>
+         <canvas id="minimap" width="136" height="136"></canvas>
+         <div class="minimap-hint">doble toque: mapa completo</div>
+         <div class="minimap-zoom" aria-label="Zoom del minimapa">
+           <button id="minimap-zoom-out" type="button" title="Alejar minimapa">−</button>
+           <button id="minimap-zoom-in" type="button" title="Acercar minimapa">+</button>
+         </div>
+       </section>
       <!-- barra del modo espectador (v30, solo guardián) -->
       <div id="espectador-bar" style="display:none">
         <span class="esp-ojo">👁</span> ESPECTADOR — <b id="esp-nombre"></b>
@@ -352,11 +362,33 @@
     </div>
   </div>
 
-  <!-- Minimapa ampliado -->
-  <div id="minimap-big" style="display:none">
-    <canvas id="minimap-big-canvas" width="560" height="560"></canvas>
-    <p>clic derecho: marcar/borrar una casilla &middot; N o Esc: cerrar</p>
-    <button id="minimap-clear" class="btn-small">Limpiar anotaciones</button>
+  <!-- Cartografía ampliada: el zoom y el arrastre quedan confinados al lienzo. -->
+  <div id="minimap-big" style="display:none" aria-hidden="true">
+    <section class="mapa-panel" role="dialog" aria-modal="true" aria-labelledby="minimap-level">
+      <header class="mapa-header">
+        <div class="mapa-title">
+          <span class="mapa-kicker">CARTOGRAFÍA DEL ERRANTE</span>
+          <strong id="minimap-level">Mapa</strong>
+          <span id="minimap-progress"></span>
+        </div>
+        <div class="mapa-actions">
+          <button id="minimap-mark" class="btn-small" type="button">Marcar</button>
+          <button id="minimap-clear" class="btn-small" type="button">Limpiar</button>
+          <button id="minimap-close" class="btn-small" type="button" aria-label="Cerrar mapa">×</button>
+        </div>
+      </header>
+      <div id="minimap-big-viewport">
+        <canvas id="minimap-big-canvas" width="900" height="650"></canvas>
+      </div>
+      <footer class="mapa-footer">
+        <div class="mapa-legend" aria-label="Leyenda">
+          <span><b class="legend-player">▲</b> errante</span>
+          <span><b class="legend-route">■</b> recorrido explorado</span>
+          <span><b class="legend-mark">●</b> anotación</span>
+        </div>
+        <span class="mapa-help">rueda/pellizco: zoom · arrastrar: mover · clic derecho: marcar · N/Esc: cerrar</span>
+      </footer>
+    </section>
   </div>
 
   <!-- Códice del Errante (superpuesto, accesible desde título y juego con C) -->
@@ -451,7 +483,8 @@
 <script src="js/ui/ui.js?v=296"></script>
 <script src="js/ui/title-interface.js?v=296"></script>
 <script src="js/ui/changelog.js?v=296"></script>
-<script src="js/ui/minimap.js?v=296"></script>
+<script src="js/ui/minimap.js?v=297"></script>
+<script src="js/ui/community-interface.js?v=297"></script>
 <script src="js/sim/fisica.js?v=296"></script>
 <!-- reglas del mundo COMPARTIDAS con el servidor (duales): IA + Sala; el modo
      offline las ejecuta en la pestaña vía el servidor local de net/local.js -->
