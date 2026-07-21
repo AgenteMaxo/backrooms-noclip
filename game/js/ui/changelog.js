@@ -232,9 +232,75 @@
     if (boton) boton.classList.remove('novedad');
   }
 
+  const REDUCE_MOTION = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  const DUR = 220;
+
+  // abre/cierra un <details> animando su altura (WAAPI), en vez del salto
+  // instantáneo nativo; basado en el patrón estándar de web.dev para <details>
+  function acordeonAnimado(det) {
+    const sum = det.querySelector('summary');
+    let anim = null;
+    let cerrando = false;
+    let abriendo = false;
+
+    function alturaAbierta() { return sum.offsetHeight + det.querySelector('.changelog-ul').offsetHeight; }
+
+    function encoger() {
+      cerrando = true;
+      const desde = `${det.offsetHeight}px`;
+      const hasta = `${sum.offsetHeight}px`;
+      anim?.cancel();
+      anim = det.animate({ height: [desde, hasta] }, { duration: DUR, easing: 'ease-out' });
+      anim.onfinish = () => terminar(false);
+      anim.oncancel = () => { cerrando = false; };
+    }
+
+    function crecer() {
+      abriendo = true;
+      const desde = `${det.offsetHeight}px`;
+      const hasta = `${alturaAbierta()}px`;
+      anim?.cancel();
+      anim = det.animate({ height: [desde, hasta] }, { duration: DUR, easing: 'ease-out' });
+      anim.onfinish = () => terminar(true);
+      anim.oncancel = () => { abriendo = false; };
+    }
+
+    function terminar(abierto) {
+      det.open = abierto;
+      anim = null;
+      cerrando = abriendo = false;
+      det.style.height = det.style.overflow = '';
+    }
+
+    function abrir() {
+      det.style.overflow = 'hidden';
+      det.style.height = `${det.offsetHeight}px`;
+      det.open = true;
+      requestAnimationFrame(crecer);
+    }
+
+    function cerrar() {
+      if (!det.open) return;
+      det.style.overflow = 'hidden';
+      encoger();
+    }
+
+    return { abrir, cerrar, estaAbierto: () => det.open || abriendo };
+  }
+
+  // control sin animación (prefers-reduced-motion): mismo interfaz, sin WAAPI
+  function acordeonSimple(det) {
+    return {
+      abrir: () => { det.open = true; },
+      cerrar: () => { det.open = false; },
+      estaAbierto: () => det.open,
+    };
+  }
+
   function render(cont) {
     if (!cont || cont.childElementCount) return; // contenido estático: se pinta una sola vez
     const frag = document.createDocumentFragment();
+    const detalles = [];
     CHANGELOG.forEach((entrada, i) => {
       const det = document.createElement('details');
       det.className = 'cdx';
@@ -251,8 +317,19 @@
       }
       det.appendChild(ul);
       frag.appendChild(det);
+      detalles.push(det);
     });
     cont.appendChild(frag);
+
+    detalles.forEach((det) => {
+      const sum = det.querySelector('summary');
+      const ctrl = REDUCE_MOTION ? acordeonSimple(det) : acordeonAnimado(det);
+      sum.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (ctrl.estaAbierto()) ctrl.cerrar();
+        else ctrl.abrir();
+      });
+    });
   }
 
   window.Changelog = { render, marcarVisto };
