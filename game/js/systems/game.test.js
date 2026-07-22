@@ -69,6 +69,24 @@ test('importar conserva datos válidos y sanea las secciones corruptas', () => {
   assert.equal(perfil.campoFuturo, 'se conserva');
 });
 
+test('remove() invalida _descCache: el códice del perfil borrado no contamina al activo reasignado', () => {
+  // create()/select() ya invalidan el caché por su cuenta, así que para
+  // aislar el fix de remove() hay que llegar al perfil superviviente SIN
+  // pasar por ninguno de los dos después de borrar (remove() reasigna
+  // d.activo internamente cuando el perfil borrado era el activo)
+  Profiles.create('A');
+  Profiles.registrarDescubierto('objetos', 'agua_almendras');
+  assert.equal(Profiles.descubierto('objetos', 'agua_almendras'), true);
+
+  Profiles.create('B'); // limpia el caché; A sigue en perfiles
+  Profiles.select('A'); // vuelve a activar A con un caché fresco
+  assert.equal(Profiles.descubierto('objetos', 'agua_almendras'), true);
+
+  Profiles.remove('A'); // reasigna d.activo a 'B' sin pasar por create()/select()
+  assert.equal(Profiles.activeName(), 'B');
+  assert.equal(Profiles.descubierto('objetos', 'agua_almendras'), false);
+});
+
 test('importar rechaza JSON irrecuperable sin modificar el perfil activo', () => {
   Profiles.create('Existente');
   for (const json of [

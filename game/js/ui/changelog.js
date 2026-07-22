@@ -227,7 +227,7 @@
   }
 
   function marcarVisto() {
-    localStorage.setItem(CLAVE_VISTO, ultima);
+    try { localStorage.setItem(CLAVE_VISTO, ultima); } catch (e) {}
     const boton = document.getElementById('btn-changelog');
     if (boton) boton.classList.remove('novedad');
   }

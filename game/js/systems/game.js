@@ -117,6 +117,7 @@
       if (d.activo === nombre) d.activo = Object.keys(d.perfiles)[0] || null;
       this._save(d);
       localStorage.removeItem('backrooms-save::' + nombre);
+      this._descCache = null;
     },
     _update(fn) {
       const d = this._load();

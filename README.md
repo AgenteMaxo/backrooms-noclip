@@ -11,7 +11,7 @@ fiel al lore: niveles, entidades, salidas y mecánicas salen de las páginas rea
 - **Espacio**: interactuar — cruzar salidas y **registrar muebles** (taquillas, archivadores… con tirada de dado)
 - **X**: esperar · **Q / E**: usar la mano izquierda/derecha · **F**: linterna
 - **B**: mochila · **M / N**: mapa · **L**: registro · **J**: diario · **C**: Códice
-- **1-6**: usar un objeto de la mochila · **ESC**: ajustes · **G**: no-clip (si desbloqueas el Instinto)
+- **1-6**: usar un objeto de la mochila · **ESC**: ajustes
 - Los niveles visitados persisten durante la expedición; las puertas de retorno sustituyen al antiguo atajo **R**.
 - **Perfiles**: crea tu usuario en el título; el Códice registra para siempre los niveles
   que transitas (con su descripción), veces visitados, mejores marcas y escapes.
