@@ -285,74 +285,90 @@ wss.on('connection', (ws, req) => {
   const timbre = setTimeout(() => { if (!jug) ws.close(1008, 'sin hola'); }, 5000);
 
   ws.on('message', (raw) => {
-    const m = P.leer(raw);
-    if (!m) return;
-    if (m.t === 'hola') {
-      if (jug) return; // ya presentado
-      clearTimeout(timbre);
-      if ((m.v | 0) !== P.VERSION) {
-        // cliente de una versión vieja: que recargue la página
-        sala2enviar(ws, { t: 'error', txt: 'Versión nueva del juego: recarga la página (Ctrl+F5).' });
-        ws.close(1008, 'version');
+    // un mensaje mal formado no puede tumbar el proceso entero (y con él, a
+    // todos los jugadores conectados); `m` se declara fuera del try para que
+    // el catch pueda registrar qué tipo de mensaje falló
+    let m;
+    try {
+      m = P.leer(raw);
+      if (!m) return;
+      if (m.t === 'hola') {
+        if (jug) return; // ya presentado
+        clearTimeout(timbre);
+        if ((m.v | 0) !== P.VERSION) {
+          // cliente de una versión vieja: que recargue la página
+          sala2enviar(ws, { t: 'error', txt: 'Versión nueva del juego: recarga la página (Ctrl+F5).' });
+          ws.close(1008, 'version');
+          return;
+        }
+        const nombre = filtro.nombreLimpio(m.nombre);
+        const expediente = db.conectar(m.token, nombre);
+        if (expediente.baneado) { ws.close(1008, 'baneado'); return; }
+        const salaPrivada = codigoSalaPrivada(m.sala);
+        if (salaPrivada === false) {
+          sala2enviar(ws, { t: 'error', txt: 'Código de sala privada inválido. Usa 3-32 letras, números, _ o -.' });
+          ws.close(1008, 'sala');
+          return;
+        }
+        // puerta de desarrollo (?nivel=): SOLO con MMO_DEV=1 — en producción
+        // todo el mundo despierta en Level 0, como manda el lore
+        const devOk = process.env.MMO_DEV === '1';
+        const nivel = devOk && m.nivel && DATA.levels[m.nivel] ? m.nivel : NIVEL_INICIAL;
+        sala = asignar(nivel, salaPrivada || undefined);
+        prepararSala(sala);
+        jug = sala.entrar(ws, nombre, m.token, expediente);
+        jug._reSala = (s) => { sala = s; };  // el cruce actualiza la sala del socket
+        db.registrarVisita(m.token, nivel);
+        console.log(`[+] ${jug.nombre}#${jug.id} → ${sala.clave} (${sala.jugadores.size})`);
         return;
       }
-      const nombre = filtro.nombreLimpio(m.nombre);
-      const expediente = db.conectar(m.token, nombre);
-      if (expediente.baneado) { ws.close(1008, 'baneado'); return; }
-      const salaPrivada = codigoSalaPrivada(m.sala);
-      if (salaPrivada === false) {
-        sala2enviar(ws, { t: 'error', txt: 'Código de sala privada inválido. Usa 3-32 letras, números, _ o -.' });
-        ws.close(1008, 'sala');
+      if (!jug) return; // todo lo demás exige estar dentro
+      if (m.t === 'espectar') {
+        // modo espectador (v30): solo el guardián
+        if (!jug.esAdmin) { sala.enviar(ws, { t: 'aviso', txt: 'Comando desconocido.' }); return; }
+        // v30.7: ←/→ rotan entre TODOS los errantes de todas las instancias
+        const objetivo = m.dir ? objetivoGlobal(jug, m.dir === 'sig' ? 1 : -1) : m.objetivo;
+        if (m.dir && objetivo === null) {
+          sala.enviar(ws, { t: 'aviso', txt: 'No hay otros errantes a los que observar.' });
+          return;
+        }
+        const r = espectar(jug, sala, objetivo);
+        if (r.error) sala.enviar(ws, { t: 'aviso', txt: r.error });
         return;
       }
-      // puerta de desarrollo (?nivel=): SOLO con MMO_DEV=1 — en producción
-      // todo el mundo despierta en Level 0, como manda el lore
-      const devOk = process.env.MMO_DEV === '1';
-      const nivel = devOk && m.nivel && DATA.levels[m.nivel] ? m.nivel : NIVEL_INICIAL;
-      sala = asignar(nivel, salaPrivada || undefined);
-      prepararSala(sala);
-      jug = sala.entrar(ws, nombre, m.token, expediente);
-      jug._reSala = (s) => { sala = s; };  // el cruce actualiza la sala del socket
-      db.registrarVisita(m.token, nivel);
-      console.log(`[+] ${jug.nombre}#${jug.id} → ${sala.clave} (${sala.jugadores.size})`);
-      return;
-    }
-    if (!jug) return; // todo lo demás exige estar dentro
-    if (m.t === 'espectar') {
-      // modo espectador (v30): solo el guardián
-      if (!jug.esAdmin) { sala.enviar(ws, { t: 'aviso', txt: 'Comando desconocido.' }); return; }
-      // v30.7: ←/→ rotan entre TODOS los errantes de todas las instancias
-      const objetivo = m.dir ? objetivoGlobal(jug, m.dir === 'sig' ? 1 : -1) : m.objetivo;
-      if (m.dir && objetivo === null) {
-        sala.enviar(ws, { t: 'aviso', txt: 'No hay otros errantes a los que observar.' });
-        return;
+      if (m.t === 'p') sala.posicion(jug, m);
+      else if (m.t === 'loot') sala.loot(jug, m.id);
+      else if (m.t === 'accion') sala.accion(jug);
+      else if (m.t === 'cruzar') sala.cruzar(jug, m.si);
+      else if (m.t === 'usar') sala.usar(jug, m.mano);
+      else if (m.t === 'luz') sala.luz(jug, m.si);
+      else if (m.t === 'mochila') sala.mochila(jug, m);
+      else if (m.t === 'admin') {
+        // contraseña de guardián desde Ajustes: desbloquea debug y barras
+        intentarAdmin(jug, sala, m.clave);
+        sala.enviar(ws, { t: 'admin', si: !!jug.esAdmin });
+        if (!jug.esAdmin)
+          sala.enviar(ws, { t: 'aviso', txt: 'La clave no abre nada.' });
       }
-      const r = espectar(jug, sala, objetivo);
-      if (r.error) sala.enviar(ws, { t: 'aviso', txt: r.error });
-      return;
+      else if (m.t === 'chat') {
+        if (m.txt.startsWith('/')) { comando(jug, sala, m.txt); return; }
+        const txt = filtro.chatLimpio(m.txt);
+        if (txt) sala.chat(jug, txt);
+      } else if (m.t === 'ping') sala.enviar(ws, m.ts !== undefined ? { t: 'pong', ts: m.ts } : { t: 'pong' });
+    } catch (e) {
+      // cambiarDeSala() saca a jug de la sala vieja ANTES de reasignar la
+      // variable `sala` del cierre (al final, vía jug._reSala): un fallo a
+      // mitad de camino deja al jugador sin sala con el socket todavía
+      // abierto (zombi). No se puede confiar en que el resto de mensajes de
+      // esta conexión sigan siendo válidos, así que se cierra el socket en
+      // vez de tragarse el error y seguir — el cliente reconecta limpio.
+      console.error(`[ws] mensaje '${m && m.t}' de ${jug ? `${jug.nombre}#${jug.id}` : ip}${sala ? ` (${sala.clave})` : ''}:`, e.stack);
+      ws.close(1011, 'error interno');
     }
-    if (m.t === 'p') sala.posicion(jug, m);
-    else if (m.t === 'loot') sala.loot(jug, m.id);
-    else if (m.t === 'accion') sala.accion(jug);
-    else if (m.t === 'cruzar') sala.cruzar(jug, m.si);
-    else if (m.t === 'usar') sala.usar(jug, m.mano);
-    else if (m.t === 'luz') sala.luz(jug, m.si);
-    else if (m.t === 'mochila') sala.mochila(jug, m);
-    else if (m.t === 'admin') {
-      // contraseña de guardián desde Ajustes: desbloquea debug y barras
-      intentarAdmin(jug, sala, m.clave);
-      sala.enviar(ws, { t: 'admin', si: !!jug.esAdmin });
-      if (!jug.esAdmin)
-        sala.enviar(ws, { t: 'aviso', txt: 'La clave no abre nada.' });
-    }
-    else if (m.t === 'chat') {
-      if (m.txt.startsWith('/')) { comando(jug, sala, m.txt); return; }
-      const txt = filtro.chatLimpio(m.txt);
-      if (txt) sala.chat(jug, txt);
-    } else if (m.t === 'ping') sala.enviar(ws, m.ts !== undefined ? { t: 'pong', ts: m.ts } : { t: 'pong' });
   });
 
   ws.on('close', () => {
+    clearTimeout(timbre); // evita que el timbre de bienvenida se dispare sobre un socket ya cerrado
     porIp.set(ip, (porIp.get(ip) || 1) - 1);
     if (porIp.get(ip) <= 0) porIp.delete(ip);
     if (jug && sala) {
@@ -532,6 +548,14 @@ setInterval(() => {
     if (!ws.vivo) { ws.terminate(); continue; }
     ws.vivo = false;
     try { ws.ping(); } catch (e) {}
+  }
+  // barrido de obsFallos: sin esto crece para siempre, una entrada por cada
+  // IP que escanea /observa (ninguna se borra salvo autenticación correcta)
+  const ahora = Date.now();
+  for (const [ip, fallos] of obsFallos) {
+    const vivos = fallos.filter((t) => ahora - t < 600000);
+    if (vivos.length) obsFallos.set(ip, vivos);
+    else obsFallos.delete(ip);
   }
 }, 30000);
 
